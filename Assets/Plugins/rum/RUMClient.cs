@@ -46,6 +46,7 @@ namespace com.rum {
                     }
 
                     sb.Append(Convert.ToString(c));
+
                     return Convert.ToInt64(sb.ToString());
                 }
             }

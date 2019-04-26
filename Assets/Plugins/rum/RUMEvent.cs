@@ -61,6 +61,8 @@ namespace com.rum {
 
                         this.WriteEvent(item);
                     }
+
+                    event_cache.Clear();
                 }
             }
         }
@@ -320,6 +322,7 @@ namespace com.rum {
                         }
 
                         items.Add(item);
+
                         event_cache.Add(Convert.ToString(item["eid"]), item);
 
                         size += System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(item));
@@ -512,17 +515,17 @@ namespace com.rum {
                 return EVENT_MAP_1;
             } 
 
-            if (this._config.ContainsKey("1") && ((List<string>)this._config["1"]).Contains(innerKey)) {
+            if (this._config.ContainsKey("1") && ((List<object>)this._config["1"]).Contains(innerKey)) {
 
                 return EVENT_MAP_1;
             }
 
-            if (this._config.ContainsKey("2") && ((List<string>)this._config["2"]).Contains(innerKey)) {
+            if (this._config.ContainsKey("2") && ((List<object>)this._config["2"]).Contains(innerKey)) {
 
                 return EVENT_MAP_2;
             }
 
-            if (this._config.ContainsKey("3") && ((List<string>)this._config["3"]).Contains(innerKey)) {
+            if (this._config.ContainsKey("3") && ((List<object>)this._config["3"]).Contains(innerKey)) {
 
                 return EVENT_MAP_3;
             }

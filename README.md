@@ -10,7 +10,7 @@
     * 默认实现`System.Threading.ThreadPool.QueueUserWorkItem`
     * 如需自己管理线程，实现该接口并注册线程池`ThreadPool.Instance.SetPool(IThreadPool value)`
 
-* 不要阻塞事件触发和回调, 否则线程池将被耗尽
+* 不要阻塞事件触发和回调, 否则线程池将被耗尽, 也不要在其中调用仅UI线程可执行的函数
 
 * 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
 
@@ -46,7 +46,7 @@ client.GetEvent().AddListener("ready", (evd) => {
     Debug.Log("ready!");
     
     client.SetUid("xxxxxx-xxxxx-xxxx");
-    client.CustomEvent("MY_EVENT", new Dictionary<string, object>());
+    client.CustomEvent("info", new Dictionary<string, object>());
 });
 
 client.Connect("52.83.220.166:13609", false, false);

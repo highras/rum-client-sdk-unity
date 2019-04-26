@@ -35,18 +35,18 @@ public class Main : MonoBehaviour
             Debug.Log("ready!");
 
             client.SetUid("uid:11111111111");
-            SendCustomEvent();
         });
 
         client.Connect("52.83.220.166:13609", false, false);
+        Invoke("SendCustomEvent", 10f);
     }
 
     void SendCustomEvent() {
 
         IDictionary<string, object> attrs = new Dictionary<string, object>();
-        attrs.Add("debug", "this is a custom event");
+        attrs.Add("MY_EVENT", "this is a custom event");
 
-        client.CustomEvent("MY_EVENT", attrs);
+        client.CustomEvent("info", attrs);
     }
 
     // Update is called once per frame
