@@ -32,7 +32,7 @@ namespace com.rum {
         }
 
         private FPEvent _event = new FPEvent();
-        private IDictionary<string, object> _prefs;
+        public IDictionary<string, object> StoragePrefs;
 
         private bool _isPause;
         private bool _isFocus;
@@ -49,12 +49,12 @@ namespace com.rum {
         }
 
         void OnEnable() {
- 
+
             this._isPause = false;
             this._isFocus = false;
-        }
 
-        void Start() {
+            Application.logMessageReceived += OnLogCallback;
+            Application.logMessageReceivedThreaded += OnLogCallbackThreaded;
 
             this._nw = "NONE";
 
@@ -77,11 +77,25 @@ namespace com.rum {
             Invoke("OnTimer", RUMConfig.LOCAL_STORAGE_DELAY / 1000);
         }
 
+        void Start() {}
+
+        void OnDisable() {
+
+            this.SavePrefs();
+
+            Application.logMessageReceived -= OnLogCallback;
+            Application.logMessageReceivedThreaded -= OnLogCallbackThreaded;
+
+            CancelInvoke();
+        }
+
         void OnApplicationPause() {
  
             if (!this._isPause) {
              
                 this._event.FireEvent(new EventData("app_bg"));
+                
+                this.SavePrefs();
             } else {
 
                 this._isFocus = true;
@@ -106,19 +120,6 @@ namespace com.rum {
         }
 
         private void OnTimer() {
-
-            if (this._prefs != null) {
-
-                lock(this._prefs) {
-
-                    foreach (KeyValuePair<string, object> kvp in this._prefs) {
-
-                        PlayerPrefs.SetString(kvp.Key, Json.SerializeToString(kvp.Value));
-                    }
-                }
-
-                PlayerPrefs.Save();
-            }
 
             if (Application.internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
 
@@ -147,15 +148,110 @@ namespace com.rum {
                 }
             }
 
+            this.SavePrefs();
             Invoke("OnTimer", RUMConfig.LOCAL_STORAGE_DELAY / 1000);
         }
 
-        public void InitPrefs(string rumid_key, string events_key) {
+        private void SavePrefs() {
 
-            this._prefs = new Dictionary<string, object>();
+            if (StoragePrefs != null) {
 
-            this.GetItem(rumid_key);
-            this.GetItem(events_key);
+                lock(StoragePrefs) {
+
+                    foreach (KeyValuePair<string, object> kvp in StoragePrefs) {
+
+                        PlayerPrefs.SetString(kvp.Key, Json.SerializeToString(kvp.Value));
+                    }
+                }
+
+                PlayerPrefs.Save();
+            }
+        }
+
+        private void OnLogCallback(string logString, string stackTrace, LogType type) {
+
+            IDictionary<string, object> dict = null;
+
+            if (type == LogType.Assert) {
+
+                if (this._writeEvent != null) {
+
+                    dict = new Dictionary<string, object>();
+                    dict.Add("type", "main_assert");
+                    dict.Add("message", logString);
+                    dict.Add("stack", stackTrace);
+
+                    this._writeEvent("crash", dict);
+                }
+            }
+
+            if (type == LogType.Exception) {
+
+                if (this._writeEvent != null) {
+
+                    dict = new Dictionary<string, object>();
+                    dict.Add("type", "main_exception");
+                    dict.Add("message", logString);
+                    dict.Add("stack", stackTrace);
+
+                    this._writeEvent("error", dict);
+                }
+            }
+
+            if (dict != null) {
+
+                this.SavePrefs();
+                this._event.FireEvent(new EventData(Convert.ToString(dict["ev"]), dict));
+            }
+        }
+
+        private void OnLogCallbackThreaded(string logString, string stackTrace, LogType type) {
+
+            IDictionary<string, object> dict = null;
+
+            if (type == LogType.Exception) {
+
+                if (this._writeEvent != null) {
+
+                    dict = new Dictionary<string, object>();
+                    dict.Add("type", "threaded_exception");
+                    dict.Add("message", logString);
+                    dict.Add("stack", stackTrace);
+
+                    this._writeEvent("error", dict);
+                }
+            }
+
+            if (dict != null) {
+
+                this._event.FireEvent(new EventData(Convert.ToString(dict["ev"]), dict));
+            }
+        }
+
+        private Action<string, IDictionary<string, object>> _writeEvent;
+
+        public void InitPrefs(string rumid_key, string events_key, Action<string, IDictionary<string, object>> writeEvent) {
+
+            this._writeEvent = writeEvent;
+            StoragePrefs = new Dictionary<string, object>();
+
+            if (PlayerPrefs.HasKey(rumid_key)) {
+
+                StoragePrefs.Add(rumid_key, Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(rumid_key)));
+            } else {
+
+                StoragePrefs.Add(rumid_key, new Dictionary<string, object>());
+            }
+
+            if (PlayerPrefs.HasKey(events_key)) {
+
+                StoragePrefs.Add(events_key, Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(events_key)));
+            } else {
+
+                StoragePrefs.Add(events_key, new Dictionary<string, object>());
+            }
+
+            ErrorRecorderHolder.setInstance(new RUMErrorRecorder(writeEvent));
         }
 
         public FPEvent GetEvent() {
@@ -230,49 +326,37 @@ namespace com.rum {
             return null;
         }
 
-        public void SetItem(string key, IDictionary<string, object> items) {
+        public void AddSelfListener() {}
 
-            if (this._prefs == null) {
+        private class RUMErrorRecorder:ErrorRecorder {
 
-                return;
+            private Action<string, IDictionary<string, object>> _writeEvent;
+
+            public RUMErrorRecorder(Action<string, IDictionary<string, object>> writeEvent):base() {
+
+                this._writeEvent = writeEvent;
             }
 
-            lock(this._prefs) {
+            public override void recordError(Exception e) {
+            
+                IDictionary<string, object> dict = null;
 
-                if (this._prefs.ContainsKey(key)) {
+                if (this._writeEvent != null) {
 
-                    this._prefs[key] = items;
-                } else {
+                    dict = new Dictionary<string, object>();
+                    dict.Add("type", "rum_threaded_exception");
+                    dict.Add("message", e.Message);
+                    dict.Add("stack", e.StackTrace);
 
-                    this._prefs.Add(key, items);
+                    this._writeEvent("error", dict);
+                }
+
+                if (dict != null) {
+
+                    Debug.LogError(e.Message);
+                    Debug.LogError(e.StackTrace);
                 }
             }
         }
-
-        public IDictionary<string, object> GetItem(string key) {
-
-            if (this._prefs == null) {
-
-                return null;
-            }
-
-            lock(this._prefs) {
-
-                if (!this._prefs.ContainsKey(key)) {
-
-                    if (PlayerPrefs.HasKey(key)) {
-
-                        this._prefs.Add(key, Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(key)));
-                    } else {
-
-                        this._prefs.Add(key, new Dictionary<string, object>());
-                    }
-                } 
-            }
-
-            return (IDictionary<string, object>)this._prefs[key];
-        }
-
-        public void AddSelfListener() {}
     }
 }

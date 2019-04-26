@@ -42,16 +42,17 @@ client.GetEvent().AddListener("close", (evd) => {
 client.GetEvent().AddListener("ready", (evd) => {
 
     Debug.Log("ready!");
+    
+    client.SetUid("xxxxxx-xxxxx-xxxx");
     client.CustomEvent("MY_EVENT", new Dictionary<string, object>());
 });
 
-client.Connect("52.83.220.166:13609", false);
+client.Connect("52.83.220.166:13609", false, false);
 
 // destory
 // client.Destory();
 // client = null;
 ```
-
 
 #### Events ####
 * `event`:
@@ -72,17 +73,17 @@ client.Connect("52.83.220.166:13609", false);
 
 * `Destroy()`: 断开链接并销毁 
 
-* `Connect(string endpoint, bool clearStorage)`: 连接服务器
+* `Connect(string endpoint, bool clearRumId, bool clearEvents)`: 连接服务器
     * `endpoint`: **(string)** RUMAgent接入地址, 由RUM项目控制台获取
-    * `clearStorage`: **(bool)** 是否格式化本地事件缓存
+    * `clearRumId`: **(bool)** 是否清理本地RumId缓存
+    * `clearEvents`: **(bool)** 是否清理本地事件缓存
 
-* `GetSession`: **(long)** 会话 ID, 设备唯一, 可用于服务端事件关联
+* `GetSession()`: **(long)** 会话 ID, 设备唯一, 可用于服务端事件关联
 
-* `GetRumId`: **(string)** RUM ID, 唯一, 可用于服务端事件关联
+* `GetRumId()`: **(string)** RUM ID, 唯一, 可用于服务端事件关联
 
 * `SetUid(string value)`: 设置用户ID
     * `value`: **(string)** 用户ID
-
 
 * `CustomEvent(string ev, IDictionary<string, object> attrs)`: 上报自定义事件 
     * `ev`: **(string)** 自定义事件名称

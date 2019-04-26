@@ -28,23 +28,22 @@ namespace com.rum {
         private long _delayCount;
         private long _lastSecondTime;
 
-        private RUMPlatform _platform;
-
         private string _rum_id_storage;
         private string _rum_events_storage;
 
         private int _storageSize;
         private int _sizeLimit;
 
-        public RUMEvent(int pid, RUMPlatform platform, bool debug) {
+        private static readonly System.Object locker = new System.Object();
+
+        public RUMEvent(int pid, RUMPlatform platform, bool debug, Action<string, IDictionary<string, object>> writeAction) {
 
             this._debug = debug;
-            this._platform = platform;
             this._rum_id_storage = "rum_rid_" + pid;
             this._rum_events_storage = "rum_events_" + pid;
 
             this._sizeLimit = RUMConfig.SENT_SIZE_LIMIT;
-            this._platform.InitPrefs(this._rum_id_storage, this._rum_events_storage);
+            RUMPlatform.Instance.InitPrefs(this._rum_id_storage, this._rum_events_storage, writeAction);
         }
 
         public void UpdateConfig(IDictionary<string, object> value) {
@@ -52,46 +51,18 @@ namespace com.rum {
             this._config = value;
             this._hasConf = true;
 
-            IDictionary<string, object> event_map = this.GetEventMap(EVENT_MAP_0);
+            lock (RUMPlatform.Instance.StoragePrefs) {
 
-            foreach (KeyValuePair<string, object> kvp in event_map) {
+                IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
-                string storageKey = this.SelectKey(kvp.Key);
+                if (!this.IsNullOrEmpty(event_cache)) {
 
-                if (!string.IsNullOrEmpty(storageKey)) {
+                    foreach (IDictionary<string, object> item in event_cache.Values) {
 
-                    IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
-
-                    if (event_storage.ContainsKey(kvp.Key)) {
-
-                        event_storage[kvp.Key] = this.MergeDictionary((IDictionary<string, object>)kvp.Value, (IDictionary<string, object>)event_storage[kvp.Key]);
-                    } else {
-
-                        event_storage[kvp.Key] = kvp.Value;
+                        this.WriteEvent(item);
                     }
-                } else {
-
-                    if (this._debug) {
-
-                        Debug.Log("[RUM] disable event & will be discard! " + Json.SerializeToString(kvp.Value));
-                    } 
-                }
-
-                event_map.Remove(kvp.Key);
-            }
-
-            this.SetEventMap(EVENT_MAP_0, event_map);
-            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
-
-            if (!this.IsNullOrEmpty(event_cache)) {
-
-                foreach (IDictionary<string, object> item in event_cache.Values) {
-
-                    this.WriteEvent(item);
                 }
             }
-
-            this.SetEventMap(EVENT_CACHE, new Dictionary<string, object>());
         }
 
         public void WriteEvent(IDictionary<string, object> dict) {
@@ -101,27 +72,29 @@ namespace com.rum {
 
             if (!string.IsNullOrEmpty(storageKey)) {
 
-                IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
+                lock (RUMPlatform.Instance.StoragePrefs) {
 
-                if (!event_storage.ContainsKey(key)) {
+                    IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
 
-                    event_storage[key] = new List<object>();
-                }
+                    if (!event_storage.ContainsKey(key)) {
 
-                List<object> event_list = (List<object>)event_storage[key];
-
-                if (event_list.Count >= RUMConfig.EVENT_QUEUE_LIMIT) {
-
-                    if (this._debug) {
-
-                        Debug.Log("[RUM] event(normal) queue limit & will be shift! " + Json.SerializeToString(dict));
+                        event_storage[key] = new List<object>();
                     }
 
-                    event_list.RemoveAt(0);
-                }
+                    List<object> event_list = (List<object>)event_storage[key];
 
-                event_list.Add(dict);
-                this.SetEventMap(storageKey, event_storage);
+                    if (event_list.Count >= RUMConfig.EVENT_QUEUE_LIMIT) {
+
+                        if (this._debug) {
+
+                            Debug.Log("[RUM] event(normal) queue limit & will be shift! " + Json.SerializeToString(dict));
+                        }
+
+                        event_list.RemoveAt(0);
+                    }
+
+                    event_list.Add(dict);
+                }
             } else {
 
                 if (this._debug) {
@@ -216,29 +189,49 @@ namespace com.rum {
 
             return this._hasConf;
         }
+        
+        public void ClearRumId() {
 
-        public void ClearStorage() {
+            lock (RUMPlatform.Instance.StoragePrefs) {
 
-            this._platform.SetItem(this._rum_id_storage, new Dictionary<string, object>());
-            this._platform.SetItem(this._rum_events_storage, new Dictionary<string, object>());
+                ((IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[this._rum_id_storage]).Clear();
+            }
+
+            if (this._debug) {
+
+                Debug.Log("[RUM] storage clear! rid_key: " + this._rum_id_storage);
+            }
+        }
+
+        public void ClearEvents() {
+
+            lock (RUMPlatform.Instance.StoragePrefs) {
+
+                ((IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[this._rum_events_storage]).Clear();
+            }
+
+            if (this._debug) {
+
+                Debug.Log("[RUM] storage clear! storage_key: " + this._rum_events_storage);
+            }
         }
 
         public void RemoveFromCache(List<object> items) {
 
-            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
+            lock (RUMPlatform.Instance.StoragePrefs) {
 
-            foreach (object item in items) {
+                IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
-                IDictionary<string, object> dict = (IDictionary<string, object>)item;
-                event_cache.Remove(Convert.ToString(dict["eid"]));
+                foreach (IDictionary<string, object> item in items) {
+
+                    event_cache.Remove(Convert.ToString(item["eid"]));
+                }
             }
-
-            this.SetEventMap(EVENT_CACHE, event_cache);
         }
 
         private IDictionary<string, object> GetEventMap(string key) {
 
-            IDictionary<string, object> items = this._platform.GetItem(this._rum_events_storage);
+            IDictionary<string, object> items = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[this._rum_events_storage];
 
             if (!items.ContainsKey(key)) {
 
@@ -246,19 +239,6 @@ namespace com.rum {
             }
 
             return (IDictionary<string, object>)items[key];
-        }
-
-        private void SetEventMap(string key, IDictionary<string, object> value) {
-
-            IDictionary<string, object> items = this._platform.GetItem(this._rum_events_storage);
-
-            if (!items.ContainsKey(key)) {
-
-                items.Add(key, value);
-            } else {
-
-                items[key] = value;
-            }
         }
 
         public List<object> GetSentEvents() {
@@ -292,90 +272,91 @@ namespace com.rum {
 
         private void ShiftEvents(string key, ref int size, ref List<object> items) {
 
-            IDictionary<string, object> event_map = this.GetEventMap(key);
+            lock (RUMPlatform.Instance.StoragePrefs) {
 
-            if (this.IsNullOrEmpty(event_map)) {
+                IDictionary<string, object> event_map = this.GetEventMap(key);
 
-                return;
-            }
+                if (this.IsNullOrEmpty(event_map)) {
 
-            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
+                    return;
+                }
 
-            if (string.IsNullOrEmpty(this._rumId)) {
+                IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
-                this.BuildRumId();
-            }
+                if (string.IsNullOrEmpty(this._rumId)) {
 
-            List<string> event_keys = new List<string>(event_map.Keys);
+                    this.BuildRumId();
+                }
 
-            foreach (string evk in event_keys) {
+                List<string> event_keys = new List<string>(event_map.Keys);
 
-                List<object> event_list = (List<object>)event_map[evk];
+                foreach (string evk in event_keys) {
 
-                while (event_list.Count > 0 && size < this._sizeLimit) {
+                    List<object> event_list = (List<object>)event_map[evk];
 
-                    IDictionary<string, object> item = (IDictionary<string, object>)event_list[0];
-                    event_list.RemoveAt(0);
+                    while (event_list.Count > 0 && size < this._sizeLimit) {
 
-                    if (!item.ContainsKey("ts")) {
+                        IDictionary<string, object> item = (IDictionary<string, object>)event_list[0];
+                        event_list.RemoveAt(0);
 
-                        item.Add("ts", this._timestamp);
-                    }
+                        if (!item.ContainsKey("ts")) {
 
-                    if (!item.ContainsKey("rid")) {
-
-                        item.Add("rid", this._rumId);
-                    }
-
-                    List<string> keys = new List<string>(item.Keys);
-
-                    foreach (string k in keys) {
-
-                        if (this.IsNullOrEmpty(item[k])) {
-
-                            item.Remove(k); 
+                            item.Add("ts", this._timestamp);
                         }
+
+                        if (!item.ContainsKey("rid")) {
+
+                            item.Add("rid", this._rumId);
+                        }
+
+                        List<string> keys = new List<string>(item.Keys);
+
+                        foreach (string k in keys) {
+
+                            if (this.IsNullOrEmpty(item[k])) {
+
+                                item.Remove(k); 
+                            }
+                        }
+
+                        items.Add(item);
+                        event_cache.Add(Convert.ToString(item["eid"]), item);
+
+                        size += System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(item));
                     }
 
-                    items.Add(item);
-                    event_cache[Convert.ToString(item["eid"])] = item;
+                    if (event_list.Count == 0) {
 
-                    size += System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(item));
-                }
+                        event_map.Remove(evk);
+                    }
 
-                if (event_list.Count == 0) {
+                    if (size >= this._sizeLimit) {
 
-                    event_map.Remove(evk);
-                }
-
-                if (size >= this._sizeLimit) {
-
-                    break;
+                        break;
+                    }
                 }
             }
-
-            this.SetEventMap(key, event_map);
         }
 
         private string BuildRumId() {
 
             string rum_id = this.UUID(0, 16);
-            IDictionary<string, object> item = this._platform.GetItem(this._rum_id_storage);
 
-            if (item.ContainsKey("rid")) {
+            lock(RUMPlatform.Instance.StoragePrefs) {
 
-                rum_id = Convert.ToString(item["rid"]);
-            } else {
+                IDictionary<string, object> item = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[this._rum_id_storage];
 
-                this._isFirst = true;
+                if (item.ContainsKey("rid")) {
 
-                IDictionary<string, object> dict = new Dictionary<string, object>();
-                dict.Add("rid", rum_id);
+                    rum_id = Convert.ToString(item["rid"]);
+                } else {
 
-                this._platform.SetItem(this._rum_id_storage, dict);
+                    this._isFirst = true;
+                    item.Add("rid", rum_id);
+                }
+
+                return this._rumId = rum_id;
             }
-
-            return this._rumId = rum_id;
         }
 
         private string UUID(int len, int radix) {
@@ -473,14 +454,17 @@ namespace com.rum {
 
         private void CheckStorageSize() {
 
-            IDictionary<string, object> items = this._platform.GetItem(this._rum_events_storage);
+            lock (RUMPlatform.Instance.StoragePrefs) {
 
-            this._storageSize = System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(items));
+                IDictionary<string, object> items = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[this._rum_events_storage];
 
-            if (this._storageSize > this._sizeLimit) {
+                this._storageSize = System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(items));
 
-                this._platform.SetItem(this._rum_events_storage, new Dictionary<string, object>());
-            } 
+                if (this._storageSize > RUMConfig.STORAGE_SIZE_LIMIT) {
+
+                    items.Clear();
+                } 
+            }
         }
 
         private void StartSecond() {
@@ -495,27 +479,30 @@ namespace com.rum {
 
         public void OnSecond(long timestamp) {
 
-            if (this._lastSecondTime == 0) {
+            lock(locker) {
 
-                return;
+                if (this._lastSecondTime == 0) {
+
+                    return;
+                }
+
+                if (timestamp - this._lastSecondTime < 1000) {
+
+                    return;
+                }
+
+                this._lastSecondTime += 1000;
+
+                if (this._delayCount > 0) {
+
+                    this._delayCount--;
+                } else {
+
+                    this._timestamp++;
+                }
+
+                this.CheckStorageSize();
             }
-
-            if (timestamp - this._lastSecondTime < 1000) {
-
-                return;
-            }
-
-            this._lastSecondTime += 1000;
-
-            if (this._delayCount > 0) {
-
-                this._delayCount--;
-            } else {
-
-                this._timestamp++;
-            }
-
-            this.CheckStorageSize();
         }
 
         private string SelectKey(string innerKey) {

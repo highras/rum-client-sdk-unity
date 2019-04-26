@@ -7,12 +7,12 @@ using com.rum;
 
 public class Main : MonoBehaviour
 {
-    private RUMClient _client;
+    private RUMClient client;
 
     // Start is called before the first frame update
     void Start() {
     
-       this._client = new RUMClient(
+       client = new RUMClient(
             41000013,
             "c23e9d90-bada-440d-8316-44790f615ec1",
             null,
@@ -20,24 +20,25 @@ public class Main : MonoBehaviour
             true
         );
 
-        this._client.GetEvent().AddListener("error", (evd) => {
+        client.GetEvent().AddListener("error", (evd) => {
 
             Debug.Log("error: " + evd.GetException().Message);
         });
 
-        this._client.GetEvent().AddListener("close", (evd) => {
+        client.GetEvent().AddListener("close", (evd) => {
 
             Debug.Log("closed!");
         });
 
-        this._client.GetEvent().AddListener("ready", (evd) => {
+        client.GetEvent().AddListener("ready", (evd) => {
 
             Debug.Log("ready!");
 
-            this.SendCustomEvent();
+            client.SetUid("uid:11111111111");
+            SendCustomEvent();
         });
 
-        this._client.Connect("52.83.220.166:13609", false);
+        client.Connect("52.83.220.166:13609", false, false);
     }
 
     void SendCustomEvent() {
@@ -45,7 +46,7 @@ public class Main : MonoBehaviour
         IDictionary<string, object> attrs = new Dictionary<string, object>();
         attrs.Add("debug", "this is a custom event");
 
-        this._client.CustomEvent("MY_EVENT", attrs);
+        client.CustomEvent("MY_EVENT", attrs);
     }
 
     // Update is called once per frame
@@ -55,9 +56,9 @@ public class Main : MonoBehaviour
 
     void OnApplicationQuit() {
 
-        if (this._client != null) {
+        if (client != null) {
 
-            this._client.Destroy();
+            client.Destroy();
         }
     }
 }

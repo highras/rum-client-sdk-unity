@@ -67,16 +67,18 @@ namespace com.rum {
 
         private RUMEvent _rumEvent;
         private FPClient _baseClient;
-        private RUMPlatform _platform;
 
         private long _pingEid = 0;
         private long _session = 0;
         private long _lastPingTime = 0;
         private long _lastSendTime = 0;
+        private long _lastConnectTime = 0;
 
         private int _pingLatency = 0;
         private int _writeCount = 0;
         private int _configVersion = 0;
+
+        private static readonly System.Object locker = new System.Object();
 
         public RUMClient(int pid, string token, string uid, string appv, bool debug) {
 
@@ -86,15 +88,34 @@ namespace com.rum {
             this._appv = appv;
             this._debug = debug;
             
-            this._platform = RUMPlatform.Instance;
-            this._rumEvent = new RUMEvent(this._pid, this._platform, this._debug);
+            this._rumEvent = new RUMEvent(this._pid, RUMPlatform.Instance, this._debug, WriteEvent);
+
+            this.AddPlatformListener();
         }
 
         public void Destroy() {
 
             this._session = 0;
             this._pingEid = 0;
-            this._writeCount = 0;   
+            this._writeCount = 0;
+
+            this._pid = 0;
+            this._token = null;
+            this._uid = null;
+            this._appv = null;
+
+            this._lastPingTime = 0;
+            this._lastSendTime = 0;
+            this._lastConnectTime = 0;
+
+            this._pingLatency = 0;
+            this._configVersion = 0;
+
+            if (this._baseClient != null) {
+
+                this._baseClient.Destroy();
+                this._baseClient = null;
+            }
 
             if (this._rumEvent != null) {
 
@@ -102,15 +123,10 @@ namespace com.rum {
             }
 
             this._event.RemoveListener();
-
-            if (this._baseClient != null) {
-
-                this._baseClient.Destroy();
-                this._baseClient = null;
-            }
+            RUMPlatform.Instance.GetEvent().RemoveListener();
         }
 
-        public void Connect(string endpoint, bool clearStorage) {
+        public void Connect(string endpoint, bool clearRumId, bool clearEvents) {
 
             if (this._baseClient != null) {
 
@@ -118,9 +134,14 @@ namespace com.rum {
                 return;
             }
 
-            if (clearStorage) {
+            if (clearRumId) {
 
-                this._rumEvent.ClearStorage();
+                this._rumEvent.ClearRumId();
+            }
+
+            if (clearEvents) {
+
+                this._rumEvent.ClearEvents();
             }
 
             if (this._debug) {
@@ -129,12 +150,11 @@ namespace com.rum {
             }
 
             this.OpenEvent();
-            this.AddPlatformListener();
 
             RUMClient self = this;
             ThreadPool.Instance.StartTimerThread();
 
-            this._baseClient = new FPClient(endpoint, true, RUMConfig.SENT_TIMEOUT);
+            this._baseClient = new FPClient(endpoint, false, RUMConfig.CONNCT_INTERVAL);
 
             this._baseClient.GetEvent().AddListener("connect", (evd) => {
 
@@ -159,6 +179,7 @@ namespace com.rum {
                 self.StopPing();
                 self.StopSend();
 
+                self._lastConnectTime = ThreadPool.Instance.GetMilliTimestamp();
                 self.GetEvent().FireEvent(new EventData("close"));
             });
 
@@ -192,6 +213,16 @@ namespace com.rum {
 
         public void SetUid(string value) {
 
+            if (!string.IsNullOrEmpty(this._uid)) {
+
+                if (this._debug) {
+
+                    Debug.Log("[RUM] uid exist, uid: " + this._uid);
+                }
+
+                return;
+            }
+
             this._uid = value;
 
             if (!string.IsNullOrEmpty(this._uid)) {
@@ -212,7 +243,7 @@ namespace com.rum {
             this.WriteEvent(ev, dict);
         }
 
-        public void AppendEvent(string type, IDictionary<string, object> dict) {
+        private void AppendEvent(string type, IDictionary<string, object> dict) {
 
             if (!string.IsNullOrEmpty(type)) {
 
@@ -225,20 +256,20 @@ namespace com.rum {
 
             RUMClient self = this;
 
-            this._platform.GetEvent().AddListener("app_bg", (evd) => {
+            RUMPlatform.Instance.GetEvent().AddListener("app_bg", (evd) => {
 
                 self.WriteEvent("bg", new Dictionary<string, object>());
             });
 
-            this._platform.GetEvent().AddListener("app_fg", (evd) => {
+            RUMPlatform.Instance.GetEvent().AddListener("app_fg", (evd) => {
 
                 self.WriteEvent("fg", new Dictionary<string, object>());
             });
 
-            this._platform.GetEvent().AddListener("network_change", (evd) => {
+            RUMPlatform.Instance.GetEvent().AddListener("network_change", (evd) => {
 
                 IDictionary<string, object> dict = new Dictionary<string, object>();
-                dict.Add("nw", self._platform.GetNetwork());
+                dict.Add("nw", RUMPlatform.Instance.GetNetwork());
 
                 self.WriteEvent("nw", dict);
             });
@@ -300,16 +331,16 @@ namespace com.rum {
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
 
-            dict.Add("sw", this._platform.ScreenWidth());
-            dict.Add("sh", this._platform.ScreenHeight());
-            dict.Add("manu", this._platform.GetManu());
-            dict.Add("model", this._platform.GetModel());
-            dict.Add("os", this._platform.GetOS());
-            dict.Add("osv", this._platform.GetOSV());
-            dict.Add("nw", this._platform.GetNetwork());
-            dict.Add("carrier", this._platform.GetCarrier());
-            dict.Add("lang", this._platform.GetLang());
-            dict.Add("from", this._platform.GetFrom());
+            dict.Add("sw", RUMPlatform.Instance.ScreenWidth());
+            dict.Add("sh", RUMPlatform.Instance.ScreenHeight());
+            dict.Add("manu", RUMPlatform.Instance.GetManu());
+            dict.Add("model", RUMPlatform.Instance.GetModel());
+            dict.Add("os", RUMPlatform.Instance.GetOS());
+            dict.Add("osv", RUMPlatform.Instance.GetOSV());
+            dict.Add("nw", RUMPlatform.Instance.GetNetwork());
+            dict.Add("carrier", RUMPlatform.Instance.GetCarrier());
+            dict.Add("lang", RUMPlatform.Instance.GetLang());
+            dict.Add("from", RUMPlatform.Instance.GetFrom());
             dict.Add("appv", this._appv);
             dict.Add("v", RUMConfig.VERSION);
             dict.Add("first", this._rumEvent.IsFirst());
@@ -319,9 +350,39 @@ namespace com.rum {
 
         private void OnSecond(long timestamp) {
 
-            this._rumEvent.OnSecond(timestamp);
-            this.SendPing(timestamp);
-            this.SendEvent(timestamp);
+            lock(locker) {
+
+                this._rumEvent.OnSecond(timestamp);
+                this.TryConnect(timestamp);
+                this.SendPing(timestamp);
+                this.SendEvent(timestamp);
+            }
+        }
+
+        private void TryConnect(long timestamp) {
+
+            if (this._lastConnectTime == 0) {
+
+                return;
+            }
+
+            if (timestamp - this._lastConnectTime < RUMConfig.CONNCT_INTERVAL) {
+
+                return;
+            }
+
+            this._lastPingTime += RUMConfig.CONNCT_INTERVAL;
+
+            if (this._debug) {
+
+                Debug.Log("[RUM] try connect...");
+            }
+
+            if (this._baseClient != null) {
+
+                this._baseClient.Connect();
+                this._lastConnectTime = 0;
+            }
         }
 
         private void StartPing() {
@@ -339,7 +400,7 @@ namespace com.rum {
             this._lastPingTime = 0;
         }
 
-        public void SendPing(long timestamp) {
+        private void SendPing(long timestamp) {
 
             if (this._lastPingTime == 0) {
 
@@ -447,14 +508,14 @@ namespace com.rum {
             payload.Add("uid", this._uid);
             payload.Add("rid", this._rumEvent.GetRumId());
 
-            payload.Add("lang", this._platform.GetLang());
-            payload.Add("manu", this._platform.GetManu());
-            payload.Add("model", this._platform.GetModel());
-            payload.Add("os", this._platform.GetOS());
-            payload.Add("osv", this._platform.GetOSV());
-            payload.Add("nw", this._platform.GetNetwork());
-            payload.Add("carrier", this._platform.GetCarrier());
-            payload.Add("from", this._platform.GetFrom());
+            payload.Add("lang", RUMPlatform.Instance.GetLang());
+            payload.Add("manu", RUMPlatform.Instance.GetManu());
+            payload.Add("model", RUMPlatform.Instance.GetModel());
+            payload.Add("os", RUMPlatform.Instance.GetOS());
+            payload.Add("osv", RUMPlatform.Instance.GetOSV());
+            payload.Add("nw", RUMPlatform.Instance.GetNetwork());
+            payload.Add("carrier", RUMPlatform.Instance.GetCarrier());
+            payload.Add("from", RUMPlatform.Instance.GetFrom());
             payload.Add("appv", this._appv);
 
             MemoryStream outputStream = new MemoryStream();
