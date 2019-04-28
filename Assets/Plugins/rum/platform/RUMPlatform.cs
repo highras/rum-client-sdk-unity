@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Collections.Generic;
 using GameDevWare.Serialization;
 using com.fpnn;
@@ -327,6 +328,61 @@ namespace com.rum {
         }
 
         public void AddSelfListener() {}
+
+        public void HookHttp(HttpWebRequest req, HttpWebResponse res, int latency) {
+
+            IDictionary<string, object> dict = new Dictionary<string, object>();;
+            IDictionary<string, object> attrs = new Dictionary<string, object>();;
+
+            if (req != null) {
+
+                dict.Add("url", req.Address);
+                dict.Add("method", req.Method);
+                dict.Add("reqsize", req.ContentLength);
+
+                if (!string.IsNullOrEmpty(req.ContentType)) {
+
+                    attrs.Add("Request-Content-type", req.ContentType);
+                }
+
+                if (!string.IsNullOrEmpty(req.Host)) {
+
+                    attrs.Add("Request-Host", req.Host);
+                }
+
+                attrs.Add("Request-Timeout", req.Timeout);
+
+                if (!string.IsNullOrEmpty(req.TransferEncoding)) { 
+
+                    attrs.Add("Request-Transfer-encoding", req.TransferEncoding);
+                }
+
+                if (!string.IsNullOrEmpty(req.UserAgent)) { 
+
+                    attrs.Add("Request-User-agent", req.UserAgent);
+                }
+            }
+
+            if (res != null) {
+
+                dict.Add("status", res.StatusCode);
+                dict.Add("respsize", res.ContentLength);
+                dict.Add("latency", latency);
+
+                if (!string.IsNullOrEmpty(res.ContentEncoding)) { 
+
+                    attrs.Add("Response-ContentEncoding", res.ContentEncoding);
+                }
+
+                if (!string.IsNullOrEmpty(res.ContentType)) { 
+
+                    attrs.Add("Response-ContentType", res.ContentType);
+                }
+            }
+
+            dict.Add("attrs", attrs);
+            this._event.FireEvent(new EventData("http_hook", dict));
+        }
 
         private class RUMErrorRecorder:ErrorRecorder {
 

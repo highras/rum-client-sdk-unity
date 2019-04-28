@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Net;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -12,7 +14,7 @@ public class Main : MonoBehaviour
     // Start is called before the first frame update
     void Start() {
     
-       client = new RUMClient(
+        client = new RUMClient(
             41000013,
             "c23e9d90-bada-440d-8316-44790f615ec1",
             null,
@@ -33,20 +35,28 @@ public class Main : MonoBehaviour
         client.GetEvent().AddListener("ready", (evd) => {
 
             Debug.Log("ready!");
-
-            client.SetUid("uid:11111111111");
+            // client.SetUid("uid:11111111111");
         });
 
+        // SendCustomEvent();
         client.Connect("52.83.220.166:13609", false, false);
-        Invoke("SendCustomEvent", 10f);
+
+        Invoke("SendHttpRequest", 5f);
+        // Invoke("SendCustomEvent", 10f);
     }
 
     void SendCustomEvent() {
 
         IDictionary<string, object> attrs = new Dictionary<string, object>();
-        attrs.Add("MY_EVENT", "this is a custom event");
+        attrs.Add("custom_event", "this is a custom event");
 
-        client.CustomEvent("info", attrs);
+        client.CustomEvent("MY_EVENT", attrs);
+    }
+
+    void SendHttpRequest() {
+
+        // test http
+        AsyncGetWithWebRequest("http://www.baidu.com");
     }
 
     // Update is called once per frame
@@ -59,6 +69,31 @@ public class Main : MonoBehaviour
         if (client != null) {
 
             client.Destroy();
+        }
+    }
+
+    private DateTime _stime;
+
+    void AsyncGetWithWebRequest(string url) {
+
+        _stime = DateTime.Now;
+        var request = (HttpWebRequest) WebRequest.Create(new Uri(url));
+        request.BeginGetResponse(new AsyncCallback(ReadCallback), request);
+    }
+
+    void ReadCallback(IAsyncResult asynchronousResult) {
+
+        int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
+
+        HttpWebRequest request = (HttpWebRequest) asynchronousResult.AsyncState;
+        HttpWebResponse response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
+
+        RUMPlatform.Instance.HookHttp(request, response, latency);
+
+        using (var streamReader = new StreamReader(response.GetResponseStream())) {
+
+            var resultString = streamReader.ReadToEnd();
+            Debug.Log(resultString);
         }
     }
 }

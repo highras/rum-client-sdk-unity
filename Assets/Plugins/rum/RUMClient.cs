@@ -244,6 +244,86 @@ namespace com.rum {
             this.WriteEvent(ev, dict);
         }
 
+        public void HttpEvent(string url, string method, int status, long reqsize, long respsize, int latency, IDictionary<string, object> attrs) {
+
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+
+            dict.Add("url", url);
+            dict.Add("method", method);
+            dict.Add("status", status);
+            dict.Add("reqsize", reqsize);
+            dict.Add("respsize", respsize);
+            dict.Add("latency", latency);
+            dict.Add("attrs", attrs);
+
+            this.WriteEvent("http", dict);
+
+            if (status == 0 || status >= 300) {
+
+                dict.Remove("ev");
+                dict.Remove("eid");
+
+                this.WriteEvent("httperr", dict);
+                return;
+            }
+
+            if (latency > 1000) {
+
+                dict.Remove("ev");
+                dict.Remove("eid");
+
+                this.WriteEvent("httplat", dict);
+                return;
+            }
+        }
+
+        private void HttpEvent(IDictionary<string, object> dict) {
+
+            string url = null;
+
+            if (dict.ContainsKey("url")) {
+
+                url = Convert.ToString(dict["url"]);
+            }
+
+            string method = null;
+
+            if (dict.ContainsKey("method")) {
+
+                method = Convert.ToString(dict["method"]);
+            }
+
+            int status = 0;
+
+            if (dict.ContainsKey("status")) {
+
+                status = Convert.ToInt32(dict["status"]);
+            }
+
+            long reqsize = 0;
+
+            if (dict.ContainsKey("reqsize")) {
+
+                reqsize = Convert.ToInt64(dict["reqsize"]);
+            }
+
+            long respsize = 0;
+
+            if (dict.ContainsKey("respsize")) {
+
+                respsize = Convert.ToInt64(dict["respsize"]);
+            }
+
+            int latency = 0;
+
+            if (dict.ContainsKey("latency")) {
+
+                latency = Convert.ToInt32(dict["latency"]);
+            }
+
+            this.HttpEvent(url, method, status, reqsize, respsize, latency, (IDictionary<string, object>)dict["attrs"]);
+        }
+
         private void AppendEvent(string type, IDictionary<string, object> dict) {
 
             if (!string.IsNullOrEmpty(type)) {
@@ -273,6 +353,14 @@ namespace com.rum {
                 dict.Add("nw", RUMPlatform.Instance.GetNetwork());
 
                 self.WriteEvent("nw", dict);
+            });
+
+            RUMPlatform.Instance.GetEvent().AddListener("http_hook", (evd) => {
+
+                if (evd.GetPayload() != null) {
+
+                    this.HttpEvent((IDictionary<string, object>)evd.GetPayload());
+                }
             });
         }
 
