@@ -246,6 +246,11 @@ namespace com.rum {
 
         public void HttpEvent(string url, string method, int status, long reqsize, long respsize, int latency, IDictionary<string, object> attrs) {
 
+            if (string.IsNullOrEmpty(url)) {
+
+                return;
+            }
+
             IDictionary<string, object> dict = new Dictionary<string, object>();
 
             dict.Add("url", url);

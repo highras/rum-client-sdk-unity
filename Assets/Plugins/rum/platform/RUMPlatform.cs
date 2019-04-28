@@ -329,6 +329,7 @@ namespace com.rum {
 
         public void AddSelfListener() {}
 
+        // HttpWebRequest
         public void HookHttp(HttpWebRequest req, HttpWebResponse res, int latency) {
 
             IDictionary<string, object> dict = new Dictionary<string, object>();;
