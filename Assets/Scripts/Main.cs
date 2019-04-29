@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
+using GameDevWare.Serialization;
 using com.rum;
 
 public class Main : MonoBehaviour
@@ -14,7 +15,7 @@ public class Main : MonoBehaviour
 
     // Start is called before the first frame update
     void Start() {
-    
+
         client = new RUMClient(
             41000013,
             "c23e9d90-bada-440d-8316-44790f615ec1",
@@ -57,10 +58,10 @@ public class Main : MonoBehaviour
     void SendHttpRequest() {
 
         // HttpWebRequest
-        // AsyncGetWithWebRequest("http://www.google.com");
+        AsyncGetWithWebRequest("http://www.baidu.com");
 
         // UnityWebRequest
-        StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
+        // StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
     }
 
     // Update is called once per frame

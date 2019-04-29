@@ -172,62 +172,42 @@ namespace com.rum {
 
         private void OnLogCallback(string logString, string stackTrace, LogType type) {
 
-            IDictionary<string, object> dict = null;
-
             if (type == LogType.Assert) {
 
-                if (this._writeEvent != null) {
-
-                    dict = new Dictionary<string, object>();
-                    dict.Add("type", "main_assert");
-                    dict.Add("message", logString);
-                    dict.Add("stack", stackTrace);
-
-                    this._writeEvent("crash", dict);
-                }
+                this.WriteException("crash", "main_assert", logString, stackTrace);
+                this.SavePrefs();
             }
 
             if (type == LogType.Exception) {
 
-                if (this._writeEvent != null) {
-
-                    dict = new Dictionary<string, object>();
-                    dict.Add("type", "main_exception");
-                    dict.Add("message", logString);
-                    dict.Add("stack", stackTrace);
-
-                    this._writeEvent("error", dict);
-                }
-            }
-
-            if (dict != null) {
-
+                this.WriteException("error", "main_exception", logString, stackTrace);
                 this.SavePrefs();
-                this._event.FireEvent(new EventData(Convert.ToString(dict["ev"]), dict));
             }
         }
 
         private void OnLogCallbackThreaded(string logString, string stackTrace, LogType type) {
 
-            IDictionary<string, object> dict = null;
-
             if (type == LogType.Exception) {
 
-                if (this._writeEvent != null) {
+                this.WriteException("error", "threaded_exception", logString, stackTrace);
+            }
+        }
 
-                    dict = new Dictionary<string, object>();
-                    dict.Add("type", "threaded_exception");
-                    dict.Add("message", logString);
-                    dict.Add("stack", stackTrace);
+        private void WriteException(string ev, string type, string message, string stack) {
 
-                    this._writeEvent("error", dict);
-                }
+            if (this._writeEvent != null) {
+
+                IDictionary<string, object> dict = new Dictionary<string, object>();
+
+                dict.Add("ev", ev);
+                dict.Add("type", type);
+                dict.Add("message", message);
+                dict.Add("stack", stack);
+
+                this._writeEvent(ev, dict);
             }
 
-            if (dict != null) {
-
-                this._event.FireEvent(new EventData(Convert.ToString(dict["ev"]), dict));
-            }
+            Debug.LogError("message: " + message + " stack: " + stack);
         }
 
         private Action<string, IDictionary<string, object>> _writeEvent;
@@ -235,24 +215,36 @@ namespace com.rum {
         public void InitPrefs(string rumid_key, string events_key, Action<string, IDictionary<string, object>> writeEvent) {
 
             this._writeEvent = writeEvent;
+
             StoragePrefs = new Dictionary<string, object>();
+            IDictionary<string, object> rumid_value = new Dictionary<string, object>();
 
             if (PlayerPrefs.HasKey(rumid_key)) {
 
-                StoragePrefs.Add(rumid_key, Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(rumid_key)));
-            } else {
+                try {
 
-                StoragePrefs.Add(rumid_key, new Dictionary<string, object>());
-            }
+                    rumid_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(rumid_key));
+                } catch(Exception ex) {
+
+                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
+                }
+            } 
+
+            StoragePrefs.Add(rumid_key, rumid_value);
+            IDictionary<string, object> events_value = new Dictionary<string, object>();
 
             if (PlayerPrefs.HasKey(events_key)) {
 
-                StoragePrefs.Add(events_key, Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(events_key)));
-            } else {
+                try {
 
-                StoragePrefs.Add(events_key, new Dictionary<string, object>());
-            }
+                    events_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(events_key));
+                } catch(Exception ex) {
 
+                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
+                }
+            } 
+
+            StoragePrefs.Add(events_key, events_value);
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(writeEvent));
         }
 
@@ -342,26 +334,33 @@ namespace com.rum {
                 dict.Add("method", req.Method);
                 dict.Add("reqsize", req.ContentLength);
 
-                if (!string.IsNullOrEmpty(req.ContentType)) {
+                if (req.ContentType != null) {
 
-                    attrs.Add("Request-Content-Type", req.ContentType);
+                    if (!string.IsNullOrEmpty(req.ContentType)) {
+
+                        attrs.Add("Request-Content-Type", req.ContentType);
+                    }
                 }
 
-                if (!string.IsNullOrEmpty(req.Host)) {
+                if (req.Timeout != null) {
 
-                    attrs.Add("Request-Host", req.Host);
+                    attrs.Add("Request-Timeout", req.Timeout);
                 }
 
-                attrs.Add("Request-Timeout", req.Timeout);
+                if (req.TransferEncoding != null) {
 
-                if (!string.IsNullOrEmpty(req.TransferEncoding)) { 
+                    if (!string.IsNullOrEmpty(req.TransferEncoding)) { 
 
-                    attrs.Add("Request-Transfer-Encoding", req.TransferEncoding);
+                        attrs.Add("Request-Transfer-Encoding", req.TransferEncoding);
+                    }
                 }
 
-                if (!string.IsNullOrEmpty(req.UserAgent)) { 
+                if (req.UserAgent != null) {
 
-                    attrs.Add("Request-User-Agent", req.UserAgent);
+                    if (!string.IsNullOrEmpty(req.UserAgent)) { 
+
+                        attrs.Add("Request-User-Agent", req.UserAgent);
+                    }
                 }
             }
 
@@ -371,15 +370,21 @@ namespace com.rum {
                 dict.Add("respsize", res.ContentLength);
                 dict.Add("latency", latency);
 
-                if (!string.IsNullOrEmpty(res.ContentEncoding)) { 
+                if (res.ContentEncoding != null) {
 
-                    attrs.Add("Response-ContentEncoding", res.ContentEncoding);
+                    if (!string.IsNullOrEmpty(res.ContentEncoding)) { 
+
+                        attrs.Add("Response-ContentEncoding", res.ContentEncoding);
+                    }
                 }
 
-                if (!string.IsNullOrEmpty(res.ContentType)) { 
+                if (res.ContentType != null) {
 
-                    attrs.Add("Response-ContentType", res.ContentType);
-                }
+                    if (!string.IsNullOrEmpty(res.ContentType)) { 
+
+                        attrs.Add("Response-ContentType", res.ContentType);
+                    }
+                } 
             }
 
             dict.Add("attrs", attrs);
@@ -430,11 +435,10 @@ namespace com.rum {
 
             public override void recordError(Exception e) {
             
-                IDictionary<string, object> dict = null;
-
                 if (this._writeEvent != null) {
 
-                    dict = new Dictionary<string, object>();
+                    IDictionary<string, object> dict = new Dictionary<string, object>();
+
                     dict.Add("type", "rum_threaded_exception");
                     dict.Add("message", e.Message);
                     dict.Add("stack", e.StackTrace);
@@ -442,11 +446,7 @@ namespace com.rum {
                     this._writeEvent("error", dict);
                 }
 
-                if (dict != null) {
-
-                    Debug.LogError(e.Message);
-                    Debug.LogError(e.StackTrace);
-                }
+                Debug.LogError("message: " + e.Message + " stack: " + e.StackTrace);
             }
         }
     }
