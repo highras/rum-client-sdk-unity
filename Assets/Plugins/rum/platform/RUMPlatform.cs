@@ -408,6 +408,11 @@ namespace com.rum {
                         attrs.Add("Request-Content-Type", req.uploadHandler.contentType);
                     }
                 }
+
+                if (!string.IsNullOrEmpty(req.error)) {
+
+                    attrs.Add("error", req.error);
+                }
             }
 
             dict.Add("attrs", attrs);

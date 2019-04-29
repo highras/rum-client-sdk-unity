@@ -84,6 +84,9 @@ public class Main : MonoBehaviour
 
         var request = (HttpWebRequest) WebRequest.Create(new Uri(url));
         request.BeginGetResponse(new AsyncCallback(ReadCallback), request);
+
+        // fail: timeout or error...
+        // RUMPlatform.Instance.HookHttp(request, null, 0);
     }
 
     void ReadCallback(IAsyncResult asynchronousResult) {

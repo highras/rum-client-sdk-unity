@@ -263,7 +263,7 @@ namespace com.rum {
 
             this.WriteEvent("http", dict);
 
-            if (status == 0 || status >= 300) {
+            if (status <= 0 || status >= 300) {
 
                 dict.Remove("ev");
                 dict.Remove("eid");

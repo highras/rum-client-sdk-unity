@@ -90,3 +90,17 @@ client.Connect("52.83.220.166:13609", false, false);
 * `CustomEvent(string ev, IDictionary<string, object> attrs)`: 上报自定义事件 
     * `ev`: **(string)** 自定义事件名称
     * `attrs`: **(IDictionary[string,object])** 自定义事件内容
+
+* `HttpEvent(string url, string method, int status, long reqsize, long respsize, int latency, IDictionary<string, object> attrs)`: 上报Http事件 
+    * `url`: **(string)** 请求地址
+    * `method`: **(string)** 请求类型`POST` `GET`...
+    * `status`: **(int)** 响应状态`200` `404` `500`...
+    * `reqsize`: **(long)** 上传内容长度(B)
+    * `respsize`: **(long)** 下载内容长度(B)
+    * `latency`: **(int)** 请求耗时(ms)
+    * `attrs`: **(IDictionary[string,object])** 自定义内容
+
+#### HOOK ####
+* 自动抓取http状态, 不会抓取请求内容, 参考`./Scripts/Main.cs`
+* `System.Net.HttpWebRequest`:`RUMPlatform.Instance.HookHttp(HttpWebRequest req, HttpWebResponse res, int latency)`
+* `UnityEngine.Networking.UnityWebRequest`:`RUMPlatform.Instance.HookHttp(UnityWebRequest req, int latency)`
