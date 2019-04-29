@@ -6,6 +6,7 @@ using GameDevWare.Serialization;
 using com.fpnn;
 
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace com.rum {
 
@@ -332,8 +333,8 @@ namespace com.rum {
         // HttpWebRequest
         public void HookHttp(HttpWebRequest req, HttpWebResponse res, int latency) {
 
-            IDictionary<string, object> dict = new Dictionary<string, object>();;
-            IDictionary<string, object> attrs = new Dictionary<string, object>();;
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> attrs = new Dictionary<string, object>();
 
             if (req != null) {
 
@@ -343,7 +344,7 @@ namespace com.rum {
 
                 if (!string.IsNullOrEmpty(req.ContentType)) {
 
-                    attrs.Add("Request-Content-type", req.ContentType);
+                    attrs.Add("Request-Content-Type", req.ContentType);
                 }
 
                 if (!string.IsNullOrEmpty(req.Host)) {
@@ -355,12 +356,12 @@ namespace com.rum {
 
                 if (!string.IsNullOrEmpty(req.TransferEncoding)) { 
 
-                    attrs.Add("Request-Transfer-encoding", req.TransferEncoding);
+                    attrs.Add("Request-Transfer-Encoding", req.TransferEncoding);
                 }
 
                 if (!string.IsNullOrEmpty(req.UserAgent)) { 
 
-                    attrs.Add("Request-User-agent", req.UserAgent);
+                    attrs.Add("Request-User-Agent", req.UserAgent);
                 }
             }
 
@@ -378,6 +379,34 @@ namespace com.rum {
                 if (!string.IsNullOrEmpty(res.ContentType)) { 
 
                     attrs.Add("Response-ContentType", res.ContentType);
+                }
+            }
+
+            dict.Add("attrs", attrs);
+            this._event.FireEvent(new EventData("http_hook", dict));
+        }
+
+        // UnityWebRequest
+        public void HookHttp(UnityWebRequest req, int latency) {
+
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> attrs = new Dictionary<string, object>();
+
+            if (req != null) {
+
+                dict.Add("url", req.url);
+                dict.Add("method", req.method);
+                dict.Add("reqsize", req.uploadedBytes);
+                dict.Add("respsize", req.downloadedBytes);
+                dict.Add("status", req.responseCode);
+                dict.Add("latency", latency);
+
+                if (req.uploadHandler != null) {
+
+                    if (!string.IsNullOrEmpty(req.uploadHandler.contentType)) {
+
+                        attrs.Add("Request-Content-Type", req.uploadHandler.contentType);
+                    }
                 }
             }
 
