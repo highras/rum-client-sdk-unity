@@ -47,7 +47,7 @@ public class Main : MonoBehaviour
     void SendCustomEvent() {
 
         IDictionary<string, object> attrs = new Dictionary<string, object>();
-        attrs.Add("custom_event", "this is a custom event");
+        attrs.Add("custom_debug", "test text");
 
         client.CustomEvent("MY_EVENT", attrs);
 
