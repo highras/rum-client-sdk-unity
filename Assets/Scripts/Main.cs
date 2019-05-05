@@ -40,11 +40,8 @@ public class Main : MonoBehaviour
             client.SetUid("uid:11111111111");
         });
 
-        SendCustomEvent();
+        Invoke("SendCustomEvent", 5f);
         client.Connect("52.83.220.166:13609", false, false);
-
-        Invoke("SendHttpRequest", 5f);
-        Invoke("SendCustomEvent", 10f);
     }
 
     void SendCustomEvent() {
@@ -53,15 +50,18 @@ public class Main : MonoBehaviour
         attrs.Add("custom_event", "this is a custom event");
 
         client.CustomEvent("MY_EVENT", attrs);
+
+        Invoke("SendHttpRequest", 1f);
     }
 
     void SendHttpRequest() {
 
         // HttpWebRequest
-        AsyncGetWithWebRequest("http://www.baidu.com");
+        // AsyncGetWithWebRequest("http://www.baidu.com");
 
         // UnityWebRequest
-        // StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
+        StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
+        Invoke("SendHttpRequest", 1f);
     }
 
     // Update is called once per frame

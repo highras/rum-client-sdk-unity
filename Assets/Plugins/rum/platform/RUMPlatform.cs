@@ -39,6 +39,8 @@ namespace com.rum {
         private bool _isPause;
         private bool _isFocus;
 
+        private bool _isSaveing;
+
         void Awake() {    
 
             if (instance == null) {
@@ -156,6 +158,13 @@ namespace com.rum {
 
         private void SavePrefs() {
 
+            if (this._isSaveing) {
+
+                return;
+            }
+
+            this._isSaveing = true;
+
             if (StoragePrefs != null) {
 
                 lock(StoragePrefs) {
@@ -168,6 +177,8 @@ namespace com.rum {
 
                 PlayerPrefs.Save();
             }
+
+            this._isSaveing = false;
         }
 
         private void OnLogCallback(string logString, string stackTrace, LogType type) {
@@ -193,7 +204,7 @@ namespace com.rum {
             }
         }
 
-        private void WriteException(string ev, string type, string message, string stack) {
+        public void WriteException(string ev, string type, string message, string stack) {
 
             if (this._writeEvent != null) {
 
@@ -212,39 +223,61 @@ namespace com.rum {
 
         private Action<string, IDictionary<string, object>> _writeEvent;
 
-        public void InitPrefs(string rumid_key, string events_key, Action<string, IDictionary<string, object>> writeEvent) {
+        public string RumIdKey = "rum_rid_";
+        public string RumEventKey = "rum_event_";
+        public string FileIndexKey = "rum_index_";
+
+        public void InitPrefs(int pid, Action<string, IDictionary<string, object>> writeEvent) {
+
+            RumIdKey += pid;
+            RumEventKey += pid;
+            FileIndexKey += pid;
 
             this._writeEvent = writeEvent;
 
             StoragePrefs = new Dictionary<string, object>();
             IDictionary<string, object> rumid_value = new Dictionary<string, object>();
 
-            if (PlayerPrefs.HasKey(rumid_key)) {
+            if (PlayerPrefs.HasKey(RumIdKey)) {
 
                 try {
 
-                    rumid_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(rumid_key));
+                    rumid_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(RumIdKey));
                 } catch(Exception ex) {
 
                     this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
                 }
             } 
 
-            StoragePrefs.Add(rumid_key, rumid_value);
+            StoragePrefs.Add(RumIdKey, rumid_value);
             IDictionary<string, object> events_value = new Dictionary<string, object>();
 
-            if (PlayerPrefs.HasKey(events_key)) {
+            if (PlayerPrefs.HasKey(RumEventKey)) {
 
                 try {
 
-                    events_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(events_key));
+                    events_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(RumEventKey));
                 } catch(Exception ex) {
 
                     this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
                 }
             } 
 
-            StoragePrefs.Add(events_key, events_value);
+            StoragePrefs.Add(RumEventKey, events_value);
+            IDictionary<string, object> fileindex_value = new Dictionary<string, object>();
+
+            if (PlayerPrefs.HasKey(FileIndexKey)) {
+
+                try {
+
+                    fileindex_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(FileIndexKey));
+                } catch(Exception ex) {
+
+                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
+                }
+            } 
+
+            StoragePrefs.Add(FileIndexKey, fileindex_value);
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(writeEvent));
         }
 

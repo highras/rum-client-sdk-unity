@@ -88,8 +88,10 @@ namespace com.rum {
             this._uid = uid;
             this._appv = appv;
             this._debug = debug;
+            this._rumEvent = new RUMEvent(this._debug);
             
-            this._rumEvent = new RUMEvent(this._pid, RUMPlatform.Instance, this._debug, WriteEvent);
+            RUMFile.Instance.Init(this._pid);
+            RUMPlatform.Instance.InitPrefs(this._pid, WriteEvent);
 
             this.AddPlatformListener();
         }
