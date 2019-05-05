@@ -9,7 +9,6 @@ namespace com.rum {
     public class RUMFile {
 
         private const string FILE_PRE = "rumlog_";
-        private const string FILE_EXT = ".rlj";
 
         private static RUMFile instance;
         private static object lock_obj = new object();
@@ -67,7 +66,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteRumLog(int index, string content) {
 
-            string path = this._directory_path + "/" + FILE_PRE + index + FILE_EXT;
+            string path = this._directory_path + "/" + FILE_PRE + index;
             return this.WriteFile(path, content, Encoding.UTF8);
         }
 
@@ -75,7 +74,7 @@ namespace com.rum {
 
             this._read_index = (this._read_index + 1) % RUMConfig.LOCAL_FILE_COUNT;
 
-            string path = this._directory_path + "/" + FILE_PRE + this._read_index + FILE_EXT;
+            string path = this._directory_path + "/" + FILE_PRE + this._read_index;
             RUMFile.Result res = this.ReadFile(path, true, Encoding.UTF8);
 
             if (!res.success) {
