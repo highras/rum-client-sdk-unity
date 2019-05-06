@@ -57,6 +57,7 @@ namespace com.rum {
             this._isPause = false;
             this._isFocus = false;
 
+            Application.lowMemory += OnLowMemory;
             Application.logMessageReceived += OnLogCallback;
             Application.logMessageReceivedThreaded += OnLogCallbackThreaded;
 
@@ -77,7 +78,13 @@ namespace com.rum {
             this._os = SystemInfo.operatingSystem;
             this._sh = Screen.height;
             this._sw = Screen.width;
+            this._isMobile = Application.isMobilePlatform;
+            this._memorySize = SystemInfo.systemMemorySize;
+            this._unityVersion = Application.unityVersion;
+            this._installMode = Application.installMode;
+            this._deviceToken = UnityEngine.iOS.NotificationServices.deviceToken;
 
+            Invoke("OnInfo", 20f);
             Invoke("OnTimer", RUMConfig.LOCAL_STORAGE_DELAY / 1000);
         }
 
@@ -87,6 +94,7 @@ namespace com.rum {
 
             this.SavePrefs();
 
+            Application.lowMemory -= OnLowMemory;
             Application.logMessageReceived -= OnLogCallback;
             Application.logMessageReceivedThreaded -= OnLogCallbackThreaded;
 
@@ -121,6 +129,23 @@ namespace com.rum {
                 this._event.FireEvent(new EventData("app_fg"));
                 this._isFocus = true;
             }
+        }
+
+        void OnLowMemory() {
+
+            this._event.FireEvent(new EventData("memory_warning"));
+        }
+
+        private void OnInfo() {
+
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+
+            dict.Add("system_memory", this.GetMemorySize());
+            dict.Add("unity_version", this.GetUnityVersion());
+            dict.Add("install_mode", this.GetInstallMode());
+            dict.Add("device_token", this.GetDeviceToken());
+
+            this._event.FireEvent(new EventData("system_info", dict));
         }
 
         private void OnTimer() {
@@ -235,50 +260,37 @@ namespace com.rum {
 
             this._writeEvent = writeEvent;
 
-            StoragePrefs = new Dictionary<string, object>();
-            IDictionary<string, object> rumid_value = new Dictionary<string, object>();
+            this.LoadStoragePrefs(RumIdKey);
+            this.LoadStoragePrefs(RumEventKey);
+            this.LoadStoragePrefs(FileIndexKey);
 
-            if (PlayerPrefs.HasKey(RumIdKey)) {
-
-                try {
-
-                    rumid_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(RumIdKey));
-                } catch(Exception ex) {
-
-                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
-                }
-            } 
-
-            StoragePrefs.Add(RumIdKey, rumid_value);
-            IDictionary<string, object> events_value = new Dictionary<string, object>();
-
-            if (PlayerPrefs.HasKey(RumEventKey)) {
-
-                try {
-
-                    events_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(RumEventKey));
-                } catch(Exception ex) {
-
-                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
-                }
-            } 
-
-            StoragePrefs.Add(RumEventKey, events_value);
-            IDictionary<string, object> fileindex_value = new Dictionary<string, object>();
-
-            if (PlayerPrefs.HasKey(FileIndexKey)) {
-
-                try {
-
-                    fileindex_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(FileIndexKey));
-                } catch(Exception ex) {
-
-                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
-                }
-            } 
-
-            StoragePrefs.Add(FileIndexKey, fileindex_value);
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(writeEvent));
+        }
+
+        private void LoadStoragePrefs(string storage_key) {
+
+            if (StoragePrefs == null) {
+
+                StoragePrefs = new Dictionary<string, object>();
+            }
+
+            IDictionary<string, object> storage_value = new Dictionary<string, object>();
+
+            if (PlayerPrefs.HasKey(storage_key)) {
+
+                try {
+
+                    storage_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(storage_key));
+                } catch(Exception ex) {
+
+                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
+                }
+            } 
+
+            if (!StoragePrefs.ContainsKey(storage_key)) {
+
+                StoragePrefs.Add(storage_key, storage_value);
+            }
         }
 
         public FPEvent GetEvent() {
@@ -324,9 +336,11 @@ namespace com.rum {
             return this._nw;
         }
 
+        private bool _isMobile;
+
         public bool IsMobile() {
 
-            return true;
+            return this._isMobile;
         }
 
         private int _sh;
@@ -353,7 +367,62 @@ namespace com.rum {
             return null;
         }
 
-        public void AddSelfListener() {}
+        private int _memorySize;
+
+        public int GetMemorySize() {
+
+            return this._memorySize;
+        }
+
+        private string _unityVersion;
+
+        public string GetUnityVersion(){
+
+            return this._unityVersion;
+        }
+
+        private ApplicationInstallMode _installMode;
+
+        public string GetInstallMode() {
+
+            if (this._installMode == ApplicationInstallMode.Store) {
+
+                return "Store";
+            }
+
+            if (this._installMode == ApplicationInstallMode.DeveloperBuild) {
+
+                return "DeveloperBuild";
+            }
+
+            if (this._installMode == ApplicationInstallMode.Adhoc) {
+
+                return "Adhoc";
+            }
+
+            if (this._installMode == ApplicationInstallMode.Enterprise) {
+
+                return "Enterprise";
+            }
+
+            if (this._installMode == ApplicationInstallMode.Editor) {
+
+                return "Editor";
+            }
+
+            return "Unknown";
+        }
+
+        private byte[] _deviceToken;
+
+        public byte[] GetDeviceToken() {
+
+            return this._deviceToken; 
+        }
+
+        public void AddSelfListener() {
+
+        }
 
         // HttpWebRequest
         public void HookHttp(HttpWebRequest req, HttpWebResponse res, int latency) {
@@ -375,7 +444,7 @@ namespace com.rum {
                     }
                 }
 
-                if (req.Timeout != null) {
+                if (req.Timeout > 0) {
 
                     attrs.Add("Request-Timeout", req.Timeout);
                 }

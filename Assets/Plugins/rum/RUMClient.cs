@@ -354,12 +354,30 @@ namespace com.rum {
                 self.WriteEvent("fg", new Dictionary<string, object>());
             });
 
+            RUMPlatform.Instance.GetEvent().AddListener("system_info", (evd) => {
+
+                IDictionary<string, object> dict = (IDictionary<string, object>)evd.GetPayload();
+                dict.Add("type", "system_info");
+
+                self.WriteEvent("info", dict);
+            });
+
             RUMPlatform.Instance.GetEvent().AddListener("network_change", (evd) => {
 
                 IDictionary<string, object> dict = new Dictionary<string, object>();
                 dict.Add("nw", RUMPlatform.Instance.GetNetwork());
 
                 self.WriteEvent("nw", dict);
+            });
+
+            RUMPlatform.Instance.GetEvent().AddListener("memory_warning", (evd) => {
+
+                IDictionary<string, object> dict = new Dictionary<string, object>();
+                
+                dict.Add("type", "low_memory");
+                dict.Add("system_memory", RUMPlatform.Instance.GetMemorySize());
+
+                self.WriteEvent("warn", dict);
             });
 
             RUMPlatform.Instance.GetEvent().AddListener("http_hook", (evd) => {

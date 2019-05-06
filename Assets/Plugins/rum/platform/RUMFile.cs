@@ -45,6 +45,8 @@ namespace com.rum {
 
         public void Init(int pid) {
 
+            this._directory_path = Application.streamingAssetsPath + "/rum_events_" + pid;
+            
             #if UNITY_EDITOR
             this._directory_path = Application.streamingAssetsPath + "/rum_events_" + pid;
             #elif UNITY_IPHONE

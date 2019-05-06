@@ -117,7 +117,7 @@ public class Main : MonoBehaviour
             int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
             RUMPlatform.Instance.HookHttp(req, latency);
 
-            if(req.isError) {
+            if(req.isNetworkError || req.isHttpError) {
 
                 Debug.Log(req.error);
             } else {
