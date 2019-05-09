@@ -102,5 +102,5 @@ client.Connect("52.83.220.166:13609", false, false);
 
 #### HOOK ####
 * 自动抓取http状态, 不会抓取请求内容, 参考`./Scripts/Main.cs`
-* `System.Net.HttpWebRequest`:`RUMPlatform.Instance.HookHttp(HttpWebRequest req, HttpWebResponse res, int latency)`
-* `UnityEngine.Networking.UnityWebRequest`:`RUMPlatform.Instance.HookHttp(UnityWebRequest req, int latency)`
+* `System.Net.HttpWebRequest` ==> `RUMPlatform.Instance.HookHttp(HttpWebRequest req, HttpWebResponse res, int latency)`
+* `UnityEngine.Networking.UnityWebRequest` ==> `RUMPlatform.Instance.HookHttp(UnityWebRequest req, int latency)`

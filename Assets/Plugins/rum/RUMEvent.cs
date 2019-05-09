@@ -350,7 +350,7 @@ namespace com.rum {
 
         private string BuildRumId() {
 
-            string rum_id = this.UUID(0, 16);
+            string rum_id = this.UUID(0, 16, 'c');
 
             lock(RUMPlatform.Instance.StoragePrefs) {
 
@@ -369,7 +369,7 @@ namespace com.rum {
             }
         }
 
-        private string UUID(int len, int radix) {
+        private string UUID(int len, int radix, char fourteen) {
 
             char[] chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".ToCharArray();
             char[] uuid_chars = new char[36];
@@ -403,7 +403,7 @@ namespace com.rum {
 
                 // rfc4122 requires these characters
                 uuid_chars[8] = uuid_chars[13] = uuid_chars[18] = uuid_chars[23] = '-';
-                uuid_chars[14] = '4';
+                uuid_chars[14] = fourteen;
 
                 // add timestamp(ms) at prefix
                 char[] ms_chars = Convert.ToString(ThreadPool.Instance.GetMilliTimestamp()).ToCharArray();
