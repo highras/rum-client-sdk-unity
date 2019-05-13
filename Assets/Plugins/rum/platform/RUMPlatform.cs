@@ -82,7 +82,11 @@ namespace com.rum {
             this._memorySize = SystemInfo.systemMemorySize;
             this._unityVersion = Application.unityVersion;
             this._installMode = Application.installMode;
+            
+            this._deviceToken = null;
+            #if UNITY_IPHONE
             this._deviceToken = UnityEngine.iOS.NotificationServices.deviceToken;
+            #endif
 
             Invoke("OnInfo", 20f);
             Invoke("OnTimer", RUMConfig.LOCAL_STORAGE_DELAY / 1000);
