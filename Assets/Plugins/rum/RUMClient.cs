@@ -485,7 +485,7 @@ namespace com.rum {
                 return;
             }
 
-            this._lastPingTime += RUMConfig.CONNCT_INTERVAL;
+            this._lastConnectTime += RUMConfig.CONNCT_INTERVAL;
 
             if (this._debug) {
 
@@ -539,7 +539,7 @@ namespace com.rum {
             this._writeCount = 0;
             this._pingEid = MidGenerator.Gen();
 
-            long salt = this.GenSalt();
+            long salt = MidGenerator.Gen();
 
             IDictionary<string, object> payload = new Dictionary<string, object>();
 
@@ -612,7 +612,7 @@ namespace com.rum {
                 Debug.Log("[RUM] load config...");
             }
 
-            long salt = this.GenSalt();
+            long salt = MidGenerator.Gen();
 
             IDictionary<string, object> payload = new Dictionary<string, object>();
 
@@ -715,7 +715,7 @@ namespace com.rum {
 
         private void SendEvents(List<object> items) {
 
-            long salt = this.GenSalt();
+            long salt = MidGenerator.Gen();
 
             IDictionary<string, object> payload = new Dictionary<string, object>();
 
@@ -765,11 +765,6 @@ namespace com.rum {
             sb.Append(Convert.ToString(salt));
 
             return this.CalcMd5(sb.ToString(), true);
-        }
-
-        private long GenSalt() {
-
-            return ThreadPool.Instance.GetMilliTimestamp();
         }
 
         private void SendQuest(FPData data, CallbackDelegate callback, int timeout) {
