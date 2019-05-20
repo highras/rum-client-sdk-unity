@@ -608,24 +608,17 @@ namespace com.rum {
 
             lock(locker) {
 
-                if (this._lastSecondTime == 0) {
+                if (this._lastSecondTime > 0 && timestamp - this._lastSecondTime >= 1000) {
 
-                    return;
-                }
+                    this._lastSecondTime += 1000;
 
-                if (timestamp - this._lastSecondTime < 1000) {
+                    if (this._delayCount > 0) {
 
-                    return;
-                }
+                        this._delayCount--;
+                    } else {
 
-                this._lastSecondTime += 1000;
-
-                if (this._delayCount > 0) {
-
-                    this._delayCount--;
-                } else {
-
-                    this._timestamp++;
+                        this._timestamp++;
+                    }
                 }
 
                 this.CheckStorageSize();
