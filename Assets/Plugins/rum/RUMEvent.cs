@@ -325,11 +325,13 @@ namespace com.rum {
 
                             string cache_key = Convert.ToString(item["eid"]);
 
-                            // if (event_cache.ContainsKey(cache_key)) {
+                            if (event_cache.ContainsKey(cache_key)) {
 
-                            // } 
+                                event_cache[cache_key] = item;
+                            } else {
 
-                            event_cache.Add(cache_key, item);
+                                event_cache.Add(cache_key, item);
+                            } 
                         }
 
                         size += System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(item));
