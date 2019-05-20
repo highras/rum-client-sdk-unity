@@ -1,4 +1,4 @@
-# fpnn rum sdk websocket #
+# fpnn rum sdk unity #
 
 #### 关于三方包依赖 ####
 * [fpnn.unitypackage](https://github.com/highras/fpnn-sdk-unity)
