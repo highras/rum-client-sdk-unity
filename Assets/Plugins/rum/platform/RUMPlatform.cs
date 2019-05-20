@@ -25,6 +25,8 @@ namespace com.rum {
                     if (instance == null) {
 
                         GameObject go = new GameObject("RUMPlatform");
+                        
+                        DontDestroyOnLoad(go);
                         instance = go.AddComponent<RUMPlatform>();
                     }
                 }
