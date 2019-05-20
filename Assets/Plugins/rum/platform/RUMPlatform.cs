@@ -38,10 +38,11 @@ namespace com.rum {
         private FPEvent _event = new FPEvent();
         public IDictionary<string, object> StoragePrefs;
 
+        public bool NeedToSave = false;
+        public IDictionary<string, string> SerializeStorage;
+
         private bool _isPause;
         private bool _isFocus;
-
-        private bool _isSaveing;
 
         void Awake() {    
 
@@ -189,27 +190,22 @@ namespace com.rum {
 
         private void SavePrefs() {
 
-            if (this._isSaveing) {
+            if (!NeedToSave) {
 
                 return;
             }
 
-            this._isSaveing = true;
+            if (SerializeStorage != null) {
 
-            if (StoragePrefs != null) {
+                foreach (KeyValuePair<string, string> kvp in SerializeStorage) {
 
-                lock(StoragePrefs) {
-
-                    foreach (KeyValuePair<string, object> kvp in StoragePrefs) {
-
-                        PlayerPrefs.SetString(kvp.Key, Json.SerializeToString(kvp.Value));
-                    }
+                    PlayerPrefs.SetString(kvp.Key, kvp.Value);
                 }
 
                 PlayerPrefs.Save();
             }
 
-            this._isSaveing = false;
+            NeedToSave = false;
         }
 
         private void OnLogCallback(string logString, string stackTrace, LogType type) {
@@ -280,13 +276,20 @@ namespace com.rum {
                 StoragePrefs = new Dictionary<string, object>();
             }
 
+            if (SerializeStorage == null) {
+
+                SerializeStorage = new Dictionary<string, string>();
+            }
+
+            string storage_json = "{}";
             IDictionary<string, object> storage_value = new Dictionary<string, object>();
 
             if (PlayerPrefs.HasKey(storage_key)) {
 
                 try {
 
-                    storage_value = Json.Deserialize<IDictionary<string, object>>(PlayerPrefs.GetString(storage_key));
+                    storage_json = PlayerPrefs.GetString(storage_key);
+                    storage_value = Json.Deserialize<IDictionary<string, object>>(storage_json);
                 } catch(Exception ex) {
 
                     this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
@@ -296,6 +299,11 @@ namespace com.rum {
             if (!StoragePrefs.ContainsKey(storage_key)) {
 
                 StoragePrefs.Add(storage_key, storage_value);
+            }
+
+            if (!SerializeStorage.ContainsKey(storage_key)) {
+
+                SerializeStorage.Add(storage_key, storage_json);
             }
         }
 

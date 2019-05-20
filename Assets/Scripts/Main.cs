@@ -51,7 +51,8 @@ public class Main : MonoBehaviour
 
         client.CustomEvent("MY_EVENT", attrs);
 
-        Invoke("SendHttpRequest", 1f);
+        // Invoke("SendHttpRequest", 1f);
+        Invoke("SendQPS", 3f);
     }
 
     void SendHttpRequest() {
@@ -60,8 +61,17 @@ public class Main : MonoBehaviour
         // AsyncGetWithWebRequest("http://www.baidu.com");
 
         // UnityWebRequest
-        StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
-        Invoke("SendHttpRequest", 1f);
+        // StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
+        // Invoke("SendHttpRequest", 1f);
+    }
+
+    void SendQPS() {
+
+        IDictionary<string, object> attrs = new Dictionary<string, object>();
+        attrs.Add("custom_debug", "test text");
+
+        client.CustomEvent("debug", attrs);
+        Invoke("SendQPS", 20f / 1000f);
     }
 
     // Update is called once per frame
