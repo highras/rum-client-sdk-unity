@@ -428,7 +428,17 @@ namespace com.rum {
                 Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
             }
 
-            this._rumEvent.WriteEvent(dict);
+            RUMClient self = this;
+            ThreadPool.Instance.Execute((state) => {
+
+                try {
+                    
+                    self._rumEvent.WriteEvent(dict);
+                } catch (Exception e) {
+
+                    ErrorRecorderHolder.recordError(e);
+                }
+            });
         }
 
         private void OpenEvent() {

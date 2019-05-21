@@ -37,6 +37,7 @@ namespace com.rum {
         private string _fileIndexKey = "rum_index_";
 
         private static readonly System.Object locker = new System.Object();
+
         private IDictionary<string, object> _storage = new Dictionary<string, object>();
 
         public RUMEvent(int pid, bool debug) {
