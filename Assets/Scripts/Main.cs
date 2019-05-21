@@ -21,7 +21,7 @@ public class Main : MonoBehaviour
             "c23e9d90-bada-440d-8316-44790f615ec1",
             null,
             null,
-            false 
+            true 
         );
 
         client.GetEvent().AddListener("error", (evd) => {
@@ -70,7 +70,7 @@ public class Main : MonoBehaviour
         IDictionary<string, object> attrs = new Dictionary<string, object>();
         attrs.Add("custom_debug", "test text");
 
-        client.CustomEvent("debug", attrs);
+        client.CustomEvent("info", attrs);
         Invoke("SendQPS", (1000f / 50f) / 1000f);
     }
 

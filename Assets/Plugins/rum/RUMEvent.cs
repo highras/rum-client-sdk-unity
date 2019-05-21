@@ -541,7 +541,16 @@ namespace com.rum {
             return false;
         }
 
+        private bool _isChecking;
+
         private void CheckStorageSize() {
+
+            if (this._isChecking) {
+
+                return;
+            }
+
+            this._isChecking = true;
 
             IDictionary<string, object> storage_copy = (IDictionary<string, object>)this.Clone(this._storage);
 
@@ -574,6 +583,7 @@ namespace com.rum {
                     }
                 }
 
+                this._isChecking = false;
                 return;
             }
 
@@ -599,10 +609,12 @@ namespace com.rum {
                     }
                 }
 
+                this._isChecking = false;
                 return;
             }
 
             this.StorageSave(storage_json);
+            this._isChecking = false;
         }
 
         private List<object> GetFileEvents() {
@@ -686,9 +698,9 @@ namespace com.rum {
                         this._timestamp++;
                     }
                 }
-
-                this.CheckStorageSize();
             }
+
+            this.CheckStorageSize();
         }
 
         private string SelectKey(string innerKey) {

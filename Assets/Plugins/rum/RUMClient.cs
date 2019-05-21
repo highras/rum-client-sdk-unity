@@ -79,8 +79,6 @@ namespace com.rum {
         private int _writeCount = 0;
         private int _configVersion = 0;
 
-        private static readonly System.Object locker = new System.Object();
-
         public RUMClient(int pid, string token, string uid, string appv, bool debug) {
 
             this._pid = pid;
@@ -463,13 +461,10 @@ namespace com.rum {
 
         private void OnSecond(long timestamp) {
 
-            lock(locker) {
-
-                this._rumEvent.OnSecond(timestamp);
-                this.TryConnect(timestamp);
-                this.SendPing(timestamp);
-                this.SendEvent(timestamp);
-            }
+            this._rumEvent.OnSecond(timestamp);
+            this.TryConnect(timestamp);
+            this.SendPing(timestamp);
+            this.SendEvent(timestamp);
         }
 
         private void TryConnect(long timestamp) {
@@ -683,6 +678,8 @@ namespace com.rum {
             this._lastSendTime = 0;
         }
 
+        private bool _isSending;
+
         private void SendEvent(long timestamp) {
 
             if (this._lastSendTime == 0) {
@@ -695,6 +692,12 @@ namespace com.rum {
                 return;
             }
 
+            if (this._isSending) {
+
+                return;
+            }
+
+            this._isSending = true;
             this._lastSendTime += RUMConfig.SENT_INTERVAL;
 
             List<object> items = this._rumEvent.GetSentEvents();
@@ -751,6 +754,8 @@ namespace com.rum {
                     return;
                 }
             }, RUMConfig.SENT_TIMEOUT);
+
+            this._isSending = false;
         }
 
         private string GenSign(long salt) {
