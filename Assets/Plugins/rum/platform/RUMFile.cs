@@ -9,6 +9,7 @@ namespace com.rum {
     public class RUMFile {
 
         private const string FILE_PRE = "rumlog_";
+        private const string STORAGE_FILE = "rumlog_storage";
 
         private static RUMFile instance;
         private static object lock_obj = new object();
@@ -61,11 +62,6 @@ namespace com.rum {
             } 
         }
 
-        public RUMFile.Result ClearRumLog() {
-
-            return this.DeleteDirectory(this._directory_path); 
-        }
-
         public RUMFile.Result WriteRumLog(int index, string content) {
 
             string path = this._directory_path + "/" + FILE_PRE + index;
@@ -85,6 +81,30 @@ namespace com.rum {
             }
 
             return res;
+        }
+
+        public RUMFile.Result WriteStorage(string content) {
+
+            string path = this._directory_path + "/" + STORAGE_FILE;
+            return this.WriteFile(path, content, Encoding.UTF8);
+        }
+
+        public RUMFile.Result ReadStorage() {
+
+            string path = this._directory_path + "/" + STORAGE_FILE;
+            RUMFile.Result res = this.ReadFile(path, false, Encoding.UTF8);
+
+            if (!res.success) {
+
+                this.DeleteFile(path);
+            }
+
+            return res;
+        }
+
+        public RUMFile.Result ClearRumLog() {
+
+            return this.DeleteDirectory(this._directory_path); 
         }
 
         public RUMFile.Result WriteFile(string path, string content, Encoding encoding) {

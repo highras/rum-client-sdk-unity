@@ -88,11 +88,12 @@ namespace com.rum {
             this._uid = uid;
             this._appv = appv;
             this._debug = debug;
-            this._rumEvent = new RUMEvent(this._debug);
-            
-            RUMFile.Instance.Init(this._pid);
-            RUMPlatform.Instance.InitPrefs(this._pid, WriteEvent);
+            this._rumEvent = new RUMEvent(this._pid, this._debug);
 
+            RUMFile.Instance.Init(this._pid);
+            RUMPlatform.Instance.InitPrefs(WriteEvent);
+
+            this._rumEvent.InitStorage();
             this.AddPlatformListener();
         }
 
@@ -424,14 +425,12 @@ namespace com.rum {
                 dict.Add("ts", this._rumEvent.GetTimestamp());
             }
 
-            IDictionary<string, object> cp_dict = new Dictionary<string, object>(dict);
-
             if (this._debug) {
 
-                Debug.Log("[RUM] write event: " + Json.SerializeToString(cp_dict));
+                Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
             }
 
-            this._rumEvent.WriteEvent(cp_dict);
+            this._rumEvent.WriteEvent(dict);
         }
 
         private void OpenEvent() {

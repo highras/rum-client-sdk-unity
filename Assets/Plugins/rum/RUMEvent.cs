@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Serialization.Formatters.Binary;
 using GameDevWare.Serialization;
 using com.fpnn;
 
@@ -31,12 +32,44 @@ namespace com.rum {
         private int _storageSize;
         private int _sizeLimit;
 
-        private static readonly System.Object locker = new System.Object();
+        private string _rumIdKey = "rum_rid_";
+        private string _rumEventKey = "rum_event_";
+        private string _fileIndexKey = "rum_index_";
 
-        public RUMEvent(bool debug) {
+        private static readonly System.Object locker = new System.Object();
+        private IDictionary<string, object> _storage = new Dictionary<string, object>();
+
+        public RUMEvent(int pid, bool debug) {
+
+            this._rumIdKey += pid;
+            this._rumEventKey += pid;
+            this._fileIndexKey += pid;
 
             this._debug = debug;
             this._sizeLimit = RUMConfig.SENT_SIZE_LIMIT;
+        }
+
+        public void InitStorage() {
+
+            lock(this._storage) {
+
+                this._storage = this.StorageLoad(); 
+
+                if (!this._storage.ContainsKey(this._rumIdKey)) {
+
+                    this._storage.Add(this._rumIdKey, new Dictionary<string, object>());
+                }
+
+                if (!this._storage.ContainsKey(this._rumEventKey)) {
+
+                    this._storage.Add(this._rumEventKey, new Dictionary<string, object>());
+                }
+
+                if (!this._storage.ContainsKey(this._fileIndexKey)) {
+
+                    this._storage.Add(this._fileIndexKey, new Dictionary<string, object>());
+                }
+            }
         }
 
         public void UpdateConfig(IDictionary<string, object> value) {
@@ -44,7 +77,7 @@ namespace com.rum {
             this._config = value;
             this._hasConf = true;
 
-            lock (RUMPlatform.Instance.StoragePrefs) {
+            lock (this._storage) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
@@ -67,7 +100,7 @@ namespace com.rum {
 
             if (!string.IsNullOrEmpty(storageKey)) {
 
-                lock (RUMPlatform.Instance.StoragePrefs) {
+                lock (this._storage) {
 
                     IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
 
@@ -187,33 +220,33 @@ namespace com.rum {
         
         public void ClearRumId() {
 
-            lock (RUMPlatform.Instance.StoragePrefs) {
+            lock (this._storage) {
 
-                ((IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.RumIdKey]).Clear();
+                ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
             }
 
             if (this._debug) {
 
-                Debug.Log("[RUM] storage clear! rid_key: " + RUMPlatform.Instance.RumIdKey);
+                Debug.Log("[RUM] storage clear! rid_key: " + this._rumIdKey);
             }
         }
 
         public void ClearEvents() {
 
-            lock (RUMPlatform.Instance.StoragePrefs) {
+            lock (this._storage) {
 
-                ((IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.RumEventKey]).Clear();
+                ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
             }
 
             if (this._debug) {
 
-                Debug.Log("[RUM] storage clear! storage_key: " + RUMPlatform.Instance.RumEventKey);
+                Debug.Log("[RUM] storage clear! storage_key: " + this._rumEventKey);
             }
         }
 
         public void RemoveFromCache(List<object> items) {
 
-            lock (RUMPlatform.Instance.StoragePrefs) {
+            lock (this._storage) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
@@ -231,7 +264,7 @@ namespace com.rum {
 
         private IDictionary<string, object> GetEventMap(string key) {
 
-            IDictionary<string, object> items = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.RumEventKey];
+            IDictionary<string, object> items = (IDictionary<string, object>)this._storage[this._rumEventKey];
 
             if (!items.ContainsKey(key)) {
 
@@ -267,12 +300,12 @@ namespace com.rum {
                 return items;
             }
 
-            return items;
+            return (List<object>)this.Clone(items);
         }
 
         private void ShiftEvents(string key, int sizeLimit, bool catchAble, ref int size, ref List<object> items) {
 
-            lock (RUMPlatform.Instance.StoragePrefs) {
+            lock (this._storage) {
 
                 IDictionary<string, object> event_map = this.GetEventMap(key);
 
@@ -350,13 +383,57 @@ namespace com.rum {
             }
         }
 
+        private void StorageSave(string storage_json) {
+
+            RUMFile.Result res = RUMFile.Instance.WriteStorage(storage_json);
+
+            if (!res.success) {
+
+                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", res.content, null);
+            }
+        }
+
+        private IDictionary<string, object> StorageLoad() {
+
+            IDictionary<string, object> storage = null;
+
+            RUMFile.Result res = RUMFile.Instance.ReadStorage();
+
+            if (res.success) {
+
+                try {
+
+                    storage = Json.Deserialize<IDictionary<string, object>>(res.content);
+                } catch(Exception ex) {
+
+                    if (this._debug) {
+
+                        Debug.Log("[RUM] storage load error: " + ex.Message);
+                    } 
+                }
+            } else {
+
+                if (this._debug) {
+
+                    Debug.Log("[RUM] storage load error: " + res.content);
+                } 
+            }
+
+            if (storage == null) {
+
+                storage = new Dictionary<string, object>();
+            }
+
+            return storage;
+        }
+
         private string BuildRumId() {
 
             string rum_id = this.UUID(0, 16, 'c');
 
-            lock(RUMPlatform.Instance.StoragePrefs) {
+            lock(this._storage) {
 
-                IDictionary<string, object> item = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.RumIdKey];
+                IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._rumIdKey];
 
                 if (item.ContainsKey("rid")) {
 
@@ -466,27 +543,10 @@ namespace com.rum {
 
         private void CheckStorageSize() {
 
-            lock (RUMPlatform.Instance.StoragePrefs) {
+            IDictionary<string, object> storage_copy = (IDictionary<string, object>)this.Clone(this._storage);
 
-                IDictionary<string, object> event_item = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.RumEventKey];
-                string event_json = Json.SerializeToString(event_item);
-                this._storageSize = System.Text.Encoding.Default.GetByteCount(event_json);
-
-                if (!RUMPlatform.Instance.NeedToSave) {
-
-                    RUMPlatform.Instance.SerializeStorage[RUMPlatform.Instance.RumEventKey] = event_json;
-
-                    IDictionary<string, object> rumid_item = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.RumIdKey];
-                    string rumid_json = Json.SerializeToString(rumid_item);
-                    RUMPlatform.Instance.SerializeStorage[RUMPlatform.Instance.RumIdKey] = rumid_json;
-
-                    IDictionary<string, object> index_item = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.FileIndexKey];
-                    string index_json = Json.SerializeToString(index_item);
-                    RUMPlatform.Instance.SerializeStorage[RUMPlatform.Instance.FileIndexKey] = index_json;
-
-                    RUMPlatform.Instance.NeedToSave = true;
-                }
-            }
+            string storage_json = Json.SerializeToString(storage_copy);
+            this._storageSize = System.Text.Encoding.Default.GetByteCount(storage_json);
 
             if (this._storageSize >= RUMConfig.STORAGE_SIZE_MAX) {
 
@@ -494,9 +554,9 @@ namespace com.rum {
 
                 int index = 1;
 
-                lock(RUMPlatform.Instance.StoragePrefs) {
+                lock(this._storage) {
 
-                    IDictionary<string, object> item = (IDictionary<string, object>)RUMPlatform.Instance.StoragePrefs[RUMPlatform.Instance.FileIndexKey];
+                    IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
 
                     if (item.ContainsKey("index")) {
 
@@ -513,6 +573,8 @@ namespace com.rum {
                         item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
                     }
                 }
+
+                return;
             }
 
             if (this._storageSize < RUMConfig.STORAGE_SIZE_MIN) {
@@ -536,7 +598,11 @@ namespace com.rum {
                         this.WriteEvents(items);
                     }
                 }
+
+                return;
             }
+
+            this.StorageSave(storage_json);
         }
 
         private List<object> GetFileEvents() {
@@ -567,7 +633,7 @@ namespace com.rum {
                 return items;
             }
 
-            lock (RUMPlatform.Instance.StoragePrefs) {
+            lock (this._storage) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
@@ -671,6 +737,17 @@ namespace com.rum {
             }
 
             return first;
+        }
+
+        private object Clone(object obj) {
+
+            MemoryStream memoryStream = new MemoryStream();
+            BinaryFormatter formatter = new BinaryFormatter();
+
+            formatter.Serialize(memoryStream, obj);
+            memoryStream.Position = 0;
+
+            return formatter.Deserialize(memoryStream);
         }
     }
 }

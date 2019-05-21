@@ -36,10 +36,6 @@ namespace com.rum {
         }
 
         private FPEvent _event = new FPEvent();
-        public IDictionary<string, object> StoragePrefs;
-
-        public bool NeedToSave = false;
-        public IDictionary<string, string> SerializeStorage;
 
         private bool _isPause;
         private bool _isFocus;
@@ -65,13 +61,14 @@ namespace com.rum {
             Application.logMessageReceivedThreaded += OnLogCallbackThreaded;
 
             this._nw = "NONE";
+            NetworkReachability internetReachability = Application.internetReachability;
 
-            if (Application.internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
+            if (internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
 
                 this._nw = "3G/4G";
             }
 
-            if (Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork) {
+            if (internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork) {
 
                 this._nw = "WIFI";
             }
@@ -91,15 +88,15 @@ namespace com.rum {
             this._deviceToken = UnityEngine.iOS.NotificationServices.deviceToken;
             #endif
 
+            Invoke("OnTimer", 5f);
             Invoke("OnInfo", 20f);
-            Invoke("OnTimer", RUMConfig.LOCAL_STORAGE_DELAY / 1000);
         }
 
         void Start() {}
 
         void OnDisable() {
 
-            this.SavePrefs();
+            // this.SavePrefs();
 
             Application.lowMemory -= OnLowMemory;
             Application.logMessageReceived -= OnLogCallback;
@@ -114,7 +111,7 @@ namespace com.rum {
              
                 this._event.FireEvent(new EventData("app_bg"));
                 
-                this.SavePrefs();
+                // this.SavePrefs();
             } else {
 
                 this._isFocus = true;
@@ -157,7 +154,9 @@ namespace com.rum {
 
         private void OnTimer() {
 
-            if (Application.internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
+            NetworkReachability internetReachability = Application.internetReachability;
+
+            if (internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
 
                 if (this._nw != "3G/4G") {
 
@@ -166,7 +165,7 @@ namespace com.rum {
                 }
             }
 
-            if (Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork) {
+            if (internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork) {
 
                 if (this._nw != "WIFI") {
 
@@ -175,7 +174,7 @@ namespace com.rum {
                 }
             }
 
-            if (Application.internetReachability == NetworkReachability.NotReachable){
+            if (internetReachability == NetworkReachability.NotReachable){
 
                 if (this._nw != "NONE") {
 
@@ -184,28 +183,7 @@ namespace com.rum {
                 }
             }
 
-            this.SavePrefs();
-            Invoke("OnTimer", RUMConfig.LOCAL_STORAGE_DELAY / 1000);
-        }
-
-        private void SavePrefs() {
-
-            if (!NeedToSave) {
-
-                return;
-            }
-
-            if (SerializeStorage != null) {
-
-                foreach (KeyValuePair<string, string> kvp in SerializeStorage) {
-
-                    PlayerPrefs.SetString(kvp.Key, kvp.Value);
-                }
-
-                PlayerPrefs.Save();
-            }
-
-            NeedToSave = false;
+            Invoke("OnTimer", 5f);
         }
 
         private void OnLogCallback(string logString, string stackTrace, LogType type) {
@@ -213,13 +191,13 @@ namespace com.rum {
             if (type == LogType.Assert) {
 
                 this.WriteException("crash", "main_assert", logString, stackTrace);
-                this.SavePrefs();
+                // this.SavePrefs();
             }
 
             if (type == LogType.Exception) {
 
                 this.WriteException("error", "main_exception", logString, stackTrace);
-                this.SavePrefs();
+                // this.SavePrefs();
             }
         }
 
@@ -237,7 +215,6 @@ namespace com.rum {
 
                 IDictionary<string, object> dict = new Dictionary<string, object>();
 
-                dict.Add("ev", ev);
                 dict.Add("type", type);
                 dict.Add("message", message);
                 dict.Add("stack", stack);
@@ -250,61 +227,10 @@ namespace com.rum {
 
         private Action<string, IDictionary<string, object>> _writeEvent;
 
-        public string RumIdKey = "rum_rid_";
-        public string RumEventKey = "rum_event_";
-        public string FileIndexKey = "rum_index_";
-
-        public void InitPrefs(int pid, Action<string, IDictionary<string, object>> writeEvent) {
-
-            RumIdKey += pid;
-            RumEventKey += pid;
-            FileIndexKey += pid;
+        public void InitPrefs(Action<string, IDictionary<string, object>> writeEvent) {
 
             this._writeEvent = writeEvent;
-
-            this.LoadStoragePrefs(RumIdKey);
-            this.LoadStoragePrefs(RumEventKey);
-            this.LoadStoragePrefs(FileIndexKey);
-
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(writeEvent));
-        }
-
-        private void LoadStoragePrefs(string storage_key) {
-
-            if (StoragePrefs == null) {
-
-                StoragePrefs = new Dictionary<string, object>();
-            }
-
-            if (SerializeStorage == null) {
-
-                SerializeStorage = new Dictionary<string, string>();
-            }
-
-            string storage_json = "{}";
-            IDictionary<string, object> storage_value = new Dictionary<string, object>();
-
-            if (PlayerPrefs.HasKey(storage_key)) {
-
-                try {
-
-                    storage_json = PlayerPrefs.GetString(storage_key);
-                    storage_value = Json.Deserialize<IDictionary<string, object>>(storage_json);
-                } catch(Exception ex) {
-
-                    this.WriteException("error", "main_exception", ex.Message, ex.StackTrace);
-                }
-            } 
-
-            if (!StoragePrefs.ContainsKey(storage_key)) {
-
-                StoragePrefs.Add(storage_key, storage_value);
-            }
-
-            if (!SerializeStorage.ContainsKey(storage_key)) {
-
-                SerializeStorage.Add(storage_key, storage_json);
-            }
         }
 
         public FPEvent GetEvent() {
