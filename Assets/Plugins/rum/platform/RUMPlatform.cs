@@ -216,8 +216,16 @@ namespace com.rum {
                 IDictionary<string, object> dict = new Dictionary<string, object>();
 
                 dict.Add("type", type);
-                dict.Add("message", message);
-                dict.Add("stack", stack);
+
+                if (!string.IsNullOrEmpty(message)) {
+
+                    dict.Add("message", message);
+                }
+
+                if (!string.IsNullOrEmpty(stack)) {
+
+                    dict.Add("stack", stack);
+                }
 
                 this._writeEvent(ev, dict);
             }
