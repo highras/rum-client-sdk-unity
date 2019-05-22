@@ -490,8 +490,16 @@ namespace com.rum {
                     IDictionary<string, object> dict = new Dictionary<string, object>();
 
                     dict.Add("type", "rum_threaded_exception");
-                    dict.Add("message", e.Message);
-                    dict.Add("stack", e.StackTrace);
+
+                    if (!string.IsNullOrEmpty(e.Message)) {
+
+                        dict.Add("message", e.Message);
+                    }
+
+                    if (!string.IsNullOrEmpty(e.StackTrace)) {
+
+                        dict.Add("stack", e.StackTrace);
+                    }
 
                     this._writeEvent("error", dict);
                 }

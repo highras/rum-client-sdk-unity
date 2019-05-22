@@ -36,7 +36,8 @@ namespace com.rum {
         private string _rumEventKey = "rum_event_";
         private string _fileIndexKey = "rum_index_";
 
-        private static readonly System.Object locker = new System.Object();
+        private System.Object locker = new System.Object();
+        private System.Object storage_locker = new System.Object();
 
         private IDictionary<string, object> _storage = new Dictionary<string, object>();
 
@@ -52,7 +53,7 @@ namespace com.rum {
 
         public void InitStorage() {
 
-            lock(this._storage) {
+            lock(storage_locker) {
 
                 this._storage = this.StorageLoad(); 
 
@@ -78,7 +79,7 @@ namespace com.rum {
             this._config = value;
             this._hasConf = true;
 
-            lock (this._storage) {
+            lock (storage_locker) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
@@ -101,7 +102,7 @@ namespace com.rum {
 
             if (!string.IsNullOrEmpty(storageKey)) {
 
-                lock (this._storage) {
+                lock (storage_locker) {
 
                     IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
 
@@ -221,7 +222,7 @@ namespace com.rum {
         
         public void ClearRumId() {
 
-            lock (this._storage) {
+            lock (storage_locker) {
 
                 ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
             }
@@ -234,7 +235,7 @@ namespace com.rum {
 
         public void ClearEvents() {
 
-            lock (this._storage) {
+            lock (storage_locker) {
 
                 ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
             }
@@ -247,7 +248,7 @@ namespace com.rum {
 
         public void RemoveFromCache(List<object> items) {
 
-            lock (this._storage) {
+            lock (storage_locker) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
@@ -306,7 +307,7 @@ namespace com.rum {
 
         private void ShiftEvents(string key, int sizeLimit, bool catchAble, ref int size, ref List<object> items) {
 
-            lock (this._storage) {
+            lock (storage_locker) {
 
                 IDictionary<string, object> event_map = this.GetEventMap(key);
 
@@ -432,7 +433,7 @@ namespace com.rum {
 
             string rum_id = this.UUID(0, 16, 'c');
 
-            lock(this._storage) {
+            lock(storage_locker) {
 
                 IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._rumIdKey];
 
@@ -564,7 +565,7 @@ namespace com.rum {
 
                 int index = 1;
 
-                lock(this._storage) {
+                lock(storage_locker) {
 
                     IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
 
@@ -646,7 +647,7 @@ namespace com.rum {
                 return items;
             }
 
-            lock (this._storage) {
+            lock (storage_locker) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
