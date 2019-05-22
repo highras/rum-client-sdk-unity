@@ -560,12 +560,15 @@ namespace com.rum {
             payload.Add("feid", lastEid);
             payload.Add("teid", this._pingEid);
 
-            MemoryStream outputStream = new MemoryStream();
+            byte[] bytes;
 
-            MsgPack.Serialize(payload, outputStream);
-            outputStream.Position = 0; 
+            using (MemoryStream outputStream = new MemoryStream()) {
 
-            byte[] bytes = outputStream.ToArray();
+                MsgPack.Serialize(payload, outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+
+                bytes = outputStream.ToArray();
+            }
 
             FPData data = new FPData();
             data.SetFlag(0x1);
@@ -636,12 +639,15 @@ namespace com.rum {
             payload.Add("from", RUMPlatform.Instance.GetFrom());
             payload.Add("appv", this._appv);
 
-            MemoryStream outputStream = new MemoryStream();
+            byte[] bytes;
 
-            MsgPack.Serialize(payload, outputStream);
-            outputStream.Position = 0; 
+            using (MemoryStream outputStream = new MemoryStream()) {
 
-            byte[] bytes = outputStream.ToArray();
+                MsgPack.Serialize(payload, outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+
+                bytes = outputStream.ToArray();
+            }
 
             FPData data = new FPData();
             data.SetFlag(0x1);
@@ -736,12 +742,15 @@ namespace com.rum {
             payload.Add("salt", salt);
             payload.Add("events", items);
 
-            MemoryStream outputStream = new MemoryStream();
+            byte[] bytes;
 
-            MsgPack.Serialize(payload, outputStream);
-            outputStream.Position = 0; 
+            using (MemoryStream outputStream = new MemoryStream()) {
 
-            byte[] bytes = outputStream.ToArray();
+                MsgPack.Serialize(payload, outputStream);
+                outputStream.Seek(0, SeekOrigin.Begin);
+
+                bytes = outputStream.ToArray();
+            }
 
             FPData data = new FPData();
             data.SetFlag(0x1);
@@ -828,8 +837,10 @@ namespace com.rum {
 
                     try {
 
-                        MemoryStream inputStream = new MemoryStream(data.MsgpackPayload());
-                        payload = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                        using (MemoryStream inputStream = new MemoryStream(data.MsgpackPayload())) {
+
+                            payload = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                        }
                     } catch(Exception ex) {
 
                        this.GetEvent().FireEvent(new EventData("error", ex));

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using GameDevWare.Serialization;
 using com.fpnn;
@@ -753,15 +754,22 @@ namespace com.rum {
             return first;
         }
 
-        private object Clone(object obj) {
+        public object Clone(object source) {
 
-            MemoryStream memoryStream = new MemoryStream();
-            BinaryFormatter formatter = new BinaryFormatter();
+            if (System.Object.ReferenceEquals(source, null)) {
 
-            formatter.Serialize(memoryStream, obj);
-            memoryStream.Position = 0;
+                return source;
+            }
 
-            return formatter.Deserialize(memoryStream);
+            IFormatter formatter = new BinaryFormatter();
+
+            using (Stream stream = new MemoryStream()) {
+
+                formatter.Serialize(stream, source);
+                stream.Seek(0, SeekOrigin.Begin);
+
+                return formatter.Deserialize(stream);
+            }
         }
     }
 }
