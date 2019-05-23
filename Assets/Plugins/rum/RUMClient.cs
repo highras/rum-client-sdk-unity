@@ -720,6 +720,7 @@ namespace com.rum {
 
             if (items.Count == 0) {
 
+                this._isSending = false;
                 return;
             }
 

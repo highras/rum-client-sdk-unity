@@ -545,8 +545,14 @@ namespace com.rum {
         }
 
         private bool _isChecking;
+        private long _lastCheckingTime;
 
-        private void CheckStorageSize() {
+        private void CheckStorageSize(long timestamp) {
+
+            if (timestamp - this._lastCheckingTime < RUMConfig.LOCAL_STORAGE_DELAY) {
+
+                return;
+            }
 
             if (this._isChecking) {
 
@@ -554,6 +560,7 @@ namespace com.rum {
             }
 
             this._isChecking = true;
+            this._lastCheckingTime += RUMConfig.LOCAL_STORAGE_DELAY;
 
             IDictionary<string, object> storage_copy = (IDictionary<string, object>)this.Clone(this._storage);
 
@@ -585,9 +592,6 @@ namespace com.rum {
                         item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
                     }
                 }
-
-                this._isChecking = false;
-                return;
             }
 
             if (this._storageSize < RUMConfig.STORAGE_SIZE_MIN) {
@@ -611,9 +615,6 @@ namespace com.rum {
                         this.WriteEvents(items);
                     }
                 }
-
-                this._isChecking = false;
-                return;
             }
 
             this.StorageSave(storage_json);
@@ -703,7 +704,7 @@ namespace com.rum {
                 }
             }
 
-            this.CheckStorageSize();
+            this.CheckStorageSize(timestamp);
         }
 
         private string SelectKey(string innerKey) {
