@@ -394,6 +394,11 @@ namespace com.rum {
 
                 RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", res.content, null);
             }
+
+            if (this._debug) {
+
+                Debug.Log("[RUM] storage save! " + res.success);
+            } 
         }
 
         private IDictionary<string, object> StorageLoad() {
@@ -419,7 +424,7 @@ namespace com.rum {
                 if (this._debug) {
 
                     Debug.Log("[RUM] storage load error: " + res.content);
-                } 
+                }
             }
 
             if (storage == null) {
@@ -591,6 +596,11 @@ namespace com.rum {
 
                         item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
                     }
+
+                    if (this._debug) {
+
+                        Debug.Log("[RUM] write to file: " + res.success + ",  index: " + index);
+                    }
                 }
             }
 
@@ -614,6 +624,11 @@ namespace com.rum {
 
                         this.WriteEvents(items);
                     }
+                }
+
+                if (this._debug) {
+
+                    Debug.Log("[RUM] load form file: " + res.success);
                 }
             }
 
