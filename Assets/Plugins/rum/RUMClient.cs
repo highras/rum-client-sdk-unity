@@ -75,6 +75,7 @@ namespace com.rum {
         private long _lastSendTime = 0;
         private long _lastConnectTime = 0;
 
+        private int _sendCount = 0;
         private int _pingLatency = 0;
         private int _writeCount = 0;
         private int _configVersion = 0;
@@ -110,6 +111,7 @@ namespace com.rum {
             this._lastSendTime = 0;
             this._lastConnectTime = 0;
 
+            this._sendCount = 0;
             this._pingLatency = 0;
             this._configVersion = 0;
 
@@ -711,8 +713,6 @@ namespace com.rum {
 
             this._lastSendTime = 0;
         }
-
-        private int _sendCount;
 
         private void SendEvent(long timestamp) {
 
