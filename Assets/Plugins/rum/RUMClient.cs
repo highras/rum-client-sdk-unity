@@ -181,6 +181,7 @@ namespace com.rum {
                 self.StopPing();
                 self.StopSend();
 
+                self._sendCount = 0;
                 self._configVersion = 0;
                 self._lastConnectTime = ThreadPool.Instance.GetMilliTimestamp();
                 self.GetEvent().FireEvent(new EventData("close"));
@@ -711,6 +712,8 @@ namespace com.rum {
             this._lastSendTime = 0;
         }
 
+        private int _sendCount;
+
         private void SendEvent(long timestamp) {
 
             if (this._lastSendTime == 0) {
@@ -725,12 +728,19 @@ namespace com.rum {
 
             this._lastSendTime += RUMConfig.SENT_INTERVAL;
 
+            if (this._sendCount >= 5) {
+
+                return;
+            }
+
             List<object> items = this._rumEvent.GetSentEvents();
 
             if (items.Count == 0) {
 
                 return;
             }
+
+            this._sendCount++;
 
             if (this._debug) {
 
@@ -770,6 +780,11 @@ namespace com.rum {
             RUMClient self = this;
 
             this.SendQuest(data, (cbd) => {
+
+                if (self._sendCount > 0) {
+
+                    self._sendCount--;
+                } 
 
                 self._rumEvent.RemoveFromCache(items);
 
