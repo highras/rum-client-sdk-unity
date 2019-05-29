@@ -36,7 +36,7 @@ namespace com.rum {
         public class Result {
 
             public bool success;
-            public string content;
+            public object content;
         }
 
         private int _read_index;
@@ -62,18 +62,31 @@ namespace com.rum {
             } 
         }
 
-        public RUMFile.Result WriteRumLog(int index, string content) {
+        public RUMFile.Result WriteRumLog(int index, byte[] content) {
 
             string path = this._directory_path + "/" + FILE_PRE + index;
-            return this.WriteFile(path, content, Encoding.UTF8);
+            return this.WriteFile(path, content);
         }
 
         public RUMFile.Result ReadRumLog() {
 
-            this._read_index = (this._read_index + 1) % RUMConfig.LOCAL_FILE_COUNT;
+            int index = 0;
+            string path = null;
 
-            string path = this._directory_path + "/" + FILE_PRE + this._read_index;
-            RUMFile.Result res = this.ReadFile(path, true, Encoding.UTF8);
+            while(index < 20) {
+
+                this._read_index = (this._read_index + 1) % RUMConfig.LOCAL_FILE_COUNT;
+                path = this._directory_path + "/" + FILE_PRE + this._read_index;
+
+                if (new FileInfo(path).Exists) {
+
+                    break;
+                }
+
+                index++;
+            }
+
+            RUMFile.Result res = this.ReadFile(path, true);
 
             if (!res.success) {
 
@@ -83,16 +96,16 @@ namespace com.rum {
             return res;
         }
 
-        public RUMFile.Result WriteStorage(string content) {
+        public RUMFile.Result WriteStorage(byte[] content) {
 
             string path = this._directory_path + "/" + STORAGE_FILE;
-            return this.WriteFile(path, content, Encoding.UTF8);
+            return this.WriteFile(path, content);
         }
 
         public RUMFile.Result ReadStorage() {
 
             string path = this._directory_path + "/" + STORAGE_FILE;
-            RUMFile.Result res = this.ReadFile(path, false, Encoding.UTF8);
+            RUMFile.Result res = this.ReadFile(path, false);
 
             if (!res.success) {
 
@@ -134,6 +147,33 @@ namespace com.rum {
             }
         }
 
+        public RUMFile.Result WriteFile(string path, byte[] content) {
+
+            lock(locker) {
+
+                try {
+
+                    using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write)) {
+
+                        fs.Write(content, 0, content.Length);
+                    }
+                } catch (Exception ex) {
+
+                    return new RUMFile.Result() {
+
+                        success = false,
+                        content = ex.Message
+                    };
+                }
+
+                return new RUMFile.Result() {
+
+                    success = true,
+                    content = content
+                };
+            }
+        }
+
         public RUMFile.Result ReadFile(string path, bool delete, Encoding encoding) {
 
             lock(locker) {
@@ -156,6 +196,52 @@ namespace com.rum {
                     using (StreamReader reader = new StreamReader(info.OpenRead(), encoding)) {
 
                         content = reader.ReadToEnd();
+                    }
+
+                    if (delete) {
+
+                        info.Delete();
+                    }
+                } catch (Exception ex) {
+
+                    return new RUMFile.Result() {
+
+                        success = false,
+                        content = ex.Message
+                    };
+                } 
+
+                return new RUMFile.Result() {
+
+                    success = true,
+                    content = content
+                };
+            }
+        }
+
+        public RUMFile.Result ReadFile(string path, bool delete) {
+
+            lock(locker) {
+
+                byte[] content;
+
+                try {
+
+                    FileInfo info = new FileInfo(path);
+
+                    if (!info.Exists) {
+
+                        return new RUMFile.Result() {
+
+                            success = false,
+                            content = "no file" 
+                        };
+                    }
+
+                    using (FileStream fs = info.OpenRead()) {
+
+                        content = new byte[fs.Length];
+                        fs.Read(content, 0, content.Length);
                     }
 
                     if (delete) {

@@ -181,6 +181,7 @@ namespace com.rum {
                 self.StopPing();
                 self.StopSend();
 
+                self._configVersion = 0;
                 self._lastConnectTime = ThreadPool.Instance.GetMilliTimestamp();
                 self.GetEvent().FireEvent(new EventData("close"));
             });
@@ -429,11 +430,13 @@ namespace com.rum {
             }
 
             RUMClient self = this;
+
             ThreadPool.Instance.Execute((state) => {
 
                 try {
-                    
-                    self._rumEvent.WriteEvent(dict);
+
+                    IDictionary<string, object> cp_dict = (IDictionary<string, object>)self._rumEvent.Clone(dict);
+                    self._rumEvent.WriteEvent(cp_dict);
                 } catch (Exception e) {
 
                     ErrorRecorderHolder.recordError(e);
@@ -606,7 +609,7 @@ namespace com.rum {
                 if (self._configVersion != cv || (cv == 0 && !self._rumEvent.HasConfig())) {
 
                     self._configVersion = cv;
-                    this.LoadConfig();
+                    self.LoadConfig();
                 }
 
             }, RUMConfig.PING_INTERVAL);
@@ -694,8 +697,6 @@ namespace com.rum {
             this._lastSendTime = 0;
         }
 
-        private bool _isSending;
-
         private void SendEvent(long timestamp) {
 
             if (this._lastSendTime == 0) {
@@ -708,19 +709,12 @@ namespace com.rum {
                 return;
             }
 
-            if (this._isSending) {
-
-                return;
-            }
-
-            this._isSending = true;
             this._lastSendTime += RUMConfig.SENT_INTERVAL;
 
             List<object> items = this._rumEvent.GetSentEvents();
 
             if (items.Count == 0) {
 
-                this._isSending = false;
                 return;
             }
 
@@ -774,8 +768,6 @@ namespace com.rum {
                     return;
                 }
             }, RUMConfig.SENT_TIMEOUT);
-
-            this._isSending = false;
         }
 
         private string GenSign(long salt) {

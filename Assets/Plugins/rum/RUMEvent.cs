@@ -72,6 +72,8 @@ namespace com.rum {
 
                     this._storage.Add(this._fileIndexKey, new Dictionary<string, object>());
                 }
+
+                this._lastCheckingTime = ThreadPool.Instance.GetMilliTimestamp();
             }
         }
 
@@ -255,7 +257,7 @@ namespace com.rum {
 
                 foreach (IDictionary<string, object> item in items) {
 
-                    string key = Convert.ToString(item["eid"]);
+                    string key = Convert.ToString(item["eid"]); 
 
                     if (event_cache.ContainsKey(key)) {
 
@@ -303,7 +305,7 @@ namespace com.rum {
                 return items;
             }
 
-            return (List<object>)this.Clone(items);
+            return items;
         }
 
         private void ShiftEvents(string key, int sizeLimit, bool catchAble, ref int size, ref List<object> items) {
@@ -360,17 +362,20 @@ namespace com.rum {
                         if (catchAble) {
 
                             string cache_key = Convert.ToString(item["eid"]);
-
-                            if (event_cache.ContainsKey(cache_key)) {
-
-                                event_cache[cache_key] = item;
-                            } else {
-
-                                event_cache.Add(cache_key, item);
-                            } 
+                            event_cache.Add(cache_key, item);
                         }
 
-                        size += System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(item));
+                        byte[] bytes;
+
+                        using (MemoryStream outputStream = new MemoryStream()) {
+
+                            MsgPack.Serialize(item, outputStream);
+                            outputStream.Seek(0, SeekOrigin.Begin);
+
+                            bytes = outputStream.ToArray();
+                        }
+
+                        size += bytes.Length;
                     }
 
                     if (event_list.Count == 0) {
@@ -386,13 +391,13 @@ namespace com.rum {
             }
         }
 
-        private void StorageSave(string storage_json) {
+        private void StorageSave(byte[] storage_bytes) {
 
-            RUMFile.Result res = RUMFile.Instance.WriteStorage(storage_json);
+            RUMFile.Result res = RUMFile.Instance.WriteStorage(storage_bytes);
 
             if (!res.success) {
 
-                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", res.content, null);
+                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", "storage save error!", null);
             }
 
             if (this._debug) {
@@ -411,7 +416,10 @@ namespace com.rum {
 
                 try {
 
-                    storage = Json.Deserialize<IDictionary<string, object>>(res.content);
+                    using (MemoryStream inputStream = new MemoryStream((byte[])res.content)) {
+
+                        storage = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                    }
                 } catch(Exception ex) {
 
                     if (this._debug) {
@@ -549,28 +557,36 @@ namespace com.rum {
             return false;
         }
 
-        private bool _isChecking;
         private long _lastCheckingTime;
 
         private void CheckStorageSize(long timestamp) {
+
+            if (this._lastCheckingTime == 0) {
+
+                return;
+            }
 
             if (timestamp - this._lastCheckingTime < RUMConfig.LOCAL_STORAGE_DELAY) {
 
                 return;
             }
 
-            if (this._isChecking) {
-
-                return;
-            }
-
-            this._isChecking = true;
             this._lastCheckingTime += RUMConfig.LOCAL_STORAGE_DELAY;
 
-            IDictionary<string, object> storage_copy = (IDictionary<string, object>)this.Clone(this._storage);
+            byte[] storage_bytes;
 
-            string storage_json = Json.SerializeToString(storage_copy);
-            this._storageSize = System.Text.Encoding.Default.GetByteCount(storage_json);
+            lock(storage_locker) {
+
+                using (MemoryStream outputStream = new MemoryStream()) {
+
+                    MsgPack.Serialize(this._storage, outputStream);
+                    outputStream.Seek(0, SeekOrigin.Begin);
+
+                    storage_bytes = outputStream.ToArray();
+                }
+            }
+
+            this._storageSize = storage_bytes.Length;
 
             if (this._storageSize >= RUMConfig.STORAGE_SIZE_MAX) {
 
@@ -590,7 +606,17 @@ namespace com.rum {
                         item.Add("index", index);
                     }
 
-                    RUMFile.Result res = RUMFile.Instance.WriteRumLog(index, Json.SerializeToString(list));
+                    byte[] bytes;
+
+                    using (MemoryStream outputStream = new MemoryStream()) {
+
+                        MsgPack.Serialize(list, outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+
+                        bytes = outputStream.ToArray();
+                    }
+
+                    RUMFile.Result res = RUMFile.Instance.WriteRumLog(index, bytes);
 
                     if (res.success) {
 
@@ -614,7 +640,10 @@ namespace com.rum {
 
                     try {
 
-                        items = Json.Deserialize<List<object>>(res.content);
+                        using (MemoryStream inputStream = new MemoryStream((byte[])res.content)) {
+
+                            items = MsgPack.Deserialize<List<object>>(inputStream);
+                        }
                     } catch(Exception ex) {
 
                         RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", ex.Message, ex.StackTrace);
@@ -632,8 +661,7 @@ namespace com.rum {
                 }
             }
 
-            this.StorageSave(storage_json);
-            this._isChecking = false;
+            this.StorageSave(storage_bytes);
         }
 
         private List<object> GetFileEvents() {
@@ -677,7 +705,18 @@ namespace com.rum {
                         IDictionary<string, object> item = (IDictionary<string, object>)event_cache[k];
 
                         items.Add(item);
-                        size += System.Text.Encoding.Default.GetByteCount(Json.SerializeToString(item));
+
+                        byte[] bytes;
+
+                        using (MemoryStream outputStream = new MemoryStream()) {
+
+                            MsgPack.Serialize(item, outputStream);
+                            outputStream.Seek(0, SeekOrigin.Begin);
+
+                            bytes = outputStream.ToArray();
+                        }
+
+                        size += bytes.Length;
                         event_cache.Remove(k);
 
                         if (size >= sizeLimit) {

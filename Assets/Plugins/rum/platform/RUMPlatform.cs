@@ -230,7 +230,7 @@ namespace com.rum {
                 this._writeEvent(ev, dict);
             }
 
-            Debug.LogError("message: " + message + " stack: " + stack);
+            Debug.LogError("message: " + message + ", " + stack);
         }
 
         private Action<string, IDictionary<string, object>> _writeEvent;
@@ -504,7 +504,7 @@ namespace com.rum {
                     this._writeEvent("error", dict);
                 }
 
-                Debug.LogError("message: " + e.Message + " stack: " + e.StackTrace);
+                Debug.LogError("message: " + e.Message + ", " + e.StackTrace);
             }
         }
     }
