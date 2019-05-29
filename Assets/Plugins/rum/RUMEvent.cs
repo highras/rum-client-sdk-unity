@@ -362,7 +362,14 @@ namespace com.rum {
                         if (catchAble) {
 
                             string cache_key = Convert.ToString(item["eid"]);
-                            event_cache.Add(cache_key, item);
+
+                            if (event_cache.ContainsKey(cache_key)) {
+
+                                event_cache[cache_key] = item;
+                            } else {
+
+                                event_cache.Add(cache_key, item);
+                            }
                         }
 
                         byte[] bytes;

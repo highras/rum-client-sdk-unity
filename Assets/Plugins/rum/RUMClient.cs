@@ -267,19 +267,33 @@ namespace com.rum {
 
             if (status <= 0 || status >= 300) {
 
-                dict.Remove("ev");
-                dict.Remove("eid");
+                IDictionary<string, object> err_dict = new Dictionary<string, object>();
 
-                this.WriteEvent("httperr", dict);
+                err_dict.Add("url", url);
+                err_dict.Add("method", method);
+                err_dict.Add("status", status);
+                err_dict.Add("reqsize", reqsize);
+                err_dict.Add("respsize", respsize);
+                err_dict.Add("latency", latency);
+                err_dict.Add("attrs", attrs);
+
+                this.WriteEvent("httperr", err_dict);
                 return;
             }
 
             if (latency > 1000) {
 
-                dict.Remove("ev");
-                dict.Remove("eid");
+                IDictionary<string, object> lat_dict = new Dictionary<string, object>();
 
-                this.WriteEvent("httplat", dict);
+                lat_dict.Add("url", url);
+                lat_dict.Add("method", method);
+                lat_dict.Add("status", status);
+                lat_dict.Add("reqsize", reqsize);
+                lat_dict.Add("respsize", respsize);
+                lat_dict.Add("latency", latency);
+                lat_dict.Add("attrs", attrs);
+
+                this.WriteEvent("httplat", lat_dict);
                 return;
             }
         }
