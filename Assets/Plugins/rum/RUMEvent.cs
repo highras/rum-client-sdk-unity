@@ -2,8 +2,8 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters.Binary;
+// using System.Runtime.Serialization;
+// using System.Runtime.Serialization.Formatters.Binary;
 using GameDevWare.Serialization;
 using com.fpnn;
 
@@ -351,6 +351,11 @@ namespace com.rum {
 
                         foreach (string k in keys) {
 
+                            if (k == "status") {
+
+                                continue;
+                            }
+
                             if (this.IsNullOrEmpty(item[k])) {
 
                                 item.Remove(k); 
@@ -404,7 +409,7 @@ namespace com.rum {
 
             if (!res.success) {
 
-                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", "storage save error!", null);
+                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", "storage save error!", (string)res.content);
             }
 
             if (this._debug) {
@@ -816,22 +821,22 @@ namespace com.rum {
             return first;
         }
 
-        public object Clone(object source) {
+        // public object Clone(object source) {
 
-            if (System.Object.ReferenceEquals(source, null)) {
+        //     if (System.Object.ReferenceEquals(source, null)) {
 
-                return source;
-            }
+        //         return source;
+        //     }
 
-            IFormatter formatter = new BinaryFormatter();
+        //     IFormatter formatter = new BinaryFormatter();
 
-            using (Stream stream = new MemoryStream()) {
+        //     using (Stream stream = new MemoryStream()) {
 
-                formatter.Serialize(stream, source);
-                stream.Seek(0, SeekOrigin.Begin);
+        //         formatter.Serialize(stream, source);
+        //         stream.Seek(0, SeekOrigin.Begin);
 
-                return formatter.Deserialize(stream);
-            }
-        }
+        //         return formatter.Deserialize(stream);
+        //     }
+        // }
     }
 }

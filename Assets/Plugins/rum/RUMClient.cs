@@ -452,7 +452,17 @@ namespace com.rum {
 
                 try {
 
-                    IDictionary<string, object> cp_dict = (IDictionary<string, object>)self._rumEvent.Clone(dict);
+                    IDictionary<string, object> cp_dict;
+
+                    using (MemoryStream outputStream = new MemoryStream()) {
+
+                        MsgPack.Serialize(dict, outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+
+                        cp_dict = MsgPack.Deserialize<IDictionary<string, object>>(outputStream);
+                    }
+
+                    // IDictionary<string, object> cp_dict = (IDictionary<string, object>)self._rumEvent.Clone(dict);
                     self._rumEvent.WriteEvent(cp_dict);
                 } catch (Exception e) {
 
