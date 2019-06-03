@@ -434,7 +434,15 @@ namespace com.rum {
 
                         attrs.Add("Response-ContentType", res.ContentType);
                     }
-                } 
+                }
+
+                if (res.StatusDescription != null) {
+
+                    if (!string.IsNullOrEmpty(res.StatusDescription)) { 
+
+                        attrs.Add("Response-StatusDescription", res.StatusDescription);
+                    }
+                }
             }
 
             dict.Add("attrs", attrs);
