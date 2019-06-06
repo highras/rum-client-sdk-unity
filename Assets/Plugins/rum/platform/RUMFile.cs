@@ -51,9 +51,9 @@ namespace com.rum {
             #if UNITY_EDITOR
             this._directory_path = Application.streamingAssetsPath + "/rum_events_" + pid;
             #elif UNITY_IPHONE
-            this._directory_path = Application.temporaryCachePath + "/rum_events_" + pid;
+            this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
             #elif UNITY_ANDROID
-            this._directory_path = Application.temporaryCachePath + "/rum_events_" + pid;
+            this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
             #endif
 
             if (Directory.Exists(this._directory_path) == false) {
