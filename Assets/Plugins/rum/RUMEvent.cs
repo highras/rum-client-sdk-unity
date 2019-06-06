@@ -409,7 +409,7 @@ namespace com.rum {
 
             if (!res.success) {
 
-                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", "storage save error!", (string)res.content);
+                RUMPlatform.Instance.WriteException("error", "storage save error", (string)res.content, "RUMFile.Instance.WriteStorage(byte[] content)");
             }
 
             if (this._debug) {

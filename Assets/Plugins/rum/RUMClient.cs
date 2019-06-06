@@ -150,7 +150,7 @@ namespace com.rum {
 
             if (this._debug) {
 
-                Debug.Log("[RUM] init: " + endpoint);
+                Debug.Log("[RUM] init: " + endpoint + " version: " + RUMConfig.VERSION);
             }
 
             this.OpenEvent();
