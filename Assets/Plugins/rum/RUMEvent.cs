@@ -536,6 +536,21 @@ namespace com.rum {
                 return false; 
             }
 
+            if (obj is byte) {
+
+                return Convert.ToByte(obj) == 0;
+            }
+
+            if (obj is sbyte) {
+
+                return Convert.ToSByte(obj) == 0;
+            }
+
+            if (obj is short) {
+
+                return Convert.ToInt16(obj) == 0;
+            }
+
             if (obj is int) {
 
                 return Convert.ToInt32(obj) == 0;
