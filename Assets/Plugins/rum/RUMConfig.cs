@@ -10,7 +10,7 @@ namespace com.rum {
         public static int SENT_INTERVAL = 1 * 1000;                     //事件发送时间间隔(ms)
         public static int CONNCT_INTERVAL = 20 * 1000;                  //客户端尝试重新连接的时间间隔(ms)
         public static int SENT_TIMEOUT = 20 * 1000;                     //事件发送的超时时间(ms)
-        public static int EVENT_QUEUE_LIMIT = 15 * 1000;                //事件队列长度限制
+        public static int EVENT_QUEUE_LIMIT = 15 * 100;                 //事件队列长度限制
         public static int STORAGE_SIZE_MAX = 1 * 1024 * 1024;           //本地存储上限阀值(B)
         public static int STORAGE_SIZE_MIN = 256 * 1024;                //本地存储下限阀值(B)
         public static int LOCAL_STORAGE_DELAY = 1 * 1000;               //内存到本地存储快照的时间间隔(ms)
