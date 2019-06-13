@@ -209,7 +209,12 @@ namespace com.rum {
             }
         }
 
-        public void WriteException(string ev, string type, string message, string stack) {
+        public void WriteException(string ev, string type, Exception ex) {
+
+            this.WriteException(ev, type, ex.Message, ex.StackTrace);
+        }
+
+        private void WriteException(string ev, string type, string message, string stack) {
 
             if (this._writeEvent != null) {
 
@@ -238,7 +243,7 @@ namespace com.rum {
         public void InitPrefs(Action<string, IDictionary<string, object>> writeEvent) {
 
             this._writeEvent = writeEvent;
-            ErrorRecorderHolder.setInstance(new RUMErrorRecorder(writeEvent));
+            ErrorRecorderHolder.setInstance(new RUMErrorRecorder());
         }
 
         public FPEvent GetEvent() {
@@ -484,35 +489,9 @@ namespace com.rum {
 
         private class RUMErrorRecorder:ErrorRecorder {
 
-            private Action<string, IDictionary<string, object>> _writeEvent;
-
-            public RUMErrorRecorder(Action<string, IDictionary<string, object>> writeEvent):base() {
-
-                this._writeEvent = writeEvent;
-            }
-
             public override void recordError(Exception e) {
             
-                if (this._writeEvent != null) {
-
-                    IDictionary<string, object> dict = new Dictionary<string, object>();
-
-                    dict.Add("type", "rum_threaded_exception");
-
-                    if (!string.IsNullOrEmpty(e.Message)) {
-
-                        dict.Add("message", e.Message);
-                    }
-
-                    if (!string.IsNullOrEmpty(e.StackTrace)) {
-
-                        dict.Add("stack", e.StackTrace);
-                    }
-
-                    this._writeEvent("error", dict);
-                }
-
-                Debug.LogError("message: " + e.Message + ", " + e.StackTrace);
+                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", e);
             }
         }
     }

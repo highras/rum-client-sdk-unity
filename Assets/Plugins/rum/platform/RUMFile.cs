@@ -135,7 +135,7 @@ namespace com.rum {
                     return new RUMFile.Result() {
 
                         success = false,
-                        content = ex.Message
+                        content = ex
                     };
                 }
 
@@ -162,7 +162,7 @@ namespace com.rum {
                     return new RUMFile.Result() {
 
                         success = false,
-                        content = ex.Message
+                        content = ex
                     };
                 }
 
@@ -189,7 +189,7 @@ namespace com.rum {
                         return new RUMFile.Result() {
 
                             success = false,
-                            content = "no file" 
+                            content = new Exception("no file")
                         };
                     }
 
@@ -207,7 +207,7 @@ namespace com.rum {
                     return new RUMFile.Result() {
 
                         success = false,
-                        content = ex.Message
+                        content = ex
                     };
                 } 
 
@@ -234,7 +234,7 @@ namespace com.rum {
                         return new RUMFile.Result() {
 
                             success = false,
-                            content = "no file" 
+                            content = new Exception("no file")
                         };
                     }
 
@@ -253,7 +253,7 @@ namespace com.rum {
                     return new RUMFile.Result() {
 
                         success = false,
-                        content = ex.Message
+                        content = ex
                     };
                 } 
 
@@ -282,7 +282,7 @@ namespace com.rum {
                     return new RUMFile.Result() {
 
                         success = false,
-                        content = ex.Message
+                        content = ex
                     };
                 } 
 
@@ -312,7 +312,7 @@ namespace com.rum {
                     return new RUMFile.Result() {
 
                         success = false,
-                        content = ex.Message
+                        content = ex
                     };
                 }
 

@@ -191,12 +191,10 @@ namespace com.rum {
 
             this._baseClient.GetEvent().AddListener("error", (evd) => {
 
-                if (self._debug) {
+                Exception ex = evd.GetException();
 
-                    Debug.Log("[RUM] error: " + evd.GetException().Message);
-                }
-
-                self.GetEvent().FireEvent(new EventData("error", evd.GetException()));
+                RUMPlatform.Instance.WriteException("error", "base_client", ex);
+                self.GetEvent().FireEvent(new EventData("error", ex));
             });
 
             this._baseClient.GetEvent().AddListener("second", (evd) => {
@@ -462,7 +460,6 @@ namespace com.rum {
                         cp_dict = MsgPack.Deserialize<IDictionary<string, object>>(outputStream);
                     }
 
-                    // IDictionary<string, object> cp_dict = (IDictionary<string, object>)self._rumEvent.Clone(dict);
                     self._rumEvent.WriteEvent(cp_dict);
                 } catch (Exception e) {
 
@@ -590,14 +587,20 @@ namespace com.rum {
             payload.Add("feid", lastEid);
             payload.Add("teid", this._pingEid);
 
-            byte[] bytes;
+            byte[] bytes = new byte[0];
 
-            using (MemoryStream outputStream = new MemoryStream()) {
+            try {
 
-                MsgPack.Serialize(payload, outputStream);
-                outputStream.Seek(0, SeekOrigin.Begin);
+                using (MemoryStream outputStream = new MemoryStream()) {
 
-                bytes = outputStream.ToArray();
+                    MsgPack.Serialize(payload, outputStream);
+                    outputStream.Seek(0, SeekOrigin.Begin);
+
+                    bytes = outputStream.ToArray();
+                }
+            } catch (Exception ex) {
+
+                RUMPlatform.Instance.WriteException("error", "send_ping_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -617,6 +620,7 @@ namespace com.rum {
 
                 if (ex != null) {
 
+                    RUMPlatform.Instance.WriteException("error", "send_ping_send_quest", ex);
                     self.GetEvent().FireEvent(new EventData("error", ex));
                     return;
                 }
@@ -669,14 +673,20 @@ namespace com.rum {
             payload.Add("from", RUMPlatform.Instance.GetFrom());
             payload.Add("appv", this._appv);
 
-            byte[] bytes;
+            byte[] bytes = new byte[0];
 
-            using (MemoryStream outputStream = new MemoryStream()) {
+            try {
 
-                MsgPack.Serialize(payload, outputStream);
-                outputStream.Seek(0, SeekOrigin.Begin);
+                using (MemoryStream outputStream = new MemoryStream()) {
 
-                bytes = outputStream.ToArray();
+                    MsgPack.Serialize(payload, outputStream);
+                    outputStream.Seek(0, SeekOrigin.Begin);
+
+                    bytes = outputStream.ToArray();
+                }
+            } catch (Exception ex) {
+
+                RUMPlatform.Instance.WriteException("error", "load_config_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -694,6 +704,8 @@ namespace com.rum {
                 if (ex != null) {
 
                     self._configVersion = 0;
+
+                    RUMPlatform.Instance.WriteException("error", "load_config_send_quest", ex);
                     self.GetEvent().FireEvent(new EventData("error", ex));
                     return;
                 }
@@ -771,14 +783,20 @@ namespace com.rum {
             payload.Add("salt", salt);
             payload.Add("events", items);
 
-            byte[] bytes;
+            byte[] bytes = new byte[0];
 
-            using (MemoryStream outputStream = new MemoryStream()) {
+            try {
 
-                MsgPack.Serialize(payload, outputStream);
-                outputStream.Seek(0, SeekOrigin.Begin);
+                using (MemoryStream outputStream = new MemoryStream()) {
 
-                bytes = outputStream.ToArray();
+                    MsgPack.Serialize(payload, outputStream);
+                    outputStream.Seek(0, SeekOrigin.Begin);
+
+                    bytes = outputStream.ToArray();
+                }
+            } catch (Exception ex) {
+
+                RUMPlatform.Instance.WriteException("error", "send_events_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -802,8 +820,10 @@ namespace com.rum {
 
                 if (ex != null) {
 
-                    self.GetEvent().FireEvent(new EventData("error", ex));
                     self._rumEvent.WriteEvents(items);
+
+                    RUMPlatform.Instance.WriteException("error", "send_events_send_quest", ex);
+                    self.GetEvent().FireEvent(new EventData("error", ex));
                     return;
                 }
             }, RUMConfig.SENT_TIMEOUT);
@@ -861,7 +881,8 @@ namespace com.rum {
                         payload = Json.Deserialize<IDictionary<string, object>>(data.JsonPayload());
                     }catch(Exception ex) {
 
-                       this.GetEvent().FireEvent(new EventData("error", ex)); 
+                        RUMPlatform.Instance.WriteException("error", "check_fpcallback_deserialize_json_payload", ex);
+                        this.GetEvent().FireEvent(new EventData("error", ex)); 
                     }
                 }
 
@@ -875,7 +896,7 @@ namespace com.rum {
                         }
                     } catch(Exception ex) {
 
-                       this.GetEvent().FireEvent(new EventData("error", ex));
+                        RUMPlatform.Instance.WriteException("error", "check_fpcallback_deserialize_msgpack_payload", ex);
                     }
                 }
 

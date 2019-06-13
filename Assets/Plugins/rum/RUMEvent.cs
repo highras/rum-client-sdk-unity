@@ -2,8 +2,6 @@ using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
-// using System.Runtime.Serialization;
-// using System.Runtime.Serialization.Formatters.Binary;
 using GameDevWare.Serialization;
 using com.fpnn;
 
@@ -377,14 +375,20 @@ namespace com.rum {
                             }
                         }
 
-                        byte[] bytes;
+                        byte[] bytes = new byte[0];
 
-                        using (MemoryStream outputStream = new MemoryStream()) {
+                        try {
 
-                            MsgPack.Serialize(item, outputStream);
-                            outputStream.Seek(0, SeekOrigin.Begin);
+                            using (MemoryStream outputStream = new MemoryStream()) {
 
-                            bytes = outputStream.ToArray();
+                                MsgPack.Serialize(item, outputStream);
+                                outputStream.Seek(0, SeekOrigin.Begin);
+
+                                bytes = outputStream.ToArray();
+                            }
+                        } catch (Exception ex) {
+
+                            RUMPlatform.Instance.WriteException("error", "shift_events_serialize_item", ex);
                         }
 
                         size += bytes.Length;
@@ -409,7 +413,7 @@ namespace com.rum {
 
             if (!res.success) {
 
-                RUMPlatform.Instance.WriteException("error", "storage save error", (string)res.content, "RUMFile.Instance.WriteStorage(byte[] content)");
+                RUMPlatform.Instance.WriteException("error", "storage_save_write_storage", (Exception)res.content);
             }
 
             if (this._debug) {
@@ -434,18 +438,9 @@ namespace com.rum {
                     }
                 } catch(Exception ex) {
 
-                    if (this._debug) {
-
-                        Debug.Log("[RUM] storage load error: " + ex.Message);
-                    } 
+                    RUMPlatform.Instance.WriteException("error", "storage_load_deserialize_content", ex);
                 }
-            } else {
-
-                if (this._debug) {
-
-                    Debug.Log("[RUM] storage load error: " + res.content);
-                }
-            }
+            } 
 
             if (storage == null) {
 
@@ -600,16 +595,22 @@ namespace com.rum {
 
             this._lastCheckingTime += RUMConfig.LOCAL_STORAGE_DELAY;
 
-            byte[] storage_bytes;
+            byte[] storage_bytes = new byte[0];
 
             lock(storage_locker) {
 
-                using (MemoryStream outputStream = new MemoryStream()) {
+                try {
 
-                    MsgPack.Serialize(this._storage, outputStream);
-                    outputStream.Seek(0, SeekOrigin.Begin);
+                    using (MemoryStream outputStream = new MemoryStream()) {
 
-                    storage_bytes = outputStream.ToArray();
+                        MsgPack.Serialize(this._storage, outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+
+                        storage_bytes = outputStream.ToArray();
+                    }
+                } catch (Exception ex) {
+
+                    RUMPlatform.Instance.WriteException("error", "check_storage_size_serialize_storage", ex);
                 }
             }
 
@@ -633,14 +634,20 @@ namespace com.rum {
                         item.Add("index", index);
                     }
 
-                    byte[] bytes;
+                    byte[] bytes = new byte[0];
 
-                    using (MemoryStream outputStream = new MemoryStream()) {
+                    try {
 
-                        MsgPack.Serialize(list, outputStream);
-                        outputStream.Seek(0, SeekOrigin.Begin);
+                        using (MemoryStream outputStream = new MemoryStream()) {
 
-                        bytes = outputStream.ToArray();
+                            MsgPack.Serialize(list, outputStream);
+                            outputStream.Seek(0, SeekOrigin.Begin);
+
+                            bytes = outputStream.ToArray();
+                        }
+                    } catch (Exception ex) {
+
+                        RUMPlatform.Instance.WriteException("error", "check_storage_size_serialize_list", ex);
                     }
 
                     RUMFile.Result res = RUMFile.Instance.WriteRumLog(index, bytes);
@@ -648,6 +655,9 @@ namespace com.rum {
                     if (res.success) {
 
                         item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
+                    } else {
+
+                        RUMPlatform.Instance.WriteException("error", "check_storage_size_write_rum_log", (Exception)res.content);
                     }
 
                     if (this._debug) {
@@ -673,14 +683,14 @@ namespace com.rum {
                         }
                     } catch(Exception ex) {
 
-                        RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", ex.Message, ex.StackTrace);
+                        RUMPlatform.Instance.WriteException("error", "check_storage_size_deserialize_content", ex);
                     }
 
                     if (!this.IsNullOrEmpty(items)) {
 
                         this.WriteEvents(items);
                     }
-                }
+                } 
 
                 if (this._debug) {
 
@@ -733,14 +743,20 @@ namespace com.rum {
 
                         items.Add(item);
 
-                        byte[] bytes;
+                        byte[] bytes = new byte[0];
 
-                        using (MemoryStream outputStream = new MemoryStream()) {
+                        try {
 
-                            MsgPack.Serialize(item, outputStream);
-                            outputStream.Seek(0, SeekOrigin.Begin);
+                            using (MemoryStream outputStream = new MemoryStream()) {
 
-                            bytes = outputStream.ToArray();
+                                MsgPack.Serialize(item, outputStream);
+                                outputStream.Seek(0, SeekOrigin.Begin);
+
+                                bytes = outputStream.ToArray();
+                            }
+                        } catch (Exception ex) {
+
+                            RUMPlatform.Instance.WriteException("error", "get_file_events_serialize_item", ex);
                         }
 
                         size += bytes.Length;
@@ -835,23 +851,5 @@ namespace com.rum {
 
             return first;
         }
-
-        // public object Clone(object source) {
-
-        //     if (System.Object.ReferenceEquals(source, null)) {
-
-        //         return source;
-        //     }
-
-        //     IFormatter formatter = new BinaryFormatter();
-
-        //     using (Stream stream = new MemoryStream()) {
-
-        //         formatter.Serialize(stream, source);
-        //         stream.Seek(0, SeekOrigin.Begin);
-
-        //         return formatter.Deserialize(stream);
-        //     }
-        // }
     }
 }
