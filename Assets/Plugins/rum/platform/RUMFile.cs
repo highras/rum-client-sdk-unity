@@ -115,39 +115,10 @@ namespace com.rum {
             return res;
         }
 
-        // private FileStream _storageWriteFileStream;
-
         public RUMFile.Result WriteStorage(byte[] content) {
 
             string path = this._directory_path + "/" + STORAGE_FILE;
             return this.WriteFile(path, content);
-
-            // lock(locker) {
-
-            //     try {
-
-            //         if (this._storageWriteFileStream == null) {
-
-            //             string path = this._directory_path + "/" + STORAGE_FILE;
-            //             this._storageWriteFileStream = new FileStream(path, FileMode.Create, FileAccess.Write);
-            //         }
-
-            //         this._storageWriteFileStream.Write(content, 0, content.Length);
-            //     } catch (Exception ex) {
-
-            //         return new RUMFile.Result() {
-
-            //             success = false,
-            //             content = ex
-            //         };
-            //     }
-
-            //     return new RUMFile.Result() {
-
-            //         success = true,
-            //         content = content
-            //     };
-            // }
         }
 
         public RUMFile.Result ReadStorage() {

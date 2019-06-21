@@ -107,6 +107,7 @@ namespace com.rum {
         }
 
         private bool _writeAble;
+        private System.Threading.ManualResetEvent _writeEvent = new System.Threading.ManualResetEvent(false);
 
         private void StartWriteThread() {
 
@@ -136,7 +137,7 @@ namespace com.rum {
                                 self._sendQuest();
                             }
 
-                            System.Threading.Thread.Sleep(1000);
+                            self._writeEvent.WaitOne(1000);
                         }
                     } catch (Exception e) {
 
@@ -149,6 +150,7 @@ namespace com.rum {
         private void StopWriteThread() {
 
             this._writeAble = false;
+            this._writeEvent.Reset();
         }
 
         public void WriteEvents(ICollection<object> items) {
@@ -670,6 +672,7 @@ namespace com.rum {
         }
 
         private bool _checkAble;
+        private System.Threading.ManualResetEvent _checkEvent = new System.Threading.ManualResetEvent(false);
 
         private void StartCheckThread() {
 
@@ -689,7 +692,7 @@ namespace com.rum {
                     while (self._checkAble) {
 
                         self.CheckStorageSize();
-                        System.Threading.Thread.Sleep(RUMConfig.LOCAL_STORAGE_DELAY);
+                        self._checkEvent.WaitOne(RUMConfig.LOCAL_STORAGE_DELAY);
                     }
                 } catch (Exception e) {
 
@@ -701,6 +704,7 @@ namespace com.rum {
         private void StopCheckThread() {
 
             this._checkAble = false;
+            this._checkEvent.Reset();
         }
 
         private void CheckStorageSize() {
