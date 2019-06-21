@@ -47,14 +47,6 @@ namespace com.rum {
         public void Init(int pid) {
 
             this._directory_path = this.GetSecureDataPath() + "/rum_events_" + pid;
-            
-            // #if UNITY_EDITOR
-            // this._directory_path = Application.streamingAssetsPath + "/rum_events_" + pid;
-            // #elif UNITY_IPHONE
-            // this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
-            // #elif UNITY_ANDROID
-            // this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
-            // #endif
 
             if (Directory.Exists(this._directory_path) == false) {
 

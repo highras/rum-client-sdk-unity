@@ -71,7 +71,7 @@ public class Main : MonoBehaviour
         attrs.Add("custom_debug", "test text");
 
         client.CustomEvent("info", attrs);
-        Invoke("SendQPS", (1000f / 50f) / 1000f);
+        Invoke("SendQPS", (1000f / 100f) / 1000f);
     }
 
     // Update is called once per frame

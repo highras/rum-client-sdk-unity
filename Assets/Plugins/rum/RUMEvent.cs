@@ -149,8 +149,8 @@ namespace com.rum {
 
         private void StopWriteThread() {
 
-            this._writeAble = false;
             this._writeEvent.Reset();
+            this._writeAble = false;
         }
 
         public void WriteEvents(ICollection<object> items) {
@@ -703,8 +703,8 @@ namespace com.rum {
 
         private void StopCheckThread() {
 
-            this._checkAble = false;
             this._checkEvent.Reset();
+            this._checkAble = false;
         }
 
         private void CheckStorageSize() {
