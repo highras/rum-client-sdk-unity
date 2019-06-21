@@ -46,20 +46,39 @@ namespace com.rum {
 
         public void Init(int pid) {
 
-            this._directory_path = Application.streamingAssetsPath + "/rum_events_" + pid;
+            this._directory_path = this.GetSecureDataPath() + "/rum_events_" + pid;
             
-            #if UNITY_EDITOR
-            this._directory_path = Application.streamingAssetsPath + "/rum_events_" + pid;
-            #elif UNITY_IPHONE
-            this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
-            #elif UNITY_ANDROID
-            this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
-            #endif
+            // #if UNITY_EDITOR
+            // this._directory_path = Application.streamingAssetsPath + "/rum_events_" + pid;
+            // #elif UNITY_IPHONE
+            // this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
+            // #elif UNITY_ANDROID
+            // this._directory_path = Application.persistentDataPath + "/rum_events_" + pid;
+            // #endif
 
             if (Directory.Exists(this._directory_path) == false) {
 
                 Directory.CreateDirectory(this._directory_path);
             } 
+        }
+
+        private string GetSecureDataPath() {
+
+            string secureDataPath = Application.streamingAssetsPath;
+
+            #if !UNITY_EDITOR && UNITY_ANDROID
+            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+            using (var getFilesDir = currentActivity.Call<AndroidJavaObject>("getFilesDir")) {
+
+                secureDataPath = getFilesDir.Call<string>("getCanonicalPath");
+            }
+
+            #elif !UNITY_EDITOR && UNITY_IPHONE
+            secureDataPath = Application.persistentDataPath;
+            #endif
+
+            return secureDataPath;
         }
 
         public RUMFile.Result WriteRumLog(int index, byte[] content) {
@@ -96,10 +115,39 @@ namespace com.rum {
             return res;
         }
 
+        // private FileStream _storageWriteFileStream;
+
         public RUMFile.Result WriteStorage(byte[] content) {
 
             string path = this._directory_path + "/" + STORAGE_FILE;
             return this.WriteFile(path, content);
+
+            // lock(locker) {
+
+            //     try {
+
+            //         if (this._storageWriteFileStream == null) {
+
+            //             string path = this._directory_path + "/" + STORAGE_FILE;
+            //             this._storageWriteFileStream = new FileStream(path, FileMode.Create, FileAccess.Write);
+            //         }
+
+            //         this._storageWriteFileStream.Write(content, 0, content.Length);
+            //     } catch (Exception ex) {
+
+            //         return new RUMFile.Result() {
+
+            //             success = false,
+            //             content = ex
+            //         };
+            //     }
+
+            //     return new RUMFile.Result() {
+
+            //         success = true,
+            //         content = content
+            //     };
+            // }
         }
 
         public RUMFile.Result ReadStorage() {

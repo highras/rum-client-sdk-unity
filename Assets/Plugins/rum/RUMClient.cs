@@ -87,7 +87,7 @@ namespace com.rum {
             this._uid = uid;
             this._appv = appv;
             this._debug = debug;
-            this._rumEvent = new RUMEvent(this._pid, this._debug);
+            this._rumEvent = new RUMEvent(this._pid, this._debug, this.OnSendQuest);
 
             RUMFile.Instance.Init(this._pid);
             RUMPlatform.Instance.InitPrefs(WriteEvent);
@@ -192,9 +192,7 @@ namespace com.rum {
             this._baseClient.GetEvent().AddListener("error", (evd) => {
 
                 Exception ex = evd.GetException();
-
                 RUMPlatform.Instance.WriteException("error", "base_client", ex);
-                self.GetEvent().FireEvent(new EventData("error", ex));
             });
 
             this._baseClient.GetEvent().AddListener("second", (evd) => {
@@ -439,33 +437,15 @@ namespace com.rum {
                 dict.Add("ts", this._rumEvent.GetTimestamp());
             }
 
-            if (this._debug) {
+            if (ev == "error") {
+
+                Debug.Log("[RUM] Exception: " + Json.SerializeToString(dict));
+            } else if (this._debug) {
 
                 Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
             }
 
-            RUMClient self = this;
-
-            ThreadPool.Instance.Execute((state) => {
-
-                try {
-
-                    IDictionary<string, object> cp_dict;
-
-                    using (MemoryStream outputStream = new MemoryStream()) {
-
-                        MsgPack.Serialize(dict, outputStream);
-                        outputStream.Seek(0, SeekOrigin.Begin);
-
-                        cp_dict = MsgPack.Deserialize<IDictionary<string, object>>(outputStream);
-                    }
-
-                    self._rumEvent.WriteEvent(cp_dict);
-                } catch (Exception e) {
-
-                    ErrorRecorderHolder.recordError(e);
-                }
-            });
+            this._rumEvent.WriteEvent(dict);
         }
 
         private void OpenEvent() {
@@ -500,8 +480,12 @@ namespace com.rum {
 
             this._rumEvent.OnSecond(timestamp);
             this.TryConnect(timestamp);
-            this.SendPing(timestamp);
-            this.SendEvent(timestamp);
+        }
+
+        private void OnSendQuest() {
+
+            this.SendPing();
+            this.SendEvent();
         }
 
         private void TryConnect(long timestamp) {
@@ -545,14 +529,14 @@ namespace com.rum {
             this._lastPingTime = 0;
         }
 
-        private void SendPing(long timestamp) {
+        private void SendPing() {
 
             if (this._lastPingTime == 0) {
 
                 return;
             }
 
-            if (timestamp - this._lastPingTime < RUMConfig.PING_INTERVAL) {
+            if (ThreadPool.Instance.GetMilliTimestamp() - this._lastPingTime < RUMConfig.PING_INTERVAL) {
 
                 return;
             }
@@ -609,7 +593,7 @@ namespace com.rum {
             data.SetMethod("ping");
             data.SetPayload(bytes);
 
-            long pingTime = timestamp;
+            long pingTime = ThreadPool.Instance.GetMilliTimestamp();
             RUMClient self = this;
 
             this.SendQuest(data, (cbd) => {
@@ -621,7 +605,6 @@ namespace com.rum {
                 if (ex != null) {
 
                     RUMPlatform.Instance.WriteException("error", "send_ping_send_quest", ex);
-                    self.GetEvent().FireEvent(new EventData("error", ex));
                     return;
                 }
 
@@ -706,7 +689,6 @@ namespace com.rum {
                     self._configVersion = 0;
 
                     RUMPlatform.Instance.WriteException("error", "load_config_send_quest", ex);
-                    self.GetEvent().FireEvent(new EventData("error", ex));
                     return;
                 }
 
@@ -736,14 +718,14 @@ namespace com.rum {
             this._lastSendTime = 0;
         }
 
-        private void SendEvent(long timestamp) {
+        private void SendEvent() {
 
             if (this._lastSendTime == 0) {
 
                 return;
             }
 
-            if (timestamp - this._lastSendTime < RUMConfig.SENT_INTERVAL) {
+            if (ThreadPool.Instance.GetMilliTimestamp() - this._lastSendTime < RUMConfig.SENT_INTERVAL) {
 
                 return;
             }
@@ -821,9 +803,7 @@ namespace com.rum {
                 if (ex != null) {
 
                     self._rumEvent.WriteEvents(items);
-
                     RUMPlatform.Instance.WriteException("error", "send_events_send_quest", ex);
-                    self.GetEvent().FireEvent(new EventData("error", ex));
                     return;
                 }
             }, RUMConfig.SENT_TIMEOUT);
@@ -882,7 +862,6 @@ namespace com.rum {
                     }catch(Exception ex) {
 
                         RUMPlatform.Instance.WriteException("error", "check_fpcallback_deserialize_json_payload", ex);
-                        this.GetEvent().FireEvent(new EventData("error", ex)); 
                     }
                 }
 

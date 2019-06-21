@@ -234,8 +234,6 @@ namespace com.rum {
 
                 this._writeEvent(ev, dict);
             }
-
-            Debug.LogError("message: " + message + ", " + stack);
         }
 
         private Action<string, IDictionary<string, object>> _writeEvent;
@@ -243,6 +241,8 @@ namespace com.rum {
         public void InitPrefs(Action<string, IDictionary<string, object>> writeEvent) {
 
             this._writeEvent = writeEvent;
+
+            ThreadPool.Instance.SetPool(new RUMThreadPool());
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder());
         }
 
@@ -332,6 +332,28 @@ namespace com.rum {
         public string GetUnityVersion(){
 
             return this._unityVersion;
+        }
+
+        private string _androidID;
+
+        public string GetAndroidID () {
+
+            if (!string.IsNullOrEmpty(this._androidID)) {
+
+                return this._androidID;
+            }
+
+            #if !UNITY_EDITOR && UNITY_ANDROID
+            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+            using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+            using (var contentResolver = currentActivity.Call<AndroidJavaObject> ("getContentResolver"))
+            using (var secure = new AndroidJavaClass ("android.provider.Settings$Secure")) {
+
+                this._androidID = secure.CallStatic<string> ("getString", contentResolver, "android_id");
+            }
+            #endif
+
+            return this._androidID;
         }
 
         private ApplicationInstallMode _installMode;
@@ -492,6 +514,20 @@ namespace com.rum {
             public override void recordError(Exception e) {
             
                 RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", e);
+            }
+        }
+
+        private class RUMThreadPool:ThreadPool.IThreadPool {
+
+            public RUMThreadPool() {
+
+                System.Threading.ThreadPool.SetMinThreads(2, 1);
+                System.Threading.ThreadPool.SetMaxThreads(SystemInfo.processorCount * 2, SystemInfo.processorCount);
+            }
+
+            public void Execute(Action<object> action) {
+
+                System.Threading.ThreadPool.QueueUserWorkItem(new System.Threading.WaitCallback(action));
             }
         }
     }

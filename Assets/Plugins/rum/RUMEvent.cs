@@ -40,13 +40,16 @@ namespace com.rum {
 
         private IDictionary<string, object> _storage = new Dictionary<string, object>();
 
-        public RUMEvent(int pid, bool debug) {
+        private Action _sendQuest;
+
+        public RUMEvent(int pid, bool debug, Action sendQuest) {
 
             this._rumIdKey += pid;
             this._rumEventKey += pid;
             this._fileIndexKey += pid;
 
             this._debug = debug;
+            this._sendQuest = sendQuest;
             this._sizeLimit = RUMConfig.SENT_SIZE_LIMIT;
         }
 
@@ -70,9 +73,10 @@ namespace com.rum {
 
                     this._storage.Add(this._fileIndexKey, new Dictionary<string, object>());
                 }
-
-                this._lastCheckingTime = ThreadPool.Instance.GetMilliTimestamp();
             }
+
+            this.StartWriteThread();
+            this.StartCheckThread();
         }
 
         public void UpdateConfig(IDictionary<string, object> value) {
@@ -86,60 +90,116 @@ namespace com.rum {
 
                 if (!this.IsNullOrEmpty(event_cache)) {
 
-                    foreach (IDictionary<string, object> item in event_cache.Values) {
-
-                        this.WriteEvent(item);
-                    }
-
+                    this.AddEvents(event_cache.Values);
                     event_cache.Clear();
                 }
             }
         }
 
+        private List<object> _eventCache = new List<object>();
+
         public void WriteEvent(IDictionary<string, object> dict) {
+
+            lock(this._eventCache) {
+
+                this._eventCache.Add(dict);
+            }
+        }
+
+        private bool _writeAble;
+
+        private void StartWriteThread() {
+
+            if (!this._writeAble) {
+
+                RUMEvent self = this;
+                this._writeAble = true;
+
+                ThreadPool.Instance.Execute((state) => {
+
+                    try {
+
+                        while (self._writeAble) {
+
+                            List<object> list;
+
+                            lock (self._eventCache) {
+
+                                list = self._eventCache;
+                                self._eventCache = new List<object>();
+                            }
+
+                            self.WriteEvents(list);
+
+                            if (self._sendQuest != null) {
+
+                                self._sendQuest();
+                            }
+
+                            System.Threading.Thread.Sleep(1000);
+                        }
+                    } catch (Exception e) {
+
+                        ErrorRecorderHolder.recordError(e);
+                    }
+                });
+            }
+        }
+
+        private void StopWriteThread() {
+
+            this._writeAble = false;
+        }
+
+        public void WriteEvents(ICollection<object> items) {
+
+            lock (storage_locker) {
+
+                this.AddEvents(items);
+            } 
+        }
+
+        private void AddEvents(ICollection<object> items) {
+
+            foreach (IDictionary<string, object> item in items) {
+
+                this.AddEvent(item);
+            }
+        }
+
+        private void AddEvent(IDictionary<string, object> dict) {
 
             string key = Convert.ToString(dict["ev"]);
             string storageKey = this.SelectKey(key);
 
             if (!string.IsNullOrEmpty(storageKey)) {
 
-                lock (storage_locker) {
+                IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
 
-                    IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
+                if (!event_storage.ContainsKey(key)) {
 
-                    if (!event_storage.ContainsKey(key)) {
-
-                        event_storage[key] = new List<object>();
-                    }
-
-                    List<object> event_list = (List<object>)event_storage[key];
-
-                    if (event_list.Count >= RUMConfig.EVENT_QUEUE_LIMIT) {
-
-                        if (this._debug) {
-
-                            Debug.Log("[RUM] event(normal) queue limit & will be shift! " + Json.SerializeToString(dict));
-                        }
-
-                        event_list.RemoveAt(0);
-                    }
-
-                    event_list.Add(dict);
+                    event_storage[key] = new List<object>();
                 }
+
+                List<object> event_list = (List<object>)event_storage[key];
+
+                if (event_list.Count >= RUMConfig.EVENT_QUEUE_LIMIT) {
+
+                    if (this._debug) {
+
+                        Debug.Log("[RUM] event(normal) queue limit & will be shift! " + Json.SerializeToString(dict));
+                    }
+
+                    event_list.RemoveAt(0);
+                }
+
+                event_list.Add(dict);
             } else {
 
                 if (this._debug) {
 
                     Debug.Log("[RUM] disable event & will be discard! " + key);
                 } 
-            }
-        }
-
-        public void WriteEvents(List<object> items) {
-
-            foreach (IDictionary<string, object> item in items) {
-
-                this.WriteEvent(item);
             }
         }
 
@@ -191,6 +251,9 @@ namespace com.rum {
 
         public void Destroy() {
 
+            this.StopWriteThread();
+            this.StopCheckThread();
+
             this._lastSecondTime = 0;
 
             this._rumId = null;
@@ -201,6 +264,7 @@ namespace com.rum {
             this._hasConf = false;
 
             this._delayCount = 0;
+            this._sendQuest = null;
         }
 
         public int GetStorageSize() {
@@ -356,7 +420,7 @@ namespace com.rum {
 
                             if (this.IsNullOrEmpty(item[k])) {
 
-                                item.Remove(k); 
+                                item.Remove(k);
                             }
                         }
 
@@ -407,13 +471,39 @@ namespace com.rum {
             }
         }
 
-        private void StorageSave(byte[] storage_bytes) {
+        private int _saveFailCount;
+
+        private void StorageSave() {
+
+            byte[] storage_bytes = new byte[0];
+
+            lock(storage_locker) {
+
+                try {
+
+                    using (MemoryStream outputStream = new MemoryStream()) {
+
+                        MsgPack.Serialize(this._storage, outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+
+                        storage_bytes = outputStream.ToArray();
+                    }
+                } catch (Exception ex) {
+
+                    RUMPlatform.Instance.WriteException("error", "storage_save_serialize_storage", ex);
+                    return;
+                }
+            }
 
             RUMFile.Result res = RUMFile.Instance.WriteStorage(storage_bytes);
 
             if (!res.success) {
 
-                RUMPlatform.Instance.WriteException("error", "storage_save_write_storage", (Exception)res.content);
+                if (this._saveFailCount < 3) {
+
+                    this._saveFailCount++;
+                    RUMPlatform.Instance.WriteException("error", "storage_save_write_storage", (Exception)res.content);
+                } 
             }
 
             if (this._debug) {
@@ -579,21 +669,41 @@ namespace com.rum {
             return false;
         }
 
-        private long _lastCheckingTime;
+        private bool _checkAble;
 
-        private void CheckStorageSize(long timestamp) {
+        private void StartCheckThread() {
 
-            if (this._lastCheckingTime == 0) {
-
-                return;
-            }
-
-            if (timestamp - this._lastCheckingTime < RUMConfig.LOCAL_STORAGE_DELAY) {
+            if (this._checkAble) {
 
                 return;
             }
 
-            this._lastCheckingTime += RUMConfig.LOCAL_STORAGE_DELAY;
+            this._checkAble = true;
+
+            RUMEvent self = this;
+
+            ThreadPool.Instance.Execute((state) => {
+
+                try {
+
+                    while (self._checkAble) {
+
+                        self.CheckStorageSize();
+                        System.Threading.Thread.Sleep(RUMConfig.LOCAL_STORAGE_DELAY);
+                    }
+                } catch (Exception e) {
+
+                    ErrorRecorderHolder.recordError(e);
+                }
+            });
+        }
+
+        private void StopCheckThread() {
+
+            this._checkAble = false;
+        }
+
+        private void CheckStorageSize() {
 
             byte[] storage_bytes = new byte[0];
 
@@ -620,85 +730,98 @@ namespace com.rum {
 
                 List<object> list = this.GetFileEvents();
 
-                int index = 1;
+                if (!this.IsNullOrEmpty(list)) {
 
-                lock(storage_locker) {
-
-                    IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
-
-                    if (item.ContainsKey("index")) {
-
-                        index = Convert.ToInt32(item["index"]);
-                    } else {
-
-                        item.Add("index", index);
-                    }
-
-                    byte[] bytes = new byte[0];
-
-                    try {
-
-                        using (MemoryStream outputStream = new MemoryStream()) {
-
-                            MsgPack.Serialize(list, outputStream);
-                            outputStream.Seek(0, SeekOrigin.Begin);
-
-                            bytes = outputStream.ToArray();
-                        }
-                    } catch (Exception ex) {
-
-                        RUMPlatform.Instance.WriteException("error", "check_storage_size_serialize_list", ex);
-                    }
-
-                    RUMFile.Result res = RUMFile.Instance.WriteRumLog(index, bytes);
-
-                    if (res.success) {
-
-                        item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
-                    } else {
-
-                        RUMPlatform.Instance.WriteException("error", "check_storage_size_write_rum_log", (Exception)res.content);
-                    }
-
-                    if (this._debug) {
-
-                        Debug.Log("[RUM] write to file: " + res.success + ",  index: " + index);
-                    }
+                    this.SlipStorage(list);
                 }
             }
 
             if (this._storageSize < RUMConfig.STORAGE_SIZE_MIN) {
 
-                RUMFile.Result res = RUMFile.Instance.ReadRumLog();
+                this.ReStorage();
+            }
+
+            this.StorageSave();
+        }
+
+        private void SlipStorage(List<object> list) {
+
+            int index = 1;
+
+            lock(storage_locker) {
+
+                IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
+
+                if (item.ContainsKey("index")) {
+
+                    index = Convert.ToInt32(item["index"]);
+                } else {
+
+                    item.Add("index", index);
+                }
+
+                byte[] bytes = new byte[0];
+
+                try {
+
+                    using (MemoryStream outputStream = new MemoryStream()) {
+
+                        MsgPack.Serialize(list, outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+
+                        bytes = outputStream.ToArray();
+                    }
+                } catch (Exception ex) {
+
+                    RUMPlatform.Instance.WriteException("error", "check_storage_size_serialize_list", ex);
+                }
+
+                RUMFile.Result res = RUMFile.Instance.WriteRumLog(index, bytes);
 
                 if (res.success) {
 
-                    List<object> items = null;
+                    item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
+                } else {
 
-                    try {
-
-                        using (MemoryStream inputStream = new MemoryStream((byte[])res.content)) {
-
-                            items = MsgPack.Deserialize<List<object>>(inputStream);
-                        }
-                    } catch(Exception ex) {
-
-                        RUMPlatform.Instance.WriteException("error", "check_storage_size_deserialize_content", ex);
-                    }
-
-                    if (!this.IsNullOrEmpty(items)) {
-
-                        this.WriteEvents(items);
-                    }
-                } 
+                    RUMPlatform.Instance.WriteException("error", "check_storage_size_write_rum_log", (Exception)res.content);
+                }
 
                 if (this._debug) {
 
-                    Debug.Log("[RUM] load form file: " + res.success);
+                    Debug.Log("[RUM] write to file: " + res.success + ",  index: " + index);
                 }
             }
+        }
 
-            this.StorageSave(storage_bytes);
+        private void ReStorage() {
+
+            RUMFile.Result res = RUMFile.Instance.ReadRumLog();
+
+            if (res.success) {
+
+                List<object> items = null;
+
+                try {
+
+                    using (MemoryStream inputStream = new MemoryStream((byte[])res.content)) {
+
+                        items = MsgPack.Deserialize<List<object>>(inputStream);
+                    }
+                } catch(Exception ex) {
+
+                    RUMPlatform.Instance.WriteException("error", "check_storage_size_deserialize_content", ex);
+                }
+
+                if (!this.IsNullOrEmpty(items)) {
+
+                    this.WriteEvents(items);
+                }
+            } 
+
+            if (this._debug) {
+
+                Debug.Log("[RUM] load form file: " + res.success);
+            }
         }
 
         private List<object> GetFileEvents() {
@@ -800,8 +923,6 @@ namespace com.rum {
                     }
                 }
             }
-
-            this.CheckStorageSize(timestamp);
         }
 
         private string SelectKey(string innerKey) {
