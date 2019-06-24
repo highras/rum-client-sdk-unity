@@ -103,6 +103,11 @@ namespace com.rum {
             lock(this._eventCache) {
 
                 this._eventCache.Add(dict);
+
+                if (this._eventCache.Count >= 1000) {
+
+                    this._eventCache.Clear();
+                }
             }
         }
 
