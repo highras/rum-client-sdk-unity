@@ -116,40 +116,42 @@ namespace com.rum {
 
         private void StartWriteThread() {
 
-            if (!this._writeAble) {
+            if (this._writeAble) {
 
-                RUMEvent self = this;
-                this._writeAble = true;
-
-                ThreadPool.Instance.Execute((state) => {
-
-                    try {
-
-                        while (self._writeAble) {
-
-                            List<object> list;
-
-                            lock (self._eventCache) {
-
-                                list = self._eventCache;
-                                self._eventCache = new List<object>();
-                            }
-
-                            self.WriteEvents(list);
-
-                            if (self._sendQuest != null) {
-
-                                self._sendQuest();
-                            }
-
-                            self._writeEvent.WaitOne(1000);
-                        }
-                    } catch (Exception e) {
-
-                        ErrorRecorderHolder.recordError(e);
-                    }
-                });
+                return;
             }
+
+            RUMEvent self = this;
+            this._writeAble = true;
+
+            ThreadPool.Instance.Execute((state) => {
+
+                try {
+
+                    while (self._writeAble) {
+
+                        List<object> list;
+
+                        lock (self._eventCache) {
+
+                            list = self._eventCache;
+                            self._eventCache = new List<object>();
+                        }
+
+                        self.WriteEvents(list);
+
+                        if (self._sendQuest != null) {
+
+                            self._sendQuest();
+                        }
+
+                        self._writeEvent.WaitOne(1000);
+                    }
+                } catch (Exception e) {
+
+                    ErrorRecorderHolder.recordError(e);
+                }
+            });
         }
 
         private void StopWriteThread() {
@@ -318,7 +320,7 @@ namespace com.rum {
             }
         }
 
-        public void RemoveFromCache(List<object> items) {
+        public void RemoveFromCache(ICollection<object> items) {
 
             lock (storage_locker) {
 

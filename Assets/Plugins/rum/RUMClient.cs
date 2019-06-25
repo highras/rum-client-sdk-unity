@@ -191,8 +191,7 @@ namespace com.rum {
 
             this._baseClient.GetEvent().AddListener("error", (evd) => {
 
-                Exception ex = evd.GetException();
-                RUMPlatform.Instance.WriteException("error", "base_client", ex);
+                RUMPlatform.Instance.WriteException("error", "base_client", evd.GetException());
             });
 
             this._baseClient.GetEvent().AddListener("second", (evd) => {
