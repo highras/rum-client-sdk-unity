@@ -21,7 +21,7 @@ public class Main : MonoBehaviour
             "c23e9d90-bada-440d-8316-44790f615ec1",
             null,
             null,
-           true 
+            false 
         );
 
         client.GetEvent().AddListener("error", (evd) => {
