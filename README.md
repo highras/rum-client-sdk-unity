@@ -36,11 +36,6 @@ RUMClient client = new RUMClient(
     true
 );
 
-client.GetEvent().AddListener("error", (evd) => {
-
-    Debug.Log("error: " + evd.GetException().Message);
-});
-
 client.GetEvent().AddListener("close", (evd) => {
 
     Debug.Log("closed!");
@@ -64,10 +59,6 @@ client.Connect("52.83.220.166:13609", false, false);
 #### Events ####
 * `event`:
     * `ready`: 初始化完成 
-
-    * `error`: 异常
-        * `exception`: **(Exception)**
-
     * `close`: 连接关闭
 
 #### API ####

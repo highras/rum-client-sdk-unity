@@ -24,11 +24,6 @@ public class Main : MonoBehaviour
          true 
         );
 
-        client.GetEvent().AddListener("error", (evd) => {
-
-            Debug.Log("error: " + evd.GetException().Message);
-        });
-
         client.GetEvent().AddListener("close", (evd) => {
 
             Debug.Log("closed!");
