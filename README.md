@@ -14,6 +14,11 @@
 
 * 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
 
+#### 关于IPV6 ####
+
+* `SOCKET`链接支持`IPV6`接口
+* 兼容`DNS64/NAT64`网络环境
+
 #### 一个例子 ####
 ```c#
 using System;

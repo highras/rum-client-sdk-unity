@@ -8,6 +8,8 @@ namespace com.rum {
 
     public class RUMFile {
 
+        private static int LOCAL_FILE_MAX = 300; 
+
         private const string FILE_PRE = "rumlog_";
         private const string STORAGE_FILE = "rumlog_storage";
 
@@ -56,7 +58,7 @@ namespace com.rum {
 
         private string GetSecureDataPath() {
 
-            string secureDataPath = Application.streamingAssetsPath;
+            string secureDataPath = Application.temporaryCachePath;
 
             #if !UNITY_EDITOR && UNITY_ANDROID
             using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
@@ -86,7 +88,7 @@ namespace com.rum {
 
             while(index < 20) {
 
-                this._read_index = (this._read_index + 1) % RUMConfig.LOCAL_FILE_COUNT;
+                this._read_index = (this._read_index + 1) % LOCAL_FILE_MAX;
                 path = this._directory_path + "/" + FILE_PRE + this._read_index;
 
                 if (new FileInfo(path).Exists) {

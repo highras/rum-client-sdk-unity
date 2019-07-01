@@ -461,7 +461,7 @@ namespace com.rum {
                             }
                         } catch (Exception ex) {
 
-                            RUMPlatform.Instance.WriteException("error", "shift_events_serialize_item", ex);
+                            RUMPlatform.Instance.WriteException("shift_events_serialize_item", ex);
                         }
 
                         size += bytes.Length;
@@ -499,9 +499,20 @@ namespace com.rum {
                     }
                 } catch (Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("error", "storage_save_serialize_storage", ex);
+                    RUMPlatform.Instance.WriteException("storage_save_serialize_storage", ex);
                     return;
                 }
+            }
+
+            if (storage_bytes.Length <= 0) {
+
+                return;
+            }
+
+            if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
+
+                this.ClearEvents();
+                return;
             }
 
             RUMFile.Result res = RUMFile.Instance.WriteStorage(storage_bytes);
@@ -511,7 +522,7 @@ namespace com.rum {
                 if (this._saveFailCount < 3) {
 
                     this._saveFailCount++;
-                    RUMPlatform.Instance.WriteException("error", "storage_save_write_storage", (Exception)res.content);
+                    RUMPlatform.Instance.WriteException("storage_save_write_storage", (Exception)res.content);
                 } 
             }
 
@@ -537,7 +548,7 @@ namespace com.rum {
                     }
                 } catch(Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("error", "storage_load_deserialize_content", ex);
+                    RUMPlatform.Instance.WriteException("storage_load_deserialize_content", ex);
                 }
             } 
 
@@ -731,7 +742,7 @@ namespace com.rum {
                     }
                 } catch (Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("error", "check_storage_size_serialize_storage", ex);
+                    RUMPlatform.Instance.WriteException("check_storage_size_serialize_storage", ex);
                 }
             }
 
@@ -784,7 +795,7 @@ namespace com.rum {
                     }
                 } catch (Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("error", "check_storage_size_serialize_list", ex);
+                    RUMPlatform.Instance.WriteException("check_storage_size_serialize_list", ex);
                 }
 
                 RUMFile.Result res = RUMFile.Instance.WriteRumLog(index, bytes);
@@ -794,7 +805,7 @@ namespace com.rum {
                     item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
                 } else {
 
-                    RUMPlatform.Instance.WriteException("error", "check_storage_size_write_rum_log", (Exception)res.content);
+                    RUMPlatform.Instance.WriteException("check_storage_size_write_rum_log", (Exception)res.content);
                 }
 
                 if (this._debug) {
@@ -820,7 +831,7 @@ namespace com.rum {
                     }
                 } catch(Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("error", "check_storage_size_deserialize_content", ex);
+                    RUMPlatform.Instance.WriteException("check_storage_size_deserialize_content", ex);
                 }
 
                 if (!this.IsNullOrEmpty(items)) {
@@ -890,7 +901,7 @@ namespace com.rum {
                             }
                         } catch (Exception ex) {
 
-                            RUMPlatform.Instance.WriteException("error", "get_file_events_serialize_item", ex);
+                            RUMPlatform.Instance.WriteException("get_file_events_serialize_item", ex);
                         }
 
                         size += bytes.Length;

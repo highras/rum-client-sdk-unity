@@ -138,6 +138,7 @@
      <Compile Include="Assets\Plugins\GameDevWare.Serialization\TypeSerializerAttribute.cs" />
      <Compile Include="Assets\Plugins\rum\platform\RUMFile.cs" />
      <Compile Include="Assets\Plugins\rum\platform\RUMPlatform.cs" />
+     <Compile Include="Assets\Plugins\rum\platform\Singleton.cs" />
      <Compile Include="Assets\Plugins\rum\RUMClient.cs" />
      <Compile Include="Assets\Plugins\rum\RUMConfig.cs" />
      <Compile Include="Assets\Plugins\rum\RUMEvent.cs" />

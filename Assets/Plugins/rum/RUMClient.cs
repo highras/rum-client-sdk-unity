@@ -191,7 +191,7 @@ namespace com.rum {
 
             this._baseClient.GetEvent().AddListener("error", (evd) => {
 
-                RUMPlatform.Instance.WriteException("error", "base_client", evd.GetException());
+                RUMPlatform.Instance.WriteException("base_client", evd.GetException());
             });
 
             this._baseClient.GetEvent().AddListener("second", (evd) => {
@@ -379,7 +379,7 @@ namespace com.rum {
                 IDictionary<string, object> dict = new Dictionary<string, object>();
                 dict.Add("nw", RUMPlatform.Instance.GetNetwork());
 
-                self.WriteEvent("nw", dict);
+                self.WriteEvent("nwswitch", dict);
             });
 
             RUMPlatform.Instance.GetEvent().AddListener("memory_warning", (evd) => {
@@ -436,10 +436,7 @@ namespace com.rum {
                 dict.Add("ts", this._rumEvent.GetTimestamp());
             }
 
-            if (ev == "error") {
-
-                Debug.Log("[RUM] Exception: " + Json.SerializeToString(dict));
-            } else if (this._debug) {
+            if (this._debug) {
 
                 Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
             }
@@ -583,7 +580,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteException("error", "send_ping_serialize_payload", ex);
+                RUMPlatform.Instance.WriteException("send_ping_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -603,7 +600,7 @@ namespace com.rum {
 
                 if (ex != null) {
 
-                    RUMPlatform.Instance.WriteException("error", "send_ping_send_quest", ex);
+                    RUMPlatform.Instance.WriteException("send_ping_send_quest", ex);
                     return;
                 }
 
@@ -668,7 +665,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteException("error", "load_config_serialize_payload", ex);
+                RUMPlatform.Instance.WriteException("load_config_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -687,7 +684,7 @@ namespace com.rum {
 
                     self._configVersion = 0;
 
-                    RUMPlatform.Instance.WriteException("error", "load_config_send_quest", ex);
+                    RUMPlatform.Instance.WriteException("load_config_send_quest", ex);
                     return;
                 }
 
@@ -731,7 +728,7 @@ namespace com.rum {
 
             this._lastSendTime += RUMConfig.SENT_INTERVAL;
 
-            if (this._sendCount >= 5) {
+            if (this._sendCount >= 3) {
 
                 return;
             }
@@ -777,7 +774,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteException("error", "send_events_serialize_payload", ex);
+                RUMPlatform.Instance.WriteException("send_events_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -802,7 +799,7 @@ namespace com.rum {
                 if (ex != null) {
 
                     self._rumEvent.WriteEvents(items);
-                    RUMPlatform.Instance.WriteException("error", "send_events_send_quest", ex);
+                    RUMPlatform.Instance.WriteException("send_events_send_quest", ex);
                     return;
                 }
             }, RUMConfig.SENT_TIMEOUT);
@@ -860,7 +857,7 @@ namespace com.rum {
                         payload = Json.Deserialize<IDictionary<string, object>>(data.JsonPayload());
                     }catch(Exception ex) {
 
-                        RUMPlatform.Instance.WriteException("error", "check_fpcallback_deserialize_json_payload", ex);
+                        RUMPlatform.Instance.WriteException("check_fpcallback_deserialize_json_payload", ex);
                     }
                 }
 
@@ -874,7 +871,7 @@ namespace com.rum {
                         }
                     } catch(Exception ex) {
 
-                        RUMPlatform.Instance.WriteException("error", "check_fpcallback_deserialize_msgpack_payload", ex);
+                        RUMPlatform.Instance.WriteException("check_fpcallback_deserialize_msgpack_payload", ex);
                     }
                 }
 

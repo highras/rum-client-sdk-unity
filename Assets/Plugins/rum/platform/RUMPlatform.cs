@@ -10,46 +10,14 @@ using UnityEngine.Networking;
 
 namespace com.rum {
 
-    public class RUMPlatform:MonoBehaviour {
-
-        private static RUMPlatform instance = null;
-
-        public static RUMPlatform Instance {
-
-            get {
-
-                if (instance == null) {    
-
-                    instance = GameObject.FindObjectOfType<RUMPlatform>();
-
-                    if (instance == null) {
-
-                        GameObject go = new GameObject("RUMPlatform");
-                        
-                        DontDestroyOnLoad(go);
-                        instance = go.AddComponent<RUMPlatform>();
-                    }
-                }
-
-                return instance;
-            }
-        }
+    public class RUMPlatform:Singleton<RUMPlatform> {
 
         private FPEvent _event = new FPEvent();
 
         private bool _isPause;
         private bool _isFocus;
 
-        void Awake() {    
-
-            if (instance == null) {
-
-                instance = this;
-            } else {
-
-                Destroy(gameObject);
-            } 
-        }
+        void Awake() {}
 
         void OnEnable() {
 
@@ -88,21 +56,34 @@ namespace com.rum {
             this._deviceToken = UnityEngine.iOS.NotificationServices.deviceToken;
             #endif
 
-            Invoke("OnTimer", 5f);
-            Invoke("OnInfo", 20f);
+            if (!this.IsInvoking("OnInfo")) {
+
+                this.Invoke("OnInfo", 20.0f);
+            }
+
+            if (!this.IsInvoking("OnTimer")) {
+
+                this.InvokeRepeating("OnTimer", 10.0f, 10.0f);
+            }
         }
 
         void Start() {}
 
         void OnDisable() {
 
-            // this.SavePrefs();
-
             Application.lowMemory -= OnLowMemory;
             Application.logMessageReceived -= OnLogCallback;
             Application.logMessageReceivedThreaded -= OnLogCallbackThreaded;
 
-            CancelInvoke();
+            if (this.IsInvoking("OnInfo")) {
+
+                this.CancelInvoke("OnInfo");
+            }
+
+            if (this.IsInvoking("OnTimer")) {
+
+                this.CancelInvoke("OnTimer");
+            }
         }
 
         void OnApplicationPause() {
@@ -110,8 +91,6 @@ namespace com.rum {
             if (!this._isPause) {
              
                 this._event.FireEvent(new EventData("app_bg"));
-                
-                // this.SavePrefs();
             } else {
 
                 this._isFocus = true;
@@ -182,8 +161,6 @@ namespace com.rum {
                     this._event.FireEvent(new EventData("network_change"));
                 }
             }
-
-            Invoke("OnTimer", 5f);
         }
 
         private void OnLogCallback(string logString, string stackTrace, LogType type) {
@@ -191,13 +168,11 @@ namespace com.rum {
             if (type == LogType.Assert) {
 
                 this.WriteException("crash", "main_assert", logString, stackTrace);
-                // this.SavePrefs();
             }
 
             if (type == LogType.Exception) {
 
                 this.WriteException("error", "main_exception", logString, stackTrace);
-                // this.SavePrefs();
             }
         }
 
@@ -209,9 +184,9 @@ namespace com.rum {
             }
         }
 
-        public void WriteException(string ev, string type, Exception ex) {
+        public void WriteException(string type, Exception ex) {
 
-            this.WriteException(ev, type, ex.Message, ex.StackTrace);
+            this.WriteException("error", type, ex.Message, ex.StackTrace);
         }
 
         private void WriteException(string ev, string type, string message, string stack) {
@@ -233,6 +208,7 @@ namespace com.rum {
                 }
 
                 this._writeEvent(ev, dict);
+                Debug.LogError(message + ":\n" + stack);
             }
         }
 
@@ -513,7 +489,7 @@ namespace com.rum {
 
             public override void recordError(Exception e) {
             
-                RUMPlatform.Instance.WriteException("error", "rum_threaded_exception", e);
+                RUMPlatform.Instance.WriteException("rum_threaded_exception", e);
             }
         }
 
