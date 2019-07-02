@@ -548,7 +548,7 @@ namespace com.rum {
                     }
                 } catch(Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("storage_load_deserialize_content", ex);
+                    Debug.LogError("storage_load_deserialize_content: " + ex.Message);
                 }
             } 
 
