@@ -24,7 +24,7 @@ namespace com.fpnn {
         private bool _isClosed = true;
         private bool _isConnecting = false;
         private Thread _writeThread = null;
-        private ArrayList _sendQueue = new ArrayList();
+        private List<byte> _sendQueue = new List<byte>();
         private ManualResetEvent _sendEvent = new ManualResetEvent(false);
         private object _lock_obj = new object();
 
@@ -84,6 +84,8 @@ namespace com.fpnn {
             FPSocket self = this;
 
             ThreadPool.Instance.Execute((state) => {
+
+                System.Threading.Thread.CurrentThread.Name = "fpnn_read_thread";
 
                 IAsyncResult result;
 
@@ -173,7 +175,11 @@ namespace com.fpnn {
 
             lock(this._sendQueue) {
 
-                this._sendQueue.Add(buffer);
+                for (int i = 0; i < buffer.Length; i++) {
+
+                    this._sendQueue.Add(buffer[i]);
+                }
+
                 this._sendEvent.Set();
             }
         }
@@ -253,6 +259,7 @@ namespace com.fpnn {
         private void StartWriteThread() {
 
             this._writeThread = new Thread(new ThreadStart(OnWrite));
+            this._writeThread.Name = "fpnn_write_thread";
             this._writeThread.Start();
         }
 
@@ -265,23 +272,15 @@ namespace com.fpnn {
                 return;
             }
 
-            ArrayList tmpQueue = new ArrayList();
+            byte[] buffer = new byte[0];
 
             lock(this._sendQueue) {
 
-                for (int i = 0; i < this._sendQueue.Count; i++) {
-
-                    for (int j = 0; j < ((byte[])this._sendQueue[i]).Length; j++) {
-
-                        tmpQueue.Add(((byte[])this._sendQueue[i])[j]);
-                    }
-                }
+                buffer = this._sendQueue.ToArray();
 
                 this._sendQueue.Clear();
                 this._sendEvent.Reset();
             }
-
-            byte[] buffer = this.GetBytes(tmpQueue);
 
             try {
 
@@ -308,13 +307,6 @@ namespace com.fpnn {
 
                 this.Close(ex);
             }
-        }
-
-        private byte[] GetBytes(ArrayList array) {
-
-            byte[] bytes = new byte[array.Count];
-            bytes = (byte[])array.ToArray(typeof(byte));
-            return bytes;
         }
     }
 }

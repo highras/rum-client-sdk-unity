@@ -71,6 +71,7 @@ namespace com.fpnn {
                 try {
                     
                     callback(new CallbackData(data));
+                } catch (ThreadAbortException tex){
                 } catch (Exception e) {
 
                    ErrorRecorderHolder.recordError(e);
@@ -109,6 +110,7 @@ namespace com.fpnn {
                 try {
 
                     callback(new CallbackData(ex));
+                } catch (ThreadAbortException tex){
                 } catch (Exception e) {
                     
                     ErrorRecorderHolder.recordError(e);

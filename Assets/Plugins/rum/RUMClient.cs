@@ -80,6 +80,8 @@ namespace com.rum {
         private int _writeCount = 0;
         private int _configVersion = 0;
 
+        private EventDelegate _eventDelegate;
+
         public RUMClient(int pid, string token, string uid, string appv, bool debug) {
 
             this._pid = pid;
@@ -89,6 +91,15 @@ namespace com.rum {
             this._debug = debug;
             this._rumEvent = new RUMEvent(this._pid, this._debug, this.OnSendQuest);
 
+            RUMClient self = this;
+
+            this._eventDelegate = (evd) => {
+
+                self.OnSecond(evd.GetTimestamp());
+            };
+
+            ThreadPool.Instance.Event.AddListener("second", this._eventDelegate);
+
             RUMFile.Instance.Init(this._pid);
             RUMPlatform.Instance.InitPrefs(WriteEvent);
 
@@ -97,6 +108,12 @@ namespace com.rum {
         }
 
         public void Destroy() {
+
+            if (this._eventDelegate != null) {
+
+                ThreadPool.Instance.Event.RemoveListener("second", this._eventDelegate);
+                this._eventDelegate = null;
+            }
 
             this._session = 0;
             this._pingEid = 0;
@@ -191,12 +208,7 @@ namespace com.rum {
 
             this._baseClient.GetEvent().AddListener("error", (evd) => {
 
-                RUMPlatform.Instance.WriteException("base_client", evd.GetException());
-            });
-
-            this._baseClient.GetEvent().AddListener("second", (evd) => {
-
-                self.OnSecond(evd.GetTimestamp());
+                RUMPlatform.Instance.WriteDebug("base_client", evd.GetException());
             });
 
             this._baseClient.Connect();
@@ -474,6 +486,17 @@ namespace com.rum {
 
         private void OnSecond(long timestamp) {
 
+            int AvailableWorkerThreads, aiot;
+            System.Threading.ThreadPool.GetAvailableThreads(out AvailableWorkerThreads, out aiot);
+
+            if (this._debug) {
+
+                Debug.Log("[ThreadPool] available worker threads: " + AvailableWorkerThreads);
+            } else if (AvailableWorkerThreads <= 1) {
+
+                Debug.Log("[ThreadPool] available worker threads: " + AvailableWorkerThreads);
+            }
+
             this._rumEvent.OnSecond(timestamp);
             this.TryConnect(timestamp);
         }
@@ -496,17 +519,16 @@ namespace com.rum {
                 return;
             }
 
-            this._lastConnectTime += RUMConfig.CONNCT_INTERVAL;
-
             if (this._debug) {
 
                 Debug.Log("[RUM] try connect...");
             }
 
+            this._lastConnectTime = 0;
+
             if (this._baseClient != null) {
 
                 this._baseClient.Connect();
-                this._lastConnectTime = 0;
             }
         }
 
@@ -580,7 +602,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteException("send_ping_serialize_payload", ex);
+                RUMPlatform.Instance.WriteDebug("send_ping_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -600,7 +622,7 @@ namespace com.rum {
 
                 if (ex != null) {
 
-                    RUMPlatform.Instance.WriteException("send_ping_send_quest", ex);
+                    RUMPlatform.Instance.WriteDebug("send_ping_send_quest", ex);
                     return;
                 }
 
@@ -665,7 +687,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteException("load_config_serialize_payload", ex);
+                RUMPlatform.Instance.WriteDebug("load_config_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -684,7 +706,7 @@ namespace com.rum {
 
                     self._configVersion = 0;
 
-                    RUMPlatform.Instance.WriteException("load_config_send_quest", ex);
+                    RUMPlatform.Instance.WriteDebug("load_config_send_quest", ex);
                     return;
                 }
 
@@ -774,7 +796,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteException("send_events_serialize_payload", ex);
+                RUMPlatform.Instance.WriteDebug("send_events_serialize_payload", ex);
             }
 
             FPData data = new FPData();
@@ -799,7 +821,7 @@ namespace com.rum {
                 if (ex != null) {
 
                     self._rumEvent.WriteEvents(items);
-                    RUMPlatform.Instance.WriteException("send_events_send_quest", ex);
+                    RUMPlatform.Instance.WriteDebug("send_events_send_quest", ex);
                     return;
                 }
             }, RUMConfig.SENT_TIMEOUT);
@@ -857,7 +879,7 @@ namespace com.rum {
                         payload = Json.Deserialize<IDictionary<string, object>>(data.JsonPayload());
                     }catch(Exception ex) {
 
-                        RUMPlatform.Instance.WriteException("check_fpcallback_deserialize_json_payload", ex);
+                        RUMPlatform.Instance.WriteDebug("check_fpcallback_deserialize_json_payload", ex);
                     }
                 }
 
@@ -871,7 +893,7 @@ namespace com.rum {
                         }
                     } catch(Exception ex) {
 
-                        RUMPlatform.Instance.WriteException("check_fpcallback_deserialize_msgpack_payload", ex);
+                        RUMPlatform.Instance.WriteDebug("check_fpcallback_deserialize_msgpack_payload", ex);
                     }
                 }
 

@@ -126,6 +126,8 @@ namespace com.rum {
 
             ThreadPool.Instance.Execute((state) => {
 
+                System.Threading.Thread.CurrentThread.Name = "rum_write_thread";
+
                 try {
 
                     while (self._writeAble) {
@@ -147,6 +149,7 @@ namespace com.rum {
 
                         self._writeEvent.WaitOne(1000);
                     }
+                } catch (System.Threading.ThreadAbortException tex) {
                 } catch (Exception e) {
 
                     ErrorRecorderHolder.recordError(e);
@@ -156,7 +159,6 @@ namespace com.rum {
 
         private void StopWriteThread() {
 
-            this._writeEvent.Reset();
             this._writeAble = false;
         }
 
@@ -461,7 +463,7 @@ namespace com.rum {
                             }
                         } catch (Exception ex) {
 
-                            RUMPlatform.Instance.WriteException("shift_events_serialize_item", ex);
+                            RUMPlatform.Instance.WriteDebug("shift_events_serialize_item", ex);
                         }
 
                         size += bytes.Length;
@@ -499,7 +501,7 @@ namespace com.rum {
                     }
                 } catch (Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("storage_save_serialize_storage", ex);
+                    RUMPlatform.Instance.WriteDebug("storage_save_serialize_storage", ex);
                     return;
                 }
             }
@@ -522,7 +524,7 @@ namespace com.rum {
                 if (this._saveFailCount < 3) {
 
                     this._saveFailCount++;
-                    RUMPlatform.Instance.WriteException("storage_save_write_storage", (Exception)res.content);
+                    RUMPlatform.Instance.WriteDebug("storage_save_write_storage", (Exception)res.content);
                 } 
             }
 
@@ -705,6 +707,8 @@ namespace com.rum {
 
             ThreadPool.Instance.Execute((state) => {
 
+                System.Threading.Thread.CurrentThread.Name = "rum_check_thread";
+
                 try {
 
                     while (self._checkAble) {
@@ -712,6 +716,7 @@ namespace com.rum {
                         self.CheckStorageSize();
                         self._checkEvent.WaitOne(RUMConfig.LOCAL_STORAGE_DELAY);
                     }
+                } catch (System.Threading.ThreadAbortException tex) {
                 } catch (Exception e) {
 
                     ErrorRecorderHolder.recordError(e);
@@ -721,7 +726,6 @@ namespace com.rum {
 
         private void StopCheckThread() {
 
-            this._checkEvent.Reset();
             this._checkAble = false;
         }
 
@@ -742,7 +746,7 @@ namespace com.rum {
                     }
                 } catch (Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("check_storage_size_serialize_storage", ex);
+                    RUMPlatform.Instance.WriteDebug("check_storage_size_serialize_storage", ex);
                 }
             }
 
@@ -795,7 +799,7 @@ namespace com.rum {
                     }
                 } catch (Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("check_storage_size_serialize_list", ex);
+                    RUMPlatform.Instance.WriteDebug("check_storage_size_serialize_list", ex);
                 }
 
                 RUMFile.Result res = RUMFile.Instance.WriteRumLog(index, bytes);
@@ -805,7 +809,7 @@ namespace com.rum {
                     item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
                 } else {
 
-                    RUMPlatform.Instance.WriteException("check_storage_size_write_rum_log", (Exception)res.content);
+                    RUMPlatform.Instance.WriteDebug("check_storage_size_write_rum_log", (Exception)res.content);
                 }
 
                 if (this._debug) {
@@ -831,7 +835,7 @@ namespace com.rum {
                     }
                 } catch(Exception ex) {
 
-                    RUMPlatform.Instance.WriteException("check_storage_size_deserialize_content", ex);
+                    RUMPlatform.Instance.WriteDebug("check_storage_size_deserialize_content", ex);
                 }
 
                 if (!this.IsNullOrEmpty(items)) {
@@ -901,7 +905,7 @@ namespace com.rum {
                             }
                         } catch (Exception ex) {
 
-                            RUMPlatform.Instance.WriteException("get_file_events_serialize_item", ex);
+                            RUMPlatform.Instance.WriteDebug("get_file_events_serialize_item", ex);
                         }
 
                         size += bytes.Length;

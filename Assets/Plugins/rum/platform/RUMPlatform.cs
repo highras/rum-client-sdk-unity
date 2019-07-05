@@ -208,8 +208,17 @@ namespace com.rum {
                 }
 
                 this._writeEvent(ev, dict);
-                Debug.LogError(message + ":\n" + stack);
+
+                if (ev == "error") {
+
+                    Debug.LogError(message + ":\n" + stack);
+                }
             }
+        }
+
+        public void WriteDebug(string type, Exception ex) {
+
+            this.WriteException("debug", type, ex.Message, ex.StackTrace);
         }
 
         private Action<string, IDictionary<string, object>> _writeEvent;
@@ -489,7 +498,7 @@ namespace com.rum {
 
             public override void recordError(Exception e) {
             
-                RUMPlatform.Instance.WriteException("rum_threaded_exception", e);
+                RUMPlatform.Instance.WriteDebug("rum_threaded_exception", e);
             }
         }
 
