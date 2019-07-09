@@ -494,7 +494,7 @@ namespace com.rum {
                 Debug.Log("[ThreadPool] available worker threads: " + AvailableWorkerThreads);
             } else if (AvailableWorkerThreads <= 1) {
 
-                Debug.Log("[ThreadPool] available worker threads: " + AvailableWorkerThreads);
+                RUMPlatform.Instance.WriteDebug("low_available_worker_threads", new Exception("available count: " + AvailableWorkerThreads));
             }
 
             this._rumEvent.OnSecond(timestamp);

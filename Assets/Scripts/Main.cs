@@ -17,13 +17,13 @@ public class Main : MonoBehaviour
     void Start() {
 
         client = new RUMClient(
-            // 41000013,
-            // "c23e9d90-bada-440d-8316-44790f615ec1",
-            41000006,
-            "7e592712-01ea-4250-bf39-e51e00c004e9",
+            41000013,
+            "c23e9d90-bada-440d-8316-44790f615ec1",
+            // 41000006,
+            // "7e592712-01ea-4250-bf39-e51e00c004e9",
             null,
             null,
-            false 
+           true 
         );
 
         client.GetEvent().AddListener("close", (evd) => {
@@ -37,9 +37,18 @@ public class Main : MonoBehaviour
             client.SetUid("uid:11111111111");
         });
 
-        Invoke("SendCustomEvent", 5f);
-        // client.Connect("52.83.220.166:13609", false, false);
-        client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
+        if (!this.IsInvoking("SendCustomEvent")) {
+
+            Invoke("SendCustomEvent", 5f);
+        }
+
+        if (!this.IsInvoking("SendQPS")) {
+
+            InvokeRepeating("SendQPS", 3.0f, (1000f / 100f) / 1000f);
+        }
+
+        client.Connect("52.83.220.166:13609", false, false);
+        // client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
     }
 
     void SendCustomEvent() {
@@ -48,9 +57,6 @@ public class Main : MonoBehaviour
         attrs.Add("custom_debug", "test text");
 
         client.CustomEvent("MY_EVENT", attrs);
-
-        // Invoke("SendHttpRequest", 1f);
-        Invoke("SendQPS", 3f);
     }
 
     void SendHttpRequest() {
@@ -60,7 +66,6 @@ public class Main : MonoBehaviour
 
         // UnityWebRequest
         // StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
-        // Invoke("SendHttpRequest", 1f);
     }
 
     void SendQPS() {
@@ -69,7 +74,6 @@ public class Main : MonoBehaviour
         attrs.Add("custom_debug", "test text");
 
         client.CustomEvent("info", attrs);
-        Invoke("SendQPS", (1000f / 100f) / 1000f);
     }
 
     // Update is called once per frame
@@ -78,6 +82,16 @@ public class Main : MonoBehaviour
     }
 
     void OnApplicationQuit() {
+
+        if (this.IsInvoking("SendCustomEvent")) {
+
+            CancelInvoke("SendCustomEvent");
+        }
+
+        if (this.IsInvoking("SendQPS")) {
+
+            CancelInvoke("SendQPS");
+        }
 
         if (client != null) {
 
