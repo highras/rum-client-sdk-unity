@@ -17,13 +17,13 @@ public class Main : MonoBehaviour
     void Start() {
 
         client = new RUMClient(
-            41000013,
-            "c23e9d90-bada-440d-8316-44790f615ec1",
-            // 41000006,
-            // "7e592712-01ea-4250-bf39-e51e00c004e9",
+            // 41000013,
+            // "c23e9d90-bada-440d-8316-44790f615ec1",
+            41000006,
+            "7e592712-01ea-4250-bf39-e51e00c004e9",
             null,
             null,
-           true 
+            false 
         );
 
         client.GetEvent().AddListener("close", (evd) => {
@@ -44,11 +44,11 @@ public class Main : MonoBehaviour
 
         if (!this.IsInvoking("SendQPS")) {
 
-            InvokeRepeating("SendQPS", 3.0f, (1000f / 100f) / 1000f);
+            InvokeRepeating("SendQPS", 3.0f, (1000f / 50f) / 1000f);
         }
 
-        client.Connect("52.83.220.166:13609", false, false);
-        // client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
+        // client.Connect("52.83.220.166:13609", false, false);
+        client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
     }
 
     void SendCustomEvent() {
