@@ -159,6 +159,11 @@ namespace com.rum {
 
         private void StopWriteThread() {
 
+            lock(this._eventCache) {
+
+                this._writeEvent.Set();
+            }
+
             this._writeAble = false;
         }
 
@@ -726,6 +731,11 @@ namespace com.rum {
 
         private void StopCheckThread() {
 
+            lock(storage_locker) {
+
+                this._checkEvent.Set();            
+            }
+            
             this._checkAble = false;
         }
 

@@ -17,11 +17,13 @@ public class Main : MonoBehaviour
     void Start() {
 
         client = new RUMClient(
-            41000013,
-            "c23e9d90-bada-440d-8316-44790f615ec1",
+            // 41000013,
+            // "c23e9d90-bada-440d-8316-44790f615ec1",
+            41000006,
+            "7e592712-01ea-4250-bf39-e51e00c004e9",
             null,
             null,
-           false 
+            false 
         );
 
         client.GetEvent().AddListener("close", (evd) => {
@@ -36,7 +38,8 @@ public class Main : MonoBehaviour
         });
 
         Invoke("SendCustomEvent", 5f);
-        client.Connect("52.83.220.166:13609", false, false);
+        // client.Connect("52.83.220.166:13609", false, false);
+        client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
     }
 
     void SendCustomEvent() {
@@ -66,7 +69,7 @@ public class Main : MonoBehaviour
         attrs.Add("custom_debug", "test text");
 
         client.CustomEvent("info", attrs);
-        Invoke("SendQPS", (1000f / 50f) / 1000f);
+        Invoke("SendQPS", (1000f / 100f) / 1000f);
     }
 
     // Update is called once per frame
