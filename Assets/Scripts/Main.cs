@@ -28,12 +28,12 @@ public class Main : MonoBehaviour
 
         client.GetEvent().AddListener("close", (evd) => {
 
-            Debug.Log("closed!");
+            Debug.Log("Main test closed!");
         });
 
         client.GetEvent().AddListener("ready", (evd) => {
 
-            Debug.Log("ready!");
+            Debug.Log("Main test ready!");
             client.SetUid("uid:11111111111");
         });
 
