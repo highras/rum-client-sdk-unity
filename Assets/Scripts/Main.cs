@@ -37,6 +37,11 @@ public class Main : MonoBehaviour
             client.SetUid("uid:11111111111");
         });
 
+        client.GetEvent().AddListener("config", (evd) => {
+
+            Debug.Log("Main test config!");
+        });
+
         if (!this.IsInvoking("SendCustomEvent")) {
 
             Invoke("SendCustomEvent", 5f);

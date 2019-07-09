@@ -720,6 +720,7 @@ namespace com.rum {
                 }
 
                 self._rumEvent.UpdateConfig((IDictionary<string, object>)dict["events"]);
+                self.GetEvent().FireEvent(new EventData("config"));
             }, RUMConfig.SENT_TIMEOUT);
         }
 

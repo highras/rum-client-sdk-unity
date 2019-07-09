@@ -58,7 +58,8 @@ client.Connect("52.83.220.166:13609", false, false);
 
 #### Events ####
 * `event`:
-    * `ready`: 初始化完成 
+    * `ready`: 连接可用
+    * `config`: 获取事件配置 
     * `close`: 连接关闭
 
 #### API ####
