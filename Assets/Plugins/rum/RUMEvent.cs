@@ -126,8 +126,6 @@ namespace com.rum {
 
             ThreadPool.Instance.Execute((state) => {
 
-                System.Threading.Thread.CurrentThread.Name = "rum_write_thread";
-
                 try {
 
                     while (self._writeAble) {
@@ -711,8 +709,6 @@ namespace com.rum {
             RUMEvent self = this;
 
             ThreadPool.Instance.Execute((state) => {
-
-                System.Threading.Thread.CurrentThread.Name = "rum_check_thread";
 
                 try {
 
