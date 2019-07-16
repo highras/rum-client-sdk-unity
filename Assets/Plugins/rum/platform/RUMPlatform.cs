@@ -189,6 +189,11 @@ namespace com.rum {
             this.WriteException("error", type, ex.Message, ex.StackTrace);
         }
 
+        public void WriteDebug(string type, Exception ex) {
+
+            this.WriteException("debug", type, ex.Message, ex.StackTrace);
+        }
+
         private void WriteException(string ev, string type, string message, string stack) {
 
             if (this._writeEvent != null) {
@@ -214,11 +219,6 @@ namespace com.rum {
                     Debug.LogError(message + ":\n" + stack);
                 }
             }
-        }
-
-        public void WriteDebug(string type, Exception ex) {
-
-            this.WriteException("debug", type, ex.Message, ex.StackTrace);
         }
 
         private Action<string, IDictionary<string, object>> _writeEvent;
