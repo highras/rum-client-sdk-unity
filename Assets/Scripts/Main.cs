@@ -3,105 +3,64 @@ using System.IO;
 using System.Net;
 using System.Collections;
 using System.Collections.Generic;
+
 using UnityEngine;
 using UnityEngine.Networking;
 
 using GameDevWare.Serialization;
 using com.rum;
+using com.test;
 
-public class Main : MonoBehaviour
-{
-    private RUMClient client;
+public class Main : MonoBehaviour {
 
-    // Start is called before the first frame update
-    void Start() {
+    public interface ITestCase {
 
-        client = new RUMClient(
-            // 41000013,
-            // "c23e9d90-bada-440d-8316-44790f615ec1",
-            41000006,
-            "7e592712-01ea-4250-bf39-e51e00c004e9",
-            null,
-            null,
-            // true
-            false 
-        );
-
-        client.GetEvent().AddListener("close", (evd) => {
-
-            Debug.Log("Main test closed!");
-        });
-
-        client.GetEvent().AddListener("ready", (evd) => {
-
-            Debug.Log("Main test ready!");
-            client.SetUid("uid:11111111111");
-        });
-
-        client.GetEvent().AddListener("config", (evd) => {
-
-            Debug.Log("Main test config!");
-        });
-
-        if (!this.IsInvoking("SendCustomEvent")) {
-
-            Invoke("SendCustomEvent", 5f);
-        }
-
-        if (!this.IsInvoking("SendQPS")) {
-
-            InvokeRepeating("SendQPS", 3.0f, (1000f / 50f) / 1000f);
-        }
-
-        // client.Connect("52.83.220.166:13609", false, false);
-        client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
+        void StartTest();
+        void StopTest();
     }
 
-    void SendCustomEvent() {
+    private ITestCase _testCase;
 
-        IDictionary<string, object> attrs = new Dictionary<string, object>();
-        attrs.Add("custom_debug", "test text");
+    void Start() {
 
-        client.CustomEvent("MY_EVENT", attrs);
+        //TestCase
+        this._testCase = new TestCase();
+
+        //SingleClientSend
+        // this._testCase = new SingleClientSend();
+
+        if (this._testCase != null) {
+
+            this._testCase.StartTest();
+        }
+
+        if (!this.IsInvoking("SendHttpRequest")) {
+
+            InvokeRepeating("SendHttpRequest", 5.0f, 10.0f);
+        }
     }
 
     void SendHttpRequest() {
 
         // HttpWebRequest
-        // AsyncGetWithWebRequest("http://www.baidu.com");
+        AsyncGetWithWebRequest("http://www.baidu.com");
 
         // UnityWebRequest
-        // StartCoroutine(UnityWebRequestGet("http://www.baidu.com"));
+        StartCoroutine(UnityWebRequestGet("http://www.google.com"));
     }
 
-    void SendQPS() {
-
-        IDictionary<string, object> attrs = new Dictionary<string, object>();
-        attrs.Add("custom_debug", "test text");
-
-        client.CustomEvent("info", attrs);
-    }
-
-    // Update is called once per frame
-    void Update() {
-        
-    }
+    void Update() {}
 
     void OnApplicationQuit() {
 
-        if (this.IsInvoking("SendCustomEvent")) {
+        if (this.IsInvoking("SendHttpRequest")) {
 
-            CancelInvoke("SendCustomEvent");
+            CancelInvoke("SendHttpRequest");
         }
 
-        if (this.IsInvoking("SendQPS")) {
+        if (this._testCase != null) {
 
-            CancelInvoke("SendQPS");
-        }
-
-        if (client != null) {
-
-            client.Destroy();
+            this._testCase.StopTest();
         }
     }
 
@@ -130,7 +89,7 @@ public class Main : MonoBehaviour
         using (var streamReader = new StreamReader(response.GetResponseStream())) {
 
             var resultString = streamReader.ReadToEnd();
-            Debug.Log(resultString);
+            // Debug.Log(resultString);
         }
     }
 
@@ -147,11 +106,11 @@ public class Main : MonoBehaviour
 
             if(req.isNetworkError || req.isHttpError) {
 
-                Debug.Log(req.error);
+                // Debug.Log(req.error);
             } else {
 
                 // Show results as text
-                Debug.Log(req.downloadHandler.text);
+                // Debug.Log(req.downloadHandler.text);
      
                 // Or retrieve results as binary data
                 byte[] results = req.downloadHandler.data;

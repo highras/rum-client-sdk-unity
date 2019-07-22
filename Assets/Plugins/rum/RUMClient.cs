@@ -314,6 +314,11 @@ namespace com.rum {
 
             string url = null;
 
+            if (dict == null) {
+
+                return;
+            }
+
             if (dict.ContainsKey("url")) {
 
                 url = Convert.ToString(dict["url"]);
@@ -408,10 +413,7 @@ namespace com.rum {
 
             RUMPlatform.Instance.GetEvent().AddListener("http_hook", (evd) => {
 
-                if (evd.GetPayload() != null) {
-
-                    this.HttpEvent((IDictionary<string, object>)evd.GetPayload());
-                }
+                self.HttpEvent((IDictionary<string, object>)evd.GetPayload());
             });
         }
 
