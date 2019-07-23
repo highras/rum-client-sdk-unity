@@ -74,9 +74,6 @@ namespace com.rum {
                     this._storage.Add(this._fileIndexKey, new Dictionary<string, object>());
                 }
             }
-
-            this.StartWriteThread();
-            this.StartCheckThread();
         }
 
         public void UpdateConfig(IDictionary<string, object> value) {
@@ -109,6 +106,16 @@ namespace com.rum {
                     this._eventCache.Clear();
                 }
             }
+
+            if (!this._writeAble) {
+                
+                this.StartWriteThread();
+            }
+
+            if (!this._checkAble) {
+
+                this.StartCheckThread();
+            }
         }
 
         private bool _writeAble;
@@ -116,13 +123,18 @@ namespace com.rum {
 
         private void StartWriteThread() {
 
-            if (this._writeAble) {
+            lock(this._eventCache) {
 
-                return;
+                if (this._writeAble) {
+
+                    return;
+                }
+
+                this._writeAble = true;
+                this._writeEvent.Reset();
             }
 
             RUMEvent self = this;
-            this._writeAble = true;
 
             ThreadPool.Instance.Execute((state) => {
 
@@ -150,6 +162,9 @@ namespace com.rum {
                     } catch (Exception e) {
 
                         ErrorRecorderHolder.recordError(e);
+                    } finally {
+
+                        self.StopWriteThread();
                     }
                 }
             });
@@ -699,12 +714,16 @@ namespace com.rum {
 
         private void StartCheckThread() {
 
-            if (this._checkAble) {
+            lock(storage_locker) {
 
-                return;
+                if (this._checkAble) {
+
+                    return;
+                }
+
+                this._checkAble = true;
+                this._checkEvent.Reset();            
             }
-
-            this._checkAble = true;
 
             RUMEvent self = this;
 
@@ -720,6 +739,9 @@ namespace com.rum {
                     } catch (Exception e) {
 
                         ErrorRecorderHolder.recordError(e);
+                    } finally {
+
+                        self.StopCheckThread();
                     }
                 }
             });

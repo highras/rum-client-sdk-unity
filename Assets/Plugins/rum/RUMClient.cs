@@ -84,7 +84,7 @@ namespace com.rum {
 
         public RUMClient(int pid, string token, string uid, string appv, bool debug) {
 
-            Debug.Log("Hello RUM!   rum@" + RUMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
+            Debug.Log("Hello RUM! rum@" + RUMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
 
             this._pid = pid;
             this._token = token;
