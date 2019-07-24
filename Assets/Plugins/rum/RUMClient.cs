@@ -252,9 +252,14 @@ namespace com.rum {
 
         public void CustomEvent(string ev, IDictionary<string, object> attrs) {
 
+            if (attrs == null) {
+
+                return;
+            }
+
             IDictionary<string, object> dict = new Dictionary<string, object>();
 
-            dict.Add("attrs", attrs);
+            dict.Add("attrs", new Dictionary<string, object>(attrs));
             this.WriteEvent(ev, dict);
         }
 
@@ -273,7 +278,11 @@ namespace com.rum {
             dict.Add("reqsize", reqsize);
             dict.Add("respsize", respsize);
             dict.Add("latency", latency);
-            dict.Add("attrs", attrs);
+
+            if (attrs != null) {
+
+                dict.Add("attrs", new Dictionary<string, object>(attrs));
+            }
 
             this.WriteEvent("http", dict);
 
@@ -287,7 +296,11 @@ namespace com.rum {
                 err_dict.Add("reqsize", reqsize);
                 err_dict.Add("respsize", respsize);
                 err_dict.Add("latency", latency);
-                err_dict.Add("attrs", attrs);
+
+                if (attrs != null) {
+
+                    err_dict.Add("attrs", new Dictionary<string, object>(attrs));
+                }
 
                 this.WriteEvent("httperr", err_dict);
                 return;
@@ -303,7 +316,11 @@ namespace com.rum {
                 lat_dict.Add("reqsize", reqsize);
                 lat_dict.Add("respsize", respsize);
                 lat_dict.Add("latency", latency);
-                lat_dict.Add("attrs", attrs);
+
+                if (attrs != null) {
+
+                    lat_dict.Add("attrs", new Dictionary<string, object>(attrs));
+                }
 
                 this.WriteEvent("httplat", lat_dict);
                 return;
