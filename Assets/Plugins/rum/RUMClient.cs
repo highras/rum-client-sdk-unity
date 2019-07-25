@@ -72,7 +72,6 @@ namespace com.rum {
         private long _pingEid = 0;
         private long _session = 0;
         private long _lastPingTime = 0;
-        private long _lastSendTime = 0;
         private long _lastConnectTime = 0;
 
         private int _sendCount = 0;
@@ -127,7 +126,6 @@ namespace com.rum {
             this._appv = null;
 
             this._lastPingTime = 0;
-            this._lastSendTime = 0;
             this._lastConnectTime = 0;
 
             this._sendCount = 0;
@@ -189,7 +187,6 @@ namespace com.rum {
                 self.GetEvent().FireEvent(new EventData("ready"));
 
                 self.StartPing();
-                self.StartSend();
             });
 
             this._baseClient.GetEvent().AddListener("close", (evd) => {
@@ -200,11 +197,11 @@ namespace com.rum {
                 }
 
                 self.StopPing();
-                self.StopSend();
 
                 self._sendCount = 0;
                 self._configVersion = 0;
                 self._lastConnectTime = ThreadPool.Instance.GetMilliTimestamp();
+
                 self.GetEvent().FireEvent(new EventData("close"));
             });
 
@@ -580,7 +577,7 @@ namespace com.rum {
                 return;
             }
 
-            this._lastPingTime += RUMConfig.PING_INTERVAL;
+            this._lastPingTime = ThreadPool.Instance.GetMilliTimestamp();
 
             if (this._debug) {
 
@@ -743,34 +740,12 @@ namespace com.rum {
             }, RUMConfig.SENT_TIMEOUT);
         }
 
-        private void StartSend() {
-
-            if (this._lastSendTime != 0 ) {
-
-                return;
-            }
-
-            this._lastSendTime = ThreadPool.Instance.GetMilliTimestamp();
-        }
-
-        private void StopSend() {
-
-            this._lastSendTime = 0;
-        }
-
         private void SendEvent() {
 
-            if (this._lastSendTime == 0) {
+            if (this._lastPingTime == 0) {
 
                 return;
             }
-
-            if (ThreadPool.Instance.GetMilliTimestamp() - this._lastSendTime < RUMConfig.SENT_INTERVAL) {
-
-                return;
-            }
-
-            this._lastSendTime += RUMConfig.SENT_INTERVAL;
 
             if (this._sendCount >= 3) {
 

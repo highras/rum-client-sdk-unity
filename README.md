@@ -6,7 +6,7 @@
 
 #### 关于线程 ####
 
-* 一个线程池, 接口`ThreadPool.IThreadPool`
+* 线程池接口`ThreadPool.IThreadPool`
     * 默认实现`System.Threading.ThreadPool.QueueUserWorkItem`
     * 如需自己管理线程，实现该接口并注册线程池`ThreadPool.Instance.SetPool(IThreadPool value)`
 

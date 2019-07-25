@@ -26,7 +26,6 @@ namespace com.rum {
 
         private long _timestamp; 
         private long _delayCount;
-        private long _lastSecondTime;
 
         private int _storageSize;
         private int _sizeLimit;
@@ -35,7 +34,7 @@ namespace com.rum {
         private string _rumEventKey = "rum_event_";
         private string _fileIndexKey = "rum_index_";
 
-        private System.Object locker = new System.Object();
+        private System.Object second_locker = new System.Object();
         private System.Object storage_locker = new System.Object();
 
         private IDictionary<string, object> _storage = new Dictionary<string, object>();
@@ -157,7 +156,7 @@ namespace com.rum {
                             self._sendQuest();
                         }
 
-                        self._writeEvent.WaitOne(1000);
+                        self._writeEvent.WaitOne(RUMConfig.SENT_INTERVAL);
                     } catch (System.Threading.ThreadAbortException tex) {
                     } catch (Exception e) {
 
@@ -249,17 +248,16 @@ namespace com.rum {
 
         public void SetTimestamp(long value) {
 
-            this._lastSecondTime = 0;
+            lock (second_locker) {
 
-            if (value < this._timestamp) {
+                if (value < this._timestamp) {
 
-                this._delayCount = this._timestamp - value;
-            } else {
+                    this._delayCount = this._timestamp - value;
+                } else {
 
-                this._timestamp = value;
+                    this._timestamp = value;
+                }
             }
-
-            this.StartSecond();
         }
 
         public bool IsFirst() {
@@ -283,8 +281,6 @@ namespace com.rum {
             this.StopWriteThread();
             this.StopCheckThread();
 
-            this._lastSecondTime = 0;
-
             this._rumId = null;
 
             this._isFirst = false;
@@ -292,6 +288,7 @@ namespace com.rum {
             this._config = null;
             this._hasConf = false;
 
+            this._timestamp = 0;
             this._delayCount = 0;
             this._sendQuest = null;
         }
@@ -427,11 +424,6 @@ namespace com.rum {
 
                         IDictionary<string, object> item = (IDictionary<string, object>)event_list[0];
                         event_list.RemoveAt(0);
-
-                        if (!item.ContainsKey("ts")) {
-
-                            item.Add("ts", this._timestamp);
-                        }
 
                         if (!item.ContainsKey("rid")) {
 
@@ -950,31 +942,21 @@ namespace com.rum {
             return items;
         }
 
-        private void StartSecond() {
-
-            if (this._lastSecondTime != 0 ) {
-
-                return;
-            }
-
-            this._lastSecondTime = ThreadPool.Instance.GetMilliTimestamp();
-        }
-
         public void OnSecond(long timestamp) {
 
-            lock(locker) {
+            lock(second_locker) {
 
-                if (this._lastSecondTime > 0 && timestamp - this._lastSecondTime >= 1000) {
+                if (this._timestamp <= 0) {
 
-                    this._lastSecondTime += 1000;
+                    return;
+                }
 
-                    if (this._delayCount > 0) {
+                if (this._delayCount > 0) {
 
-                        this._delayCount--;
-                    } else {
+                    this._delayCount--;
+                } else {
 
-                        this._timestamp++;
-                    }
+                    this._timestamp++;
                 }
             }
         }
