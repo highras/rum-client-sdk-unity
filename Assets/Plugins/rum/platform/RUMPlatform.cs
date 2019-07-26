@@ -499,10 +499,10 @@ namespace com.rum {
             public override void recordError(Exception e) {
             
                 // Debug
-                Debug.LogError(e);
+                // Debug.LogError(e);
 
                 // Release
-                // RUMPlatform.Instance.WriteDebug("rum_threaded_exception", e);
+                RUMPlatform.Instance.WriteDebug("rum_threaded_exception", e);
             }
         }
 
