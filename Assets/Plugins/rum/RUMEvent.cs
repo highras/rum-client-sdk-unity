@@ -137,9 +137,9 @@ namespace com.rum {
 
             ThreadPool.Instance.Execute((state) => {
 
-                while (self._writeAble) {
+                try {
 
-                    try {
+                    while (self._writeAble) {
 
                         List<object> list;
 
@@ -157,14 +157,14 @@ namespace com.rum {
                         }
 
                         self._writeEvent.WaitOne(RUMConfig.SENT_INTERVAL);
-                    } catch (System.Threading.ThreadAbortException tex) {
-                    } catch (Exception e) {
-
-                        ErrorRecorderHolder.recordError(e);
-                    } finally {
-
-                        self.StopWriteThread();
                     }
+                } catch (System.Threading.ThreadAbortException tex) {
+                } catch (Exception e) {
+
+                    ErrorRecorderHolder.recordError(e);
+                } finally {
+
+                    self.StopWriteThread();
                 }
             });
         }
@@ -721,20 +721,20 @@ namespace com.rum {
 
             ThreadPool.Instance.Execute((state) => {
 
-                while (self._checkAble) {
+                try {
 
-                    try {
+                    while (self._checkAble) {
 
                         self.CheckStorageSize();
                         self._checkEvent.WaitOne(RUMConfig.LOCAL_STORAGE_DELAY);
-                    } catch (System.Threading.ThreadAbortException tex) {
-                    } catch (Exception e) {
-
-                        ErrorRecorderHolder.recordError(e);
-                    } finally {
-
-                        self.StopCheckThread();
                     }
+                } catch (System.Threading.ThreadAbortException tex) {
+                } catch (Exception e) {
+
+                    ErrorRecorderHolder.recordError(e);
+                } finally {
+
+                    self.StopCheckThread();
                 }
             });
         }
