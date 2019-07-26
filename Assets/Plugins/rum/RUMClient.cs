@@ -90,7 +90,7 @@ namespace com.rum {
             this._uid = uid;
             this._appv = appv;
             this._debug = debug;
-            this._rumEvent = new RUMEvent(this._pid, this._debug, this.OnSendQuest);
+            this._rumEvent = new RUMEvent(this._pid, this._debug, this.OnSendQuest, this.OpenEvent);
 
             RUMClient self = this;
 
@@ -104,7 +104,6 @@ namespace com.rum {
             RUMFile.Instance.Init(this._pid);
             RUMPlatform.Instance.InitPrefs(WriteEvent);
 
-            this._rumEvent.InitStorage();
             this.AddPlatformListener();
         }
 
@@ -169,8 +168,6 @@ namespace com.rum {
 
                 Debug.Log("[RUM] init: " + endpoint + " version: " + RUMConfig.VERSION);
             }
-
-            this.OpenEvent();
 
             RUMClient self = this;
             ThreadPool.Instance.StartTimerThread();
@@ -448,7 +445,10 @@ namespace com.rum {
 
             if (!dict.ContainsKey("sid")) {
 
-                dict.Add("sid", this._session);
+                if (this._session > 0) {
+
+                    dict.Add("sid", this._session);
+                }
             }
 
             if (!dict.ContainsKey("uid")) {
@@ -458,7 +458,10 @@ namespace com.rum {
 
             if (!dict.ContainsKey("rid")) {
 
-                dict.Add("rid", this._rumEvent.GetRumId());
+                if (this._rumEvent.GetRumId() != null) {
+
+                    dict.Add("rid", this._rumEvent.GetRumId());
+                }
             }
 
             if (!dict.ContainsKey("ts")) {
@@ -482,6 +485,7 @@ namespace com.rum {
             }
 
             this._session = MidGenerator.Gen();
+            this._rumEvent.SetSession(this._session);
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
 

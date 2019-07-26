@@ -24,6 +24,7 @@ namespace com.rum {
         private bool _hasConf;
         private bool _debug;
 
+        private long _session;
         private long _timestamp; 
         private long _delayCount;
 
@@ -40,8 +41,9 @@ namespace com.rum {
         private IDictionary<string, object> _storage = new Dictionary<string, object>();
 
         private Action _sendQuest;
+        private Action _openEvent;
 
-        public RUMEvent(int pid, bool debug, Action sendQuest) {
+        public RUMEvent(int pid, bool debug, Action sendQuest, Action openEvent) {
 
             this._rumIdKey += pid;
             this._rumEventKey += pid;
@@ -49,10 +51,11 @@ namespace com.rum {
 
             this._debug = debug;
             this._sendQuest = sendQuest;
+            this._openEvent = openEvent;
             this._sizeLimit = RUMConfig.SENT_SIZE_LIMIT;
         }
 
-        public void InitStorage() {
+        private void InitStorage() {
 
             lock(storage_locker) {
 
@@ -73,6 +76,16 @@ namespace com.rum {
                     this._storage.Add(this._fileIndexKey, new Dictionary<string, object>());
                 }
             }
+
+            if (this._openEvent != null) {
+
+                this._openEvent();
+            }
+        }
+
+        public void SetSession(long value) {
+
+            this._session = value;
         }
 
         public void UpdateConfig(IDictionary<string, object> value) {
@@ -139,6 +152,8 @@ namespace com.rum {
 
                 try {
 
+                    self.InitStorage();
+
                     while (self._writeAble) {
 
                         List<object> list;
@@ -191,6 +206,11 @@ namespace com.rum {
 
             foreach (IDictionary<string, object> item in items) {
 
+                if (!item.ContainsKey("sid")) {
+
+                    item.Add("sid", this._session);
+                }
+
                 this.AddEvent(item);
             }
         }
@@ -232,11 +252,6 @@ namespace com.rum {
         }
 
         public string GetRumId() {
-
-            if (string.IsNullOrEmpty(this._rumId)) {
-
-                return this.BuildRumId();
-            }
 
             return this._rumId;
         }
@@ -745,7 +760,7 @@ namespace com.rum {
 
                 this._checkEvent.Set();            
             }
-            
+
             this._checkAble = false;
         }
 
