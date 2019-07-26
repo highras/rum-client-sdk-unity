@@ -143,7 +143,6 @@ namespace com.rum {
             }
 
             this._event.RemoveListener();
-            RUMPlatform.Instance.GetEvent().RemoveListener();
         }
 
         public void Connect(string endpoint, bool clearRumId, bool clearEvents) {

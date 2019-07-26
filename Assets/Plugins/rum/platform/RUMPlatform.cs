@@ -19,8 +19,6 @@ namespace com.rum {
         public Action<IDictionary<string, object>>  HttpHook_Action;
         public Action<IDictionary<string, object>>  SystemInfo_Action;
 
-        private FPEvent _event = new FPEvent();
-
         private bool _isPause;
         private bool _isFocus;
 
@@ -255,11 +253,6 @@ namespace com.rum {
 
             ThreadPool.Instance.SetPool(new RUMThreadPool());
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder());
-        }
-
-        public FPEvent GetEvent() {
-
-            return this._event;
         }
 
         private string _lang;
