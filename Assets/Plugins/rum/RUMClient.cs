@@ -386,33 +386,31 @@ namespace com.rum {
 
             RUMClient self = this;
 
-            RUMPlatform.Instance.GetEvent().AddListener("app_bg", (evd) => {
-
-                self.WriteEvent("bg", new Dictionary<string, object>());
-            });
-
-            RUMPlatform.Instance.GetEvent().AddListener("app_fg", (evd) => {
+            RUMPlatform.Instance.AppFg_Action = () => {
 
                 self.WriteEvent("fg", new Dictionary<string, object>());
-            });
+            };
 
-            RUMPlatform.Instance.GetEvent().AddListener("system_info", (evd) => {
+            RUMPlatform.Instance.AppBg_Action = () => {
 
-                IDictionary<string, object> dict = (IDictionary<string, object>)evd.GetPayload();
+                self.WriteEvent("bg", new Dictionary<string, object>());
+            };
+
+            RUMPlatform.Instance.SystemInfo_Action = (dict) => {
+
                 dict.Add("type", "system_info");
-
                 self.WriteEvent("info", dict);
-            });
+            };
 
-            RUMPlatform.Instance.GetEvent().AddListener("network_change", (evd) => {
+            RUMPlatform.Instance.NetworkChange_Action = (nw) => {
 
                 IDictionary<string, object> dict = new Dictionary<string, object>();
-                dict.Add("nw", RUMPlatform.Instance.GetNetwork());
 
+                dict.Add("nw", nw);
                 self.WriteEvent("nwswitch", dict);
-            });
+            };
 
-            RUMPlatform.Instance.GetEvent().AddListener("memory_warning", (evd) => {
+            RUMPlatform.Instance.LowMemory_Action = () => {
 
                 IDictionary<string, object> dict = new Dictionary<string, object>();
                 
@@ -420,12 +418,12 @@ namespace com.rum {
                 dict.Add("system_memory", RUMPlatform.Instance.GetMemorySize());
 
                 self.WriteEvent("warn", dict);
-            });
+            };
 
-            RUMPlatform.Instance.GetEvent().AddListener("http_hook", (evd) => {
+            RUMPlatform.Instance.HttpHook_Action = (dict) => {
 
-                self.HttpEvent((IDictionary<string, object>)evd.GetPayload());
-            });
+                self.HttpEvent(dict);
+            };
         }
 
         private void WriteEvent(string ev, IDictionary<string, object> dict) {

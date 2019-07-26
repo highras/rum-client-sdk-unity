@@ -12,6 +12,13 @@ namespace com.rum {
 
     public class RUMPlatform:Singleton<RUMPlatform> {
 
+        public Action AppFg_Action;
+        public Action AppBg_Action;
+        public Action LowMemory_Action;
+        public Action<string> NetworkChange_Action;
+        public Action<IDictionary<string, object>>  HttpHook_Action;
+        public Action<IDictionary<string, object>>  SystemInfo_Action;
+
         private FPEvent _event = new FPEvent();
 
         private bool _isPause;
@@ -90,7 +97,10 @@ namespace com.rum {
  
             if (!this._isPause) {
              
-                this._event.FireEvent(new EventData("app_bg"));
+                if (this.AppBg_Action != null) {
+
+                    this.AppBg_Action();
+                }
             } else {
 
                 this._isFocus = true;
@@ -109,14 +119,21 @@ namespace com.rum {
              
             if (this._isPause) {
 
-                this._event.FireEvent(new EventData("app_fg"));
                 this._isFocus = true;
+
+                if (this.AppFg_Action != null) {
+
+                    this.AppFg_Action();
+                }
             }
         }
 
         void OnLowMemory() {
 
-            this._event.FireEvent(new EventData("memory_warning"));
+            if (this.LowMemory_Action != null) {
+
+                this.LowMemory_Action();
+            }
         }
 
         private void OnInfo() {
@@ -128,19 +145,23 @@ namespace com.rum {
             dict.Add("install_mode", this.GetInstallMode());
             dict.Add("device_token", this.GetDeviceToken());
 
-            this._event.FireEvent(new EventData("system_info", dict));
+            if (this.SystemInfo_Action != null) {
+
+                this.SystemInfo_Action(dict);
+            }
         }
 
         private void OnTimer() {
 
+            bool change = false;
             NetworkReachability internetReachability = Application.internetReachability;
 
             if (internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
 
                 if (this._nw != "3G/4G") {
 
+                    change = true;
                     this._nw = "3G/4G";
-                    this._event.FireEvent(new EventData("network_change"));
                 }
             }
 
@@ -148,8 +169,8 @@ namespace com.rum {
 
                 if (this._nw != "WIFI") {
 
+                    change = true;
                     this._nw = "WIFI";
-                    this._event.FireEvent(new EventData("network_change"));
                 }
             }
 
@@ -157,9 +178,14 @@ namespace com.rum {
 
                 if (this._nw != "NONE") {
 
+                    change = true;
                     this._nw = "NONE";
-                    this._event.FireEvent(new EventData("network_change"));
                 }
+            }
+
+            if (change && this.NetworkChange_Action != null) {
+
+                this.NetworkChange_Action(this._nw);
             }
         }
 
@@ -458,7 +484,11 @@ namespace com.rum {
             }
 
             dict.Add("attrs", attrs);
-            this._event.FireEvent(new EventData("http_hook", dict));
+
+            if (this.HttpHook_Action != null) {
+
+                this.HttpHook_Action(dict);
+            }
         }
 
         // UnityWebRequest
@@ -491,7 +521,11 @@ namespace com.rum {
             }
 
             dict.Add("attrs", attrs);
-            this._event.FireEvent(new EventData("http_hook", dict));
+
+            if (this.HttpHook_Action != null) {
+
+                this.HttpHook_Action(dict);
+            }
         }
 
         private class RUMErrorRecorder:ErrorRecorder {
