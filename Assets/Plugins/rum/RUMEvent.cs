@@ -485,42 +485,41 @@ namespace com.rum {
 
             lock (check_locker) {
 
-                List<object> items = new List<object>();
-                int countLimit = this.GetCountLimit(this._sizeLimit);
-
-                this.ShiftEvents(EVENT_MAP_1, countLimit, true, ref items);
-
-                if (items.Count >= countLimit) {
-
-                    return items;
-                }
-
-                this.ShiftEvents(EVENT_MAP_2, countLimit, true, ref items);
-
-                if (items.Count >= countLimit) {
-
-                    return items;
-                }
-
-                this.ShiftEvents(EVENT_MAP_3, countLimit, true, ref items);
-
-                if (items.Count >= countLimit) {
-
-                    return items;
-                }
-
-                return items;
+                return this.GetEventsFromStorage(this._sizeLimit, true);
             }
         }
 
-        private int GetCountLimit(int sizeLimit) {
+        private List<object> GetFileEvents() {
 
-            if (sizeLimit < 1 || this._storageSize < 1 || this._storageCount < 1) {
+            return this.GetEventsFromStorage(RUMConfig.LOCAL_FILE_SIZE, false);
+        }
+
+        private List<object> GetEventsFromStorage(int size, bool catchAble) {
+
+            List<object> items = new List<object>();
+            int countLimit = this.GetCountLimit(size);
+
+            foreach (string map_key in this._eventMap.Values) {
+
+                this.ShiftEvents(map_key, countLimit, catchAble, ref items);
+
+                if (items.Count >= countLimit) {
+
+                    return items;
+                }
+            }
+
+            return items;
+        }
+
+        private int GetCountLimit(int size) {
+
+            if (size < 1 || this._storageSize < 1 || this._storageCount < 1) {
 
                 return 20;
             }
 
-            return (int) Math.Ceiling(sizeLimit / (this._storageSize / this._storageCount * 1f));
+            return (int) Math.Ceiling(size / (this._storageSize / this._storageCount * 1f));
         }
 
         private void ShiftEvents(string key, int countLimit, bool catchAble, ref List<object> items) {
@@ -1001,35 +1000,6 @@ namespace com.rum {
 
                 Debug.Log("[RUM] load form file: " + res.success);
             }
-        }
-
-        private List<object> GetFileEvents() {
-
-            List<object> items = new List<object>();
-            int countLimit = this.GetCountLimit(RUMConfig.LOCAL_FILE_SIZE);
-
-            this.ShiftEvents(EVENT_MAP_1, countLimit, false, ref items);
-
-            if (items.Count >= countLimit) {
-
-                return items;
-            }
-
-            this.ShiftEvents(EVENT_MAP_2, countLimit, false, ref items);
-
-            if (items.Count >= countLimit) {
-
-                return items;
-            }
-
-            this.ShiftEvents(EVENT_MAP_3, countLimit, false, ref items);
-
-            if (items.Count >= countLimit) {
-
-                return items;
-            }
-
-            return items;
         }
 
         public void OnSecond(long timestamp) {
