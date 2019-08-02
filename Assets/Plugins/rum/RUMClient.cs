@@ -269,7 +269,7 @@ namespace com.rum {
 
                 this._baseClient.Client_Error = (evd) => {
 
-                    RUMPlatform.Instance.WriteDebug("base_client", evd.GetException());
+                    ErrorRecorderHolder.recordError(evd.GetException());
                 };
 
                 this._baseClient.Connect();
@@ -455,44 +455,47 @@ namespace com.rum {
 
             RUMClient self = this;
 
-            RUMPlatform.Instance.AppFg_Action = () => {
+            if (RUMPlatform.HasInstance()) {
 
-                self.WriteEvent("fg", new Dictionary<string, object>());
-            };
+                RUMPlatform.Instance.AppFg_Action = () => {
 
-            RUMPlatform.Instance.AppBg_Action = () => {
+                    self.WriteEvent("fg", new Dictionary<string, object>());
+                };
 
-                self.WriteEvent("bg", new Dictionary<string, object>());
-            };
+                RUMPlatform.Instance.AppBg_Action = () => {
 
-            RUMPlatform.Instance.SystemInfo_Action = (dict) => {
+                    self.WriteEvent("bg", new Dictionary<string, object>());
+                };
 
-                dict.Add("type", "system_info");
-                self.WriteEvent("info", dict);
-            };
+                RUMPlatform.Instance.SystemInfo_Action = (dict) => {
 
-            RUMPlatform.Instance.NetworkChange_Action = (nw) => {
+                    dict.Add("type", "system_info");
+                    self.WriteEvent("info", dict);
+                };
 
-                IDictionary<string, object> dict = new Dictionary<string, object>();
+                RUMPlatform.Instance.NetworkChange_Action = (nw) => {
 
-                dict.Add("nw", nw);
-                self.WriteEvent("nwswitch", dict);
-            };
+                    IDictionary<string, object> dict = new Dictionary<string, object>();
 
-            RUMPlatform.Instance.LowMemory_Action = (mem) => {
+                    dict.Add("nw", nw);
+                    self.WriteEvent("nwswitch", dict);
+                };
 
-                IDictionary<string, object> dict = new Dictionary<string, object>();
-                
-                dict.Add("type", "low_memory");
-                dict.Add("system_memory", mem);
+                RUMPlatform.Instance.LowMemory_Action = (mem) => {
 
-                self.WriteEvent("warn", dict);
-            };
+                    IDictionary<string, object> dict = new Dictionary<string, object>();
+                    
+                    dict.Add("type", "low_memory");
+                    dict.Add("system_memory", mem);
 
-            RUMPlatform.Instance.HttpHook_Action = (dict) => {
+                    self.WriteEvent("warn", dict);
+                };
 
-                self.HttpEvent(dict);
-            };
+                RUMPlatform.Instance.HttpHook_Action = (dict) => {
+
+                    self.HttpEvent(dict);
+                };
+            }
         }
 
         private void WriteEvent(string ev, IDictionary<string, object> dict) {
@@ -545,10 +548,10 @@ namespace com.rum {
                 }
             }
 
-            if (this._debug) {
+            // if (this._debug) {
 
-                Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
-            }
+            //     Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
+            // }
 
             this._rumEvent.WriteEvent(dict);
         }
@@ -564,16 +567,20 @@ namespace com.rum {
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
 
-            dict.Add("sw", RUMPlatform.Instance.ScreenWidth());
-            dict.Add("sh", RUMPlatform.Instance.ScreenHeight());
-            dict.Add("manu", RUMPlatform.Instance.GetManu());
-            dict.Add("model", RUMPlatform.Instance.GetModel());
-            dict.Add("os", RUMPlatform.Instance.GetOS());
-            dict.Add("osv", RUMPlatform.Instance.GetOSV());
-            dict.Add("nw", RUMPlatform.Instance.GetNetwork());
-            dict.Add("carrier", RUMPlatform.Instance.GetCarrier());
-            dict.Add("lang", RUMPlatform.Instance.GetLang());
-            dict.Add("from", RUMPlatform.Instance.GetFrom());
+            if (RUMPlatform.HasInstance()) {
+
+                dict.Add("sw", RUMPlatform.Instance.ScreenWidth());
+                dict.Add("sh", RUMPlatform.Instance.ScreenHeight());
+                dict.Add("manu", RUMPlatform.Instance.GetManu());
+                dict.Add("model", RUMPlatform.Instance.GetModel());
+                dict.Add("os", RUMPlatform.Instance.GetOS());
+                dict.Add("osv", RUMPlatform.Instance.GetOSV());
+                dict.Add("nw", RUMPlatform.Instance.GetNetwork());
+                dict.Add("carrier", RUMPlatform.Instance.GetCarrier());
+                dict.Add("lang", RUMPlatform.Instance.GetLang());
+                dict.Add("from", RUMPlatform.Instance.GetFrom());
+            }
+            
             dict.Add("appv", this._appv);
             dict.Add("v", RUMConfig.VERSION);
             dict.Add("first", this._rumEvent.IsFirst());
@@ -743,7 +750,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteDebug("send_ping_serialize_payload", ex);
+                ErrorRecorderHolder.recordError(ex);
             }
 
             FPData data = new FPData();
@@ -766,7 +773,7 @@ namespace com.rum {
 
                 if (ex != null) {
 
-                    RUMPlatform.Instance.WriteDebug("send_ping_send_quest", ex);
+                    ErrorRecorderHolder.recordError(ex);
                     return;
                 }
 
@@ -849,7 +856,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteDebug("load_config_serialize_payload", ex);
+                ErrorRecorderHolder.recordError(ex);
             }
 
             FPData data = new FPData();
@@ -871,7 +878,7 @@ namespace com.rum {
                         self._configVersion = 0;
                     }
 
-                    RUMPlatform.Instance.WriteDebug("load_config_send_quest", ex);
+                    ErrorRecorderHolder.recordError(ex);
                     return;
                 }
 
@@ -921,7 +928,7 @@ namespace com.rum {
 
             if (this._debug) {
 
-                Debug.Log("[RUM] will be sent! " + Json.SerializeToString(items));
+                Debug.Log("[RUM] will be sent! " + items.Count);
             }
 
             this.SendEvents(items);
@@ -951,7 +958,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteDebug("send_events_serialize_payload", ex);
+                ErrorRecorderHolder.recordError(ex);
             }
 
             FPData data = new FPData();
@@ -979,7 +986,7 @@ namespace com.rum {
                 if (ex != null) {
 
                     self._rumEvent.WriteEvents(items);
-                    RUMPlatform.Instance.WriteDebug("send_events_send_quest", ex);
+                    ErrorRecorderHolder.recordError(ex);
                     return;
                 }
             }, RUMConfig.SENT_TIMEOUT);
@@ -1040,7 +1047,7 @@ namespace com.rum {
                         payload = Json.Deserialize<IDictionary<string, object>>(data.JsonPayload());
                     }catch(Exception ex) {
 
-                        RUMPlatform.Instance.WriteDebug("check_fpcallback_deserialize_json_payload", ex);
+                        ErrorRecorderHolder.recordError(ex);
                     }
                 }
 
@@ -1054,7 +1061,7 @@ namespace com.rum {
                         }
                     } catch(Exception ex) {
 
-                        RUMPlatform.Instance.WriteDebug("check_fpcallback_deserialize_msgpack_payload", ex);
+                        ErrorRecorderHolder.recordError(ex);
                     }
                 }
 

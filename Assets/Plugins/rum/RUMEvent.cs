@@ -610,7 +610,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteDebug("storage_save_serialize_storage", ex);
+                ErrorRecorderHolder.recordError(ex);
             }
 
             if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
@@ -632,14 +632,14 @@ namespace com.rum {
                 if (this._saveFailCount < 3) {
 
                     this._saveFailCount++;
-                    RUMPlatform.Instance.WriteDebug("storage_save_write_storage", (Exception)res.content);
+                    ErrorRecorderHolder.recordError((Exception)res.content);
                 } 
+
+                if (this._debug) {
+
+                    Debug.Log("[RUM] fail to save storage!");
+                }
             }
-
-            if (this._debug) {
-
-                Debug.Log("[RUM] storage save! " + res.success);
-            } 
         }
 
         private void UpdateStorageSize(int size) {
@@ -909,7 +909,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteDebug("check_storage_size_serialize_storage", ex);
+                ErrorRecorderHolder.recordError(ex);
             }
 
             this.UpdateStorageSize(storage_bytes.Length);
@@ -959,7 +959,7 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                RUMPlatform.Instance.WriteDebug("check_storage_size_serialize_list", ex);
+                ErrorRecorderHolder.recordError(ex);
             }
 
             RUMFile.Result res = this._rumFile.WriteRumLog(index, bytes);
@@ -969,7 +969,7 @@ namespace com.rum {
                 item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
             } else {
 
-                RUMPlatform.Instance.WriteDebug("check_storage_size_write_rum_log", (Exception)res.content);
+                ErrorRecorderHolder.recordError((Exception)res.content);
             }
 
             if (this._debug) {
@@ -994,7 +994,7 @@ namespace com.rum {
                     }
                 } catch(Exception ex) {
 
-                    RUMPlatform.Instance.WriteDebug("check_storage_size_deserialize_content", ex);
+                    ErrorRecorderHolder.recordError(ex);
                 }
 
                 if (!this.IsNullOrEmpty(items)) {

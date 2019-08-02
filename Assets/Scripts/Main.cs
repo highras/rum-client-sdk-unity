@@ -24,10 +24,10 @@ public class Main : MonoBehaviour {
     void Start() {
 
         //TestCase
-        // this._testCase = new TestCase();
+        this._testCase = new TestCase();
 
         //SingleClientSend
-        this._testCase = new SingleClientSend();
+        // this._testCase = new SingleClientSend();
 
         if (this._testCase != null) {
 
@@ -36,7 +36,7 @@ public class Main : MonoBehaviour {
 
         // if (!this.IsInvoking("SendHttpRequest")) {
 
-        //     InvokeRepeating("SendHttpRequest", 5.0f, 10.0f);
+        //     InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
         // }
     }
 
@@ -74,7 +74,10 @@ public class Main : MonoBehaviour {
         request.BeginGetResponse(new AsyncCallback(ReadCallback), request);
 
         // fail: timeout or error...
-        // RUMPlatform.Instance.HookHttp(request, null, 0);
+        // if (RUMPlatform.HasInstance()) {
+
+        //     RUMPlatform.Instance.HookHttp(request, null, 0);
+        // }
     }
 
     void ReadCallback(IAsyncResult asynchronousResult) {
@@ -84,7 +87,10 @@ public class Main : MonoBehaviour {
         HttpWebRequest request = (HttpWebRequest) asynchronousResult.AsyncState;
         HttpWebResponse response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
 
-        RUMPlatform.Instance.HookHttp(request, response, latency);
+        if (RUMPlatform.HasInstance()) {
+
+            RUMPlatform.Instance.HookHttp(request, response, latency);
+        }
 
         using (var streamReader = new StreamReader(response.GetResponseStream())) {
 
@@ -102,7 +108,11 @@ public class Main : MonoBehaviour {
             yield return req.SendWebRequest();
      
             int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
-            RUMPlatform.Instance.HookHttp(req, latency);
+
+            if (RUMPlatform.HasInstance()) {
+
+                RUMPlatform.Instance.HookHttp(req, latency);
+            }
 
             if(req.isNetworkError || req.isHttpError) {
 

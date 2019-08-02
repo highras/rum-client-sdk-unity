@@ -22,9 +22,25 @@ namespace com.rum {
         private bool _isPause;
         private bool _isFocus;
 
+        private static RUMPlatform instance_self = null;
+        private static object lock_obj = new object();
+
+        public static bool HasInstance() {
+
+            lock (lock_obj) {
+
+                return instance_self != null;
+            }
+        }
+
         void Awake() {}
 
         void OnEnable() {
+
+            lock (lock_obj) {
+
+                instance_self = this;
+            }
 
             this._isPause = false;
             this._isFocus = false;
@@ -528,7 +544,10 @@ namespace com.rum {
                 // Debug.LogError(e);
 
                 // Release
-                RUMPlatform.Instance.WriteDebug("rum_threaded_exception", e);
+                if (RUMPlatform.HasInstance()) {
+
+                    RUMPlatform.Instance.WriteDebug("rum_exception", e);
+                }
             }
         }
     }
