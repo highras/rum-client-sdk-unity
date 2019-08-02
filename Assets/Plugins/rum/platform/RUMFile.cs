@@ -2,38 +2,13 @@ using System;
 using System.IO;
 using System.Text;
 
+using com.fpnn;
+
 using UnityEngine;
 
 namespace com.rum {
 
     public class RUMFile {
-
-        private static int LOCAL_FILE_MAX = 300; 
-
-        private const string FILE_PRE = "rumlog_";
-        private const string STORAGE_FILE = "rumlog_storage";
-
-        private static RUMFile instance;
-        private static object lock_obj = new object();
-
-        public static RUMFile Instance {
-
-            get{
-
-                if (instance == null) {
-
-                    lock (lock_obj) {
-
-                        if (instance == null) {
-
-                            instance = new RUMFile();
-                        }
-                    }
-                }
-
-                return instance;
-            }
-        }
 
         public class Result {
 
@@ -41,19 +16,39 @@ namespace com.rum {
             public object content;
         }
 
+        private class FileLocker {
+
+            public int Status = 0;
+        }
+
+        private static int LOCAL_FILE_MAX = 300; 
+
+        private const string FILE_PRE = "rumlog_";
+        private const string STORAGE_FILE = "rumlog_storage";
+
         private int _read_index;
         private string _directory_path;
 
-        private static readonly System.Object locker = new System.Object();
+        private FileLocker file_locker = new FileLocker();
 
-        public void Init(int pid) {
+        public RUMFile(int pid) {
 
             this._directory_path = this.GetSecureDataPath() + "/rum_events_" + pid;
+            this.InitDirectory();
+        }
 
-            if (Directory.Exists(this._directory_path) == false) {
+        private void InitDirectory () {
 
-                Directory.CreateDirectory(this._directory_path);
-            } 
+            try {
+
+                if (Directory.Exists(this._directory_path) == false) {
+
+                    Directory.CreateDirectory(this._directory_path);
+                } 
+            } catch (Exception ex) {
+
+                ErrorRecorderHolder.recordError(ex);
+            }
         }
 
         private string GetSecureDataPath() {
@@ -135,7 +130,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, string content, Encoding encoding) {
 
-            lock(locker) {
+            lock(file_locker) {
 
                 try {
 
@@ -162,7 +157,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, byte[] content) {
 
-            lock(locker) {
+            lock(file_locker) {
 
                 try {
 
@@ -189,7 +184,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete, Encoding encoding) {
 
-            lock(locker) {
+            lock(file_locker) {
 
                 string content;
 
@@ -234,7 +229,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete) {
 
-            lock(locker) {
+            lock(file_locker) {
 
                 byte[] content;
 
@@ -280,7 +275,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteFile(string path) {
 
-            lock(locker) {
+            lock(file_locker) {
 
                 try {
 
@@ -309,7 +304,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteDirectory(string path) {
 
-            lock(locker) {
+            lock(file_locker) {
 
                 try {
 

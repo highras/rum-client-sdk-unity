@@ -14,7 +14,7 @@ namespace com.rum {
 
         public Action AppFg_Action;
         public Action AppBg_Action;
-        public Action LowMemory_Action;
+        public Action<int> LowMemory_Action;
         public Action<string> NetworkChange_Action;
         public Action<IDictionary<string, object>>  HttpHook_Action;
         public Action<IDictionary<string, object>>  SystemInfo_Action;
@@ -130,7 +130,7 @@ namespace com.rum {
 
             if (this.LowMemory_Action != null) {
 
-                this.LowMemory_Action();
+                this.LowMemory_Action(this.GetMemorySize());
             }
         }
 
@@ -251,7 +251,6 @@ namespace com.rum {
 
             this._writeEvent = writeEvent;
 
-            ThreadPool.Instance.SetPool(new RUMThreadPool());
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder());
         }
 
@@ -530,20 +529,6 @@ namespace com.rum {
 
                 // Release
                 RUMPlatform.Instance.WriteDebug("rum_threaded_exception", e);
-            }
-        }
-
-        private class RUMThreadPool:ThreadPool.IThreadPool {
-
-            public RUMThreadPool() {
-
-                System.Threading.ThreadPool.SetMinThreads(2, 1);
-                System.Threading.ThreadPool.SetMaxThreads(SystemInfo.processorCount * 2, SystemInfo.processorCount);
-            }
-
-            public void Execute(Action<object> action) {
-
-                System.Threading.ThreadPool.QueueUserWorkItem(new System.Threading.WaitCallback(action));
             }
         }
     }

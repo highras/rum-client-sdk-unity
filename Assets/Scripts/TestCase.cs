@@ -36,7 +36,6 @@ namespace com.test {
             this._client.GetEvent().AddListener("ready", (evd) => {
 
                 Debug.Log("TestCase ready!");
-                self._client.SetUid("uid:11111111111");
             });
 
             this._client.GetEvent().AddListener("config", (evd) => {
@@ -46,6 +45,7 @@ namespace com.test {
 
             // client.Connect("52.83.220.166:13609", false, false);
             this._client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
+            this._client.SetUid("uid:11111111111");
         }
 
         public void StopTest() {

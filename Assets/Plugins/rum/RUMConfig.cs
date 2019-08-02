@@ -4,7 +4,7 @@ namespace com.rum {
 
     public class RUMConfig {
 
-        public static string VERSION = "1.1.9";
+        public static string VERSION = "1.2.0";
         
         public static int PING_INTERVAL = 20 * 1000;                    //与Agent之间的连通性检查以及config更新检查的时间间隔(ms)
         public static int SENT_INTERVAL = 1 * 1000;                     //事件发送时间间隔(ms)

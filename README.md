@@ -4,18 +4,13 @@
 * [fpnn.unitypackage](https://github.com/highras/fpnn-sdk-unity)
 * [Json&MsgPack.unitypackage](https://github.com/deniszykov/msgpack-unity3d)
 
-#### 关于线程 ####
+#### 异步函数 ####
+* 异步函数均由子线程呼叫, 不要在其中调用仅UI线程可执行的函数, 不要阻塞事件和回调函数
 
-* 线程池接口`ThreadPool.IThreadPool`
-    * 默认实现`System.Threading.ThreadPool.QueueUserWorkItem`
-    * 如需自己管理线程，实现该接口并注册线程池`ThreadPool.Instance.SetPool(IThreadPool value)`
-
-* 不要阻塞事件触发和回调, 否则线程池将被耗尽, 也不要在其中调用仅UI线程可执行的函数
-
+#### 关于连接 ####
 * 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
 
 #### 关于IPV6 ####
-
 * `SOCKET`链接支持`IPV6`接口
 * 兼容`DNS64/NAT64`网络环境
 

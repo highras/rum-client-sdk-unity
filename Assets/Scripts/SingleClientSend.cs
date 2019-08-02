@@ -15,10 +15,17 @@ namespace com.test {
 
     public class SingleClientSend : Main.ITestCase {
 
-        private int send_qps = 50;
+        private class SendLocker {
+
+            public int Status = 0;
+        }
+
+        private int send_qps = 2000;
         private int trace_interval = 10;
+        private int batch_count = 10;
 
         private RUMClient _client;
+        private SendLocker send_locker = new SendLocker();
 
         /**
          *  单客户端实例发送QPS脚本
@@ -59,7 +66,6 @@ namespace com.test {
             });
 
             this._client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
-
             this.StartThread();
         }
 
@@ -74,13 +80,17 @@ namespace com.test {
         }
 
         private Thread _thread;
-        private bool _sendAble;
 
         private void StartThread() {
 
-            if (!this._sendAble) {
+            lock (send_locker) {
 
-                this._sendAble = true;
+                if (send_locker.Status != 0) {
+
+                    return;
+                }
+
+                send_locker.Status = 1;
 
                 this._thread = new Thread(new ThreadStart(SendCustomEvent));
                 this._thread.Start();
@@ -89,63 +99,74 @@ namespace com.test {
 
         private void StopThread() {
 
-            this._sendAble = false;
+            lock (send_locker) {
 
-            this._sendCount = 0;
-            this._traceTimestamp = 0;
+                send_locker.Status = 0;
+
+                this._sendCount = 0;
+                this._traceTimestamp = 0;
+            }
         }
 
         private void SendCustomEvent() {
 
             SingleClientSend self = this;
 
-            while(this._sendAble) {
+            try {
 
-                try {
+                while(true) {
 
-                    IDictionary<string, object> attrs = new Dictionary<string, object>();
-                    attrs.Add("custom_debug", "test text");
+                    lock (send_locker) {
 
-                    this._client.CustomEvent("info", attrs);
+                        if (send_locker.Status == 0) {
 
-                    this.SendInc();
-                    Thread.Sleep((int) Math.Ceiling((1000f / this.send_qps)));
-                }catch(Exception ex) {
+                            return;
+                        } 
 
-                    Debug.Log(ex);
+                        for (int i = 0; i < this.batch_count; i++) {
+
+                            IDictionary<string, object> attrs = new Dictionary<string, object>();
+                            attrs.Add("custom_debug", "test text");
+
+                            this._client.CustomEvent("info", attrs);
+
+                            this.SendInc();
+                        }
+                    }
+
+                    Thread.Sleep((int) Math.Ceiling((1000f / this.send_qps) * this.batch_count));
                 }
+            }catch(Exception ex) {
+
+                Debug.Log(ex);
             }
         }
 
         private int _sendCount;
         private long _traceTimestamp;
-        private System.Object inc_locker = new System.Object();
 
         private void SendInc() {
 
-            lock(inc_locker) {
+            this._sendCount++;
 
-                this._sendCount++;
+            if (this._traceTimestamp <= 0) {
 
-                if (this._traceTimestamp <= 0) {
+                this._traceTimestamp = com.fpnn.FPManager.Instance.GetMilliTimestamp();
+            }
 
-                    this._traceTimestamp = com.fpnn.ThreadPool.Instance.GetMilliTimestamp();
-                }
+            int interval = (int)((com.fpnn.FPManager.Instance.GetMilliTimestamp() - this._traceTimestamp) / 1000);
 
-                int interval = (int)((com.fpnn.ThreadPool.Instance.GetMilliTimestamp() - this._traceTimestamp) / 1000);
+            if (interval >= this.trace_interval) {
 
-                if (interval >= this.trace_interval) {
+                Debug.Log(
+                    com.fpnn.FPManager.Instance.GetMilliTimestamp()
+                    + ", trace interval: " + interval
+                    + ", send count: " + this._sendCount 
+                    + ", send qps: " + (int)(this._sendCount / interval)
+                    );
 
-                    Debug.Log(
-                        com.fpnn.ThreadPool.Instance.GetMilliTimestamp()
-                        + ", trace interval: " + interval
-                        + ", send count: " + this._sendCount 
-                        + ", send qps: " + (int)(this._sendCount / interval)
-                        );
-
-                    this._sendCount = 0;
-                    this._traceTimestamp = com.fpnn.ThreadPool.Instance.GetMilliTimestamp();
-                }
+                this._sendCount = 0;
+                this._traceTimestamp = com.fpnn.FPManager.Instance.GetMilliTimestamp();
             }
         }   
     }
