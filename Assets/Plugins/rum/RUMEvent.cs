@@ -593,8 +593,6 @@ namespace com.rum {
             }
         }
 
-        private int _saveFailCount;
-
         private void StorageSave() {
 
             byte[] storage_bytes = new byte[0];
@@ -629,16 +627,12 @@ namespace com.rum {
 
             if (!res.success) {
 
-                if (this._saveFailCount < 3) {
-
-                    this._saveFailCount++;
-                    ErrorRecorderHolder.recordError((Exception)res.content);
-                } 
-
                 if (this._debug) {
 
                     Debug.Log("[RUM] fail to save storage!");
                 }
+
+                ErrorRecorderHolder.recordError((Exception)res.content);
             }
         }
 
@@ -1033,26 +1027,6 @@ namespace com.rum {
             if (items.Count >= countLimit) {
 
                 return items;
-            }
-
-            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
-
-            if (!this.IsNullOrEmpty(event_cache)) {
-
-                List<string> keys = new List<string>(event_cache.Keys);
-
-                foreach (string k in keys) {
-
-                    IDictionary<string, object> item = (IDictionary<string, object>)event_cache[k];
-
-                    items.Add(item);
-                    event_cache.Remove(k);
-
-                    if (items.Count >= countLimit) {
-
-                        break;
-                    }
-                }
             }
 
             return items;
