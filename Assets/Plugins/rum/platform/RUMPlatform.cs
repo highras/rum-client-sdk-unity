@@ -223,40 +223,35 @@ namespace com.rum {
             }
         }
 
-        public void WriteException(string type, Exception ex) {
+        private void WriteException(string type, Exception ex) {
 
             this.WriteException("error", type, ex.Message, ex.StackTrace);
         }
 
-        public void WriteDebug(string type, Exception ex) {
-
-            this.WriteException("debug", type, ex.Message, ex.StackTrace);
-        }
-
         private void WriteException(string ev, string type, string message, string stack) {
+
+            if (ev == "error") {
+
+                Debug.LogError(message + ":\n" + stack);
+            }
+
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+
+            dict.Add("type", type);
+
+            if (!string.IsNullOrEmpty(message)) {
+
+                dict.Add("message", message);
+            }
+
+            if (!string.IsNullOrEmpty(stack)) {
+
+                dict.Add("stack", stack);
+            }
 
             if (this._writeEvent != null) {
 
-                IDictionary<string, object> dict = new Dictionary<string, object>();
-
-                dict.Add("type", type);
-
-                if (!string.IsNullOrEmpty(message)) {
-
-                    dict.Add("message", message);
-                }
-
-                if (!string.IsNullOrEmpty(stack)) {
-
-                    dict.Add("stack", stack);
-                }
-
                 this._writeEvent(ev, dict);
-
-                if (ev == "error") {
-
-                    Debug.LogError(message + ":\n" + stack);
-                }
             }
         }
 
@@ -265,8 +260,6 @@ namespace com.rum {
         public void InitPrefs(Action<string, IDictionary<string, object>> writeEvent) {
 
             this._writeEvent = writeEvent;
-
-            ErrorRecorderHolder.setInstance(new RUMErrorRecorder());
         }
 
         private string _lang;
@@ -415,21 +408,6 @@ namespace com.rum {
 
         public void AddSelfListener() {
 
-        }
-
-        private class RUMErrorRecorder:ErrorRecorder {
-
-            public override void recordError(Exception e) {
-            
-                // Debug
-                Debug.LogError(e);
-
-                // Release
-                if (RUMPlatform.HasInstance()) {
-
-                    RUMPlatform.Instance.WriteDebug("rum_exception", e);
-                }
-            }
         }
     }
 }

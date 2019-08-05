@@ -124,6 +124,8 @@ namespace com.rum {
             };
 
             FPManager.Instance.AddSecond(this._eventDelegate);
+            
+            ErrorRecorderHolder.setInstance(new RUMErrorRecorder(WriteEvent));
             RUMPlatform.Instance.InitPrefs(WriteEvent);
 
             this._rumEvent.Init();
@@ -1205,6 +1207,56 @@ namespace com.rum {
             }
 
             return sb.ToString();
+        }
+
+        private class RUMErrorRecorder:ErrorRecorder {
+
+            private Action<string, IDictionary<string, object>> _writeEvent;
+
+            public RUMErrorRecorder(Action<string, IDictionary<string, object>> writeEvent) {
+
+                this._writeEvent = writeEvent;
+            }
+
+            public override void recordError(Exception ex) {
+
+                this.WriteDebug("rum_exception", ex);
+
+                // Debug
+                Debug.LogError(ex);
+            }
+
+            private void WriteDebug(string type, Exception ex) {
+
+                this.WriteException("debug", type, ex.Message, ex.StackTrace);
+            }
+
+            private void WriteException(string type, Exception ex) {
+
+                this.WriteException("error", type, ex.Message, ex.StackTrace);
+            }
+
+            private void WriteException(string ev, string type, string message, string stack) {
+
+                IDictionary<string, object> dict = new Dictionary<string, object>();
+
+                dict.Add("type", type);
+
+                if (!string.IsNullOrEmpty(message)) {
+
+                    dict.Add("message", message);
+                }
+
+                if (!string.IsNullOrEmpty(stack)) {
+
+                    dict.Add("stack", stack);
+                }
+
+                if (this._writeEvent != null) {
+
+                    this._writeEvent(ev, dict);
+                }
+            }
         }
     }
 }
