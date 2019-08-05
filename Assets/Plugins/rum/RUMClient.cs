@@ -95,8 +95,6 @@ namespace com.rum {
         private long _lastPingTime = 0;
         private long _lastConnectTime = 0;
 
-        private String _rumId;
-
         private int _pingCount = 0;
         private int _sendCount = 0;
         private int _pingLatency = 0;
@@ -124,8 +122,8 @@ namespace com.rum {
             };
 
             FPManager.Instance.AddSecond(this._eventDelegate);
-            
-            ErrorRecorderHolder.setInstance(new RUMErrorRecorder(WriteEvent));
+
+            ErrorRecorderHolder.setInstance(new RUMErrorRecorder(this._debug, WriteEvent));
             RUMPlatform.Instance.InitPrefs(WriteEvent);
 
             this._rumEvent.Init();
@@ -144,12 +142,19 @@ namespace com.rum {
                     this._eventDelegate = null;
                 }
 
-                this._session = 0;
-
                 this._pid = 0;
                 this._token = null;
-                this._uid = null;
                 this._appv = null;
+
+                lock (session_locker) {
+
+                    this._session = 0;
+                }
+
+                lock (uid_locker) {
+
+                    this._uid = null;
+                }
 
                 lock (ping_locker) {
 
@@ -278,19 +283,26 @@ namespace com.rum {
             }
         }
 
+        private object session_locker = new object();
+
         public long GetSession() {
 
-            return this._session;
+            lock (session_locker) {
+
+                return this._session;
+            }
         }
 
         public string GetRumId() {
 
-            return this._rumId;
+            return this._rumEvent.GetRumId();
         }
+
+        private object uid_locker = new object();
 
         public void SetUid(string value) {
 
-            lock (self_locker) {
+            lock (uid_locker) {
 
                 if (!string.IsNullOrEmpty(this._uid)) {
 
@@ -626,22 +638,30 @@ namespace com.rum {
 
             if (!dict.ContainsKey("sid")) {
 
-                if (this._session > 0) {
+                lock (session_locker) {
 
-                    dict.Add("sid", this._session);
+                    if (this._session > 0) {
+
+                        dict.Add("sid", this._session);
+                    }
                 }
             }
 
             if (!dict.ContainsKey("uid")) {
 
-                dict.Add("uid", this._uid);
+                lock (uid_locker) {
+
+                    dict.Add("uid", this._uid);
+                }
             }
 
             if (!dict.ContainsKey("rid")) {
 
-                if (this._rumId != null) {
+                string rumId = this._rumEvent.GetRumId();
 
-                    dict.Add("rid", this._rumId);
+                if (rumId != null) {
+
+                    dict.Add("rid", rumId);
                 }
             }
 
@@ -665,12 +685,16 @@ namespace com.rum {
 
         private void OpenEvent() {
 
-            if (this._session > 0) {
+            lock (session_locker) {
 
-                return;
+                if (this._session > 0) {
+
+                    return;
+                }
+
+                this._session = MidGenerator.Gen();
+                this._rumEvent.SetSession(this._session);
             }
-
-            this._session = MidGenerator.Gen();
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
 
@@ -691,9 +715,6 @@ namespace com.rum {
             dict.Add("appv", this._appv);
             dict.Add("v", RUMConfig.VERSION);
             dict.Add("first", this._rumEvent.IsFirst());
-
-            this._rumId = this._rumEvent.GetRumId();
-            this._rumEvent.SetSession(this._session);
 
             this.WriteEvent("open", dict);
         }
@@ -817,11 +838,19 @@ namespace com.rum {
             payload.Add("pid", this._pid);
             payload.Add("sign", this.GenSign(salt));
             payload.Add("salt", salt);
-            payload.Add("uid", this._uid);
-            payload.Add("rid", this._rumId);
-            payload.Add("sid", this._session);
-            // payload.Add("ss", this._rumEvent.GetStorageSize());
-            payload.Add("ss", 1);
+            payload.Add("ss", this._rumEvent.GetStorageSize());
+
+            lock (uid_locker) { 
+
+                payload.Add("uid", this._uid);
+            }
+
+            payload.Add("rid", this._rumEvent.GetRumId());
+
+            lock (session_locker) {
+
+                payload.Add("sid", this._session);
+            }
 
             lock (config_locker) {
 
@@ -842,7 +871,6 @@ namespace com.rum {
                 payload.Add("feid", lastEid);
                 payload.Add("teid", this._pingEid);
             }
-
 
             byte[] bytes = new byte[0];
 
@@ -896,13 +924,13 @@ namespace com.rum {
                     Debug.Log("[RUM] ping: " + Json.SerializeToString(dict));
                 }
 
-                bool hasConfig = self._rumEvent.HasConfig();
                 self._rumEvent.SetTimestamp(Convert.ToInt64(dict["ts"]));
                 self._rumEvent.SetSizeLimit(Convert.ToInt32(dict["bw"]));
 
                 int cv = Convert.ToInt32(dict["cv"]);
 
                 bool needLoad = false;
+                bool hasConfig = self._rumEvent.HasConfig();
 
                 lock (config_locker) {
 
@@ -937,17 +965,26 @@ namespace com.rum {
             payload.Add("pid", this._pid);
             payload.Add("sign", this.GenSign(salt));
             payload.Add("salt", salt);
-            payload.Add("uid", this._uid);
-            payload.Add("rid", this._rumId);
 
-            payload.Add("lang", RUMPlatform.Instance.GetLang());
-            payload.Add("manu", RUMPlatform.Instance.GetManu());
-            payload.Add("model", RUMPlatform.Instance.GetModel());
-            payload.Add("os", RUMPlatform.Instance.GetOS());
-            payload.Add("osv", RUMPlatform.Instance.GetOSV());
-            payload.Add("nw", RUMPlatform.Instance.GetNetwork());
-            payload.Add("carrier", RUMPlatform.Instance.GetCarrier());
-            payload.Add("from", RUMPlatform.Instance.GetFrom());
+            lock (uid_locker) {
+
+                payload.Add("uid", this._uid);
+            }
+
+            payload.Add("rid", this._rumEvent.GetRumId());
+
+            if (RUMPlatform.HasInstance()) {
+
+                payload.Add("lang", RUMPlatform.Instance.GetLang());
+                payload.Add("manu", RUMPlatform.Instance.GetManu());
+                payload.Add("model", RUMPlatform.Instance.GetModel());
+                payload.Add("os", RUMPlatform.Instance.GetOS());
+                payload.Add("osv", RUMPlatform.Instance.GetOSV());
+                payload.Add("nw", RUMPlatform.Instance.GetNetwork());
+                payload.Add("carrier", RUMPlatform.Instance.GetCarrier());
+                payload.Add("from", RUMPlatform.Instance.GetFrom());
+            }
+
             payload.Add("appv", this._appv);
 
             byte[] bytes = new byte[0];
@@ -1211,10 +1248,12 @@ namespace com.rum {
 
         private class RUMErrorRecorder:ErrorRecorder {
 
+            private bool _debug;
             private Action<string, IDictionary<string, object>> _writeEvent;
 
-            public RUMErrorRecorder(Action<string, IDictionary<string, object>> writeEvent) {
+            public RUMErrorRecorder(bool debug, Action<string, IDictionary<string, object>> writeEvent) {
 
+                this._debug = debug;
                 this._writeEvent = writeEvent;
             }
 
@@ -1222,8 +1261,10 @@ namespace com.rum {
 
                 this.WriteDebug("rum_exception", ex);
 
-                // Debug
-                Debug.LogError(ex);
+                if (this._debug) {
+
+                    Debug.LogError(ex);
+                } 
             }
 
             private void WriteDebug(string type, Exception ex) {

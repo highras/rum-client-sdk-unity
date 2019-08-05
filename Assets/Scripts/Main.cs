@@ -35,10 +35,10 @@ public class Main : MonoBehaviour {
             this._testCase.StartTest();
         }
 
-        // if (!this.IsInvoking("SendHttpRequest")) {
+        if (!this.IsInvoking("SendHttpRequest")) {
 
-        //     InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
-        // }
+            InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
+        }
     }
 
     void SendHttpRequest() {

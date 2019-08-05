@@ -22,6 +22,11 @@ namespace com.rum {
             public int Status = 0;
         }
 
+        private class ConfigLocker {
+
+            public int Status = 0;
+        }
+
         private const string EVENT_CACHE = "event_cache";
         private const string EVENT_MAP_0 = "event_map_0";
         private const string EVENT_MAP_1 = "event_map_1";
@@ -39,7 +44,6 @@ namespace com.rum {
         private bool _isFirst;
 
         private IDictionary<string, string> _config;
-        private bool _hasConf;
         private bool _debug;
 
         private long _session;
@@ -81,13 +85,7 @@ namespace com.rum {
 
         public void Init() {
 
-            lock (write_locker) {
-
-                if (write_locker.Status == 0) {
-
-                    this.StartWriteThread();
-                }
-            }
+            this.StartWriteThread();
         }
 
         private void InitStorage() {
@@ -129,9 +127,11 @@ namespace com.rum {
             } 
         }
 
+        private ConfigLocker config_locker = new ConfigLocker();
+
         public void UpdateConfig(IDictionary<string, object> value) {
 
-            lock (check_locker) {
+            lock (config_locker) {
 
                 if (this._config == null) {
 
@@ -153,7 +153,10 @@ namespace com.rum {
                     }
                 }
 
-                this._hasConf = true;
+                config_locker.Status = 1;
+            }
+
+            lock (check_locker) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
@@ -240,14 +243,7 @@ namespace com.rum {
                         this._sendQuest();
                     }
 
-                    lock (check_locker) {
-
-                        if (check_locker.Status == 0) {
-
-                            this.StartCheckThread();
-                        }
-                    }
-
+                    this.StartCheckThread();
                     this._writeEvent.WaitOne(RUMConfig.SENT_INTERVAL);
                 }
             } catch (ThreadAbortException tex) {
@@ -326,9 +322,11 @@ namespace com.rum {
             }
         }
 
+        private object rumid_locker = new object();
+
         public string GetRumId() {
 
-            lock (check_locker) {
+            lock (rumid_locker) {
 
                 return this._rumId;
             }
@@ -358,9 +356,16 @@ namespace com.rum {
 
         public bool IsFirst() {
 
+            bool build = false;
+
+            lock (rumid_locker) {
+            
+                build = string.IsNullOrEmpty(this._rumId);
+            }
+
             lock (check_locker) {
 
-                if (string.IsNullOrEmpty(this._rumId)) {
+                if (build) {
 
                     this.BuildRumId();
                 }
@@ -380,13 +385,20 @@ namespace com.rum {
             this.StopWriteThread();
             this.StopCheckThread();
 
-            lock (check_locker) {
+            lock (rumid_locker) {
 
                 this._rumId = null;
-                this._isFirst = false;
+            }
+
+            lock (config_locker) {
 
                 this._config = null;
-                this._hasConf = false;
+                config_locker.Status = 0;
+            }
+
+            lock (check_locker) {
+
+                this._isFirst = false;
             }
 
             lock (second_locker) {
@@ -395,20 +407,30 @@ namespace com.rum {
                 this._timestamp = 0;
             }
 
+            lock (storagesize_locker) {
+
+                this._storageSize = 0;
+            }
+
             this._sendQuest = null;
+            this._openEvent = null;
         }
+
+        private object storagesize_locker = new object();
 
         public int GetStorageSize() {
 
-            lock (check_locker) {
+            lock (storagesize_locker) {
 
                 return this._storageSize;
             }
         }
 
+        private object sizelimit_locker = new object();
+
         public void SetSizeLimit(int value) {
 
-            lock (check_locker) {
+            lock (sizelimit_locker) {
 
                 if (value > 0) {
 
@@ -419,9 +441,9 @@ namespace com.rum {
 
         public bool HasConfig() {
 
-            lock (check_locker) {
+            lock (config_locker) {
 
-                return this._hasConf;
+                return config_locker.Status != 0;
             }
         }
         
@@ -483,9 +505,16 @@ namespace com.rum {
 
         public List<object> GetSentEvents() {
 
+            int sizeLimit = 0;
+
+            lock (sizelimit_locker) {
+
+                sizeLimit = this._sizeLimit;
+            } 
+
             lock (check_locker) {
 
-                return this.GetEventsFromStorage(this._sizeLimit, true);
+                return this.GetEventsFromStorage(sizeLimit, true);
             }
         }
 
@@ -519,12 +548,19 @@ namespace com.rum {
 
         private int GetCountLimit(int size) {
 
-            if (size < 1 || this._storageSize < 1 || this._storageCount < 1) {
+            int storageSize = 0;
+
+            lock (storagesize_locker) {
+
+                storageSize = this._storageSize;
+            }
+
+            if (size < 1 || storageSize < 1 || this._storageCount < 1) {
 
                 return 20;
             }
 
-            return (int) Math.Ceiling(size / (this._storageSize / this._storageCount * 1f));
+            return (int) Math.Ceiling(size / (storageSize / this._storageCount * 1f));
         }
 
         private void ShiftEvents(string key, int countLimit, ref List<object> items) {
@@ -548,7 +584,10 @@ namespace com.rum {
 
                     if (!item.ContainsKey("rid")) {
 
-                        item.Add("rid", this._rumId);
+                        lock (rumid_locker) {
+
+                            item.Add("rid", this._rumId);
+                        }
                     }
 
                     this.TrimEmptyKey(item);
@@ -625,7 +664,7 @@ namespace com.rum {
 
             if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
 
-                this.ClearEvents();
+                ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
             }
 
             this.UpdateStorageSize(storage_bytes.Length);
@@ -661,7 +700,11 @@ namespace com.rum {
             count += event_cache.Values.Count;
 
             this._storageCount = count;
-            this._storageSize = size;
+
+            lock (storagesize_locker) {
+
+                this._storageSize = size;
+            }
         }
 
         private int GetStorageCount(string key) {
@@ -726,7 +769,10 @@ namespace com.rum {
                 item.Add("rid", rum_id);
             }
 
-            return this._rumId = rum_id;
+            lock (rumid_locker) {
+
+                return this._rumId = rum_id;
+            }
         }
 
         private string UUID(int len, int radix, char fourteen) {
@@ -1036,14 +1082,17 @@ namespace com.rum {
 
         private string SelectKey(string innerKey) {
 
-            if (!this._hasConf) {
+            lock (config_locker) {
 
-                return EVENT_MAP_1;
-            } 
+                if (config_locker.Status == 0) {
 
-            if (this._config.ContainsKey(innerKey)) {
+                    return EVENT_MAP_1;
+                }
 
-                return this._config[innerKey];
+                if (this._config.ContainsKey(innerKey)) {
+
+                    return this._config[innerKey];
+                }
             }
 
             return null;
