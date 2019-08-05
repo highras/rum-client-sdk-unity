@@ -404,7 +404,6 @@ namespace com.rum {
             }
         }
 
-        // HttpWebRequest
         public void HookHttp(System.Net.HttpWebRequest req, System.Net.HttpWebResponse res, int latency) {
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
@@ -481,7 +480,6 @@ namespace com.rum {
             this.HttpEvent(dict);
         }
 
-        // UnityWebRequest
         public void HookHttp(UnityEngine.Networking.UnityWebRequest req, int latency) {
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
@@ -1070,11 +1068,6 @@ namespace com.rum {
                 this._sendCount++;
             }
 
-            if (this._debug) {
-
-                Debug.Log("[RUM] will be sent! " + items.Count);
-            }
-
             this.SendEvents(items);
         }
 
@@ -1132,6 +1125,11 @@ namespace com.rum {
                     self._rumEvent.WriteEvents(items);
                     ErrorRecorderHolder.recordError(ex);
                     return;
+                }
+
+                if (self._debug) {
+
+                    Debug.Log("[RUM] sent success! " + items.Count);
                 }
             }, RUMConfig.SENT_TIMEOUT);
         }

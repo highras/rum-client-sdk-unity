@@ -20,7 +20,7 @@ namespace com.test {
             public int Status = 0;
         }
 
-        private int send_qps = 2000;
+        private int send_qps = 1000;
         private int trace_interval = 10;
         private int batch_count = 10;
         
@@ -44,8 +44,8 @@ namespace com.test {
                 "7e592712-01ea-4250-bf39-e51e00c004e9",
                 null,
                 null,
-                // true
-                false 
+                true
+                // false 
             );
 
             SingleClientSend self = this;

@@ -1067,7 +1067,7 @@ namespace com.rum {
 
             if (this._debug) {
 
-                Debug.Log("[RUM] load form file: " + res.success);
+                Debug.Log("[RUM] load from file: " + res.success);
             }
         }
 

@@ -92,7 +92,14 @@ client.Connect("52.83.220.166:13609", false, false);
     * `latency`: **(int)** 请求耗时(ms)
     * `attrs`: **(IDictionary[string,object])** 自定义内容
 
+* `HookHttp(HttpWebRequest req, HttpWebResponse res, int latency)`: 抓取以`System.Net.HttpWebRequest`方式发起的Http请求
+    * `req`: **(HttpWebRequest)** `HttpWebRequest` 请求对象
+    * `res`: **(HttpWebResponse)** `HttpWebResponse` 响应对象
+    * `latency`: **(int)** 请求耗时(ms)
+
+* `HookHttp(UnityWebRequest req, int latency)`: 抓取以`UnityEngine.Networking.UnityWebRequest`方式发起的Http请求
+    * `req`: **(UnityWebRequest)** `UnityWebRequest` 请求对象
+    * `latency`: **(int)** 请求耗时(ms)
+
 #### HOOK ####
-* 自动抓取http状态, 不会抓取请求内容, 参考`./Scripts/Main.cs`
-* `System.Net.HttpWebRequest` ==> `RUMPlatform.Instance.HookHttp(HttpWebRequest req, HttpWebResponse res, int latency)`
-* `UnityEngine.Networking.UnityWebRequest` ==> `RUMPlatform.Instance.HookHttp(UnityWebRequest req, int latency)`
+* 抓取http状态, 半自动非侵入方式, 不会抓取请求内容, 参考`./Scripts/Main.cs`
