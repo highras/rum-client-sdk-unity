@@ -23,9 +23,14 @@ namespace com.test {
         private int send_qps = 2000;
         private int trace_interval = 10;
         private int batch_count = 10;
+        
+        private SendLocker send_locker = new SendLocker();
 
         private RUMClient _client;
-        private SendLocker send_locker = new SendLocker();
+        public RUMClient GetClient() {
+
+            return this._client;
+        }
 
         /**
          *  单客户端实例发送QPS脚本

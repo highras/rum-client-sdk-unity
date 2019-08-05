@@ -14,6 +14,11 @@ namespace com.test {
 
         private RUMClient _client;
 
+        public RUMClient GetClient() {
+
+            return this._client;
+        }
+
         public void StartTest() {
 
             this._client = new RUMClient(

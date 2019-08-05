@@ -15,6 +15,7 @@ public class Main : MonoBehaviour {
 
     public interface ITestCase {
 
+        RUMClient GetClient();
         void StartTest();
         void StopTest();
     }
@@ -34,10 +35,10 @@ public class Main : MonoBehaviour {
             this._testCase.StartTest();
         }
 
-        // if (!this.IsInvoking("SendHttpRequest")) {
+        if (!this.IsInvoking("SendHttpRequest")) {
 
-        //     InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
-        // }
+            InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
+        }
     }
 
     void SendHttpRequest() {
@@ -74,9 +75,10 @@ public class Main : MonoBehaviour {
         request.BeginGetResponse(new AsyncCallback(ReadCallback), request);
 
         // fail: timeout or error...
-        // if (RUMPlatform.HasInstance()) {
+        // RUMClient client = _testCase.GetClient();
+        // if (client != null) {
 
-        //     RUMPlatform.Instance.HookHttp(request, null, 0);
+        //     client.HookHttp(request, null, 0);
         // }
     }
 
@@ -87,9 +89,10 @@ public class Main : MonoBehaviour {
         HttpWebRequest request = (HttpWebRequest) asynchronousResult.AsyncState;
         HttpWebResponse response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
 
-        if (RUMPlatform.HasInstance()) {
-
-            RUMPlatform.Instance.HookHttp(request, response, latency);
+        RUMClient client = _testCase.GetClient();
+        if (client != null) {
+            
+            client.HookHttp(request, response, latency);
         }
 
         using (var streamReader = new StreamReader(response.GetResponseStream())) {
@@ -109,9 +112,10 @@ public class Main : MonoBehaviour {
      
             int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
 
-            if (RUMPlatform.HasInstance()) {
+            RUMClient client = _testCase.GetClient();
+            if (client != null) {
 
-                RUMPlatform.Instance.HookHttp(req, latency);
+                client.HookHttp(req, latency);
             }
 
             if(req.isNetworkError || req.isHttpError) {

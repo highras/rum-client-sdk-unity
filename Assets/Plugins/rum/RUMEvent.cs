@@ -501,12 +501,17 @@ namespace com.rum {
 
             foreach (string map_key in this._eventMap.Values) {
 
-                this.ShiftEvents(map_key, countLimit, catchAble, ref items);
+                this.ShiftEvents(map_key, countLimit, ref items);
 
                 if (items.Count >= countLimit) {
 
-                    return items;
+                    break;
                 }
+            }
+
+            if (catchAble) {
+
+                this.AddToCache(items);
             }
 
             return items;
@@ -522,7 +527,7 @@ namespace com.rum {
             return (int) Math.Ceiling(size / (this._storageSize / this._storageCount * 1f));
         }
 
-        private void ShiftEvents(string key, int countLimit, bool catchAble, ref List<object> items) {
+        private void ShiftEvents(string key, int countLimit, ref List<object> items) {
 
             IDictionary<string, object> event_map = this.GetEventMap(key);
 
@@ -530,8 +535,6 @@ namespace com.rum {
 
                 return;
             }
-
-            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
             List<string> event_keys = new List<string>(event_map.Keys);
 
@@ -542,42 +545,16 @@ namespace com.rum {
                 while (event_list.Count > 0 && items.Count < countLimit) {
 
                     IDictionary<string, object> item = (IDictionary<string, object>)event_list[0];
-                    event_list.RemoveAt(0);
 
                     if (!item.ContainsKey("rid")) {
 
                         item.Add("rid", this._rumId);
                     }
 
-                    List<string> keys = new List<string>(item.Keys);
-
-                    foreach (string k in keys) {
-
-                        if (k == "status") {
-
-                            continue;
-                        }
-
-                        if (this.IsNullOrEmpty(item[k])) {
-
-                            item.Remove(k);
-                        }
-                    }
-
+                    this.TrimEmptyKey(item);
+                    
                     items.Add(item);
-
-                    if (catchAble) {
-
-                        string cache_key = Convert.ToString(item["eid"]);
-
-                        if (event_cache.ContainsKey(cache_key)) {
-
-                            event_cache[cache_key] = item;
-                        } else {
-
-                            event_cache.Add(cache_key, item);
-                        }
-                    }
+                    event_list.RemoveAt(0);
                 }
 
                 if (event_list.Count == 0) {
@@ -588,6 +565,42 @@ namespace com.rum {
                 if (items.Count >= countLimit) {
 
                     break;
+                }
+            }
+        }
+
+        private void TrimEmptyKey(IDictionary<string, object> item) {
+
+            List<string> keys = new List<string>(item.Keys);
+
+            foreach (string k in keys) {
+
+                if (k == "status") {
+
+                    continue;
+                }
+
+                if (this.IsNullOrEmpty(item[k])) {
+
+                    item.Remove(k);
+                }
+            }
+        }
+
+        private void AddToCache(ICollection<object> items) {
+
+            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
+
+            foreach (IDictionary<string, object> item in items) {
+
+                string cache_key = Convert.ToString(item["eid"]); 
+
+                if (event_cache.ContainsKey(cache_key)) {
+
+                    event_cache[cache_key] = item;
+                } else {
+
+                    event_cache.Add(cache_key, item);
                 }
             }
         }

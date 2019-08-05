@@ -390,6 +390,116 @@ namespace com.rum {
             }
         }
 
+        // HttpWebRequest
+        public void HookHttp(System.Net.HttpWebRequest req, System.Net.HttpWebResponse res, int latency) {
+
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> attrs = new Dictionary<string, object>();
+
+            if (req != null) {
+
+                dict.Add("url", req.Address);
+                dict.Add("method", req.Method);
+                dict.Add("reqsize", req.ContentLength);
+
+                if (req.ContentType != null) {
+
+                    if (!string.IsNullOrEmpty(req.ContentType)) {
+
+                        attrs.Add("Request-Content-Type", req.ContentType);
+                    }
+                }
+
+                if (req.Timeout > 0) {
+
+                    attrs.Add("Request-Timeout", req.Timeout);
+                }
+
+                if (req.TransferEncoding != null) {
+
+                    if (!string.IsNullOrEmpty(req.TransferEncoding)) { 
+
+                        attrs.Add("Request-Transfer-Encoding", req.TransferEncoding);
+                    }
+                }
+
+                if (req.UserAgent != null) {
+
+                    if (!string.IsNullOrEmpty(req.UserAgent)) { 
+
+                        attrs.Add("Request-User-Agent", req.UserAgent);
+                    }
+                }
+            }
+
+            if (res != null) {
+
+                dict.Add("status", res.StatusCode);
+                dict.Add("respsize", res.ContentLength);
+                dict.Add("latency", latency);
+
+                if (res.ContentEncoding != null) {
+
+                    if (!string.IsNullOrEmpty(res.ContentEncoding)) { 
+
+                        attrs.Add("Response-ContentEncoding", res.ContentEncoding);
+                    }
+                }
+
+                if (res.ContentType != null) {
+
+                    if (!string.IsNullOrEmpty(res.ContentType)) { 
+
+                        attrs.Add("Response-ContentType", res.ContentType);
+                    }
+                }
+
+                if (res.StatusDescription != null) {
+
+                    if (!string.IsNullOrEmpty(res.StatusDescription)) { 
+
+                        attrs.Add("Response-StatusDescription", res.StatusDescription);
+                    }
+                }
+            }
+
+            dict.Add("attrs", attrs);
+            this.HttpEvent(dict);
+        }
+
+        // UnityWebRequest
+        public void HookHttp(UnityEngine.Networking.UnityWebRequest req, int latency) {
+
+            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> attrs = new Dictionary<string, object>();
+
+            if (req != null) {
+
+                dict.Add("url", req.url);
+                dict.Add("method", req.method);
+                dict.Add("reqsize", req.uploadedBytes);
+                dict.Add("respsize", req.downloadedBytes);
+                dict.Add("status", req.responseCode);
+                dict.Add("latency", latency);
+
+                if (req.uploadHandler != null) {
+
+                    if (!string.IsNullOrEmpty(req.uploadHandler.contentType)) {
+
+                        attrs.Add("Request-Content-Type", req.uploadHandler.contentType);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(req.error)) {
+
+                    attrs.Add("error", req.error);
+                }
+            }
+
+            dict.Add("attrs", attrs);
+            this.HttpEvent(dict);
+        }
+
         private void HttpEvent(IDictionary<string, object> dict) {
 
             string url = null;
@@ -489,11 +599,6 @@ namespace com.rum {
                     dict.Add("system_memory", mem);
 
                     self.WriteEvent("warn", dict);
-                };
-
-                RUMPlatform.Instance.HttpHook_Action = (dict) => {
-
-                    self.HttpEvent(dict);
                 };
             }
         }
