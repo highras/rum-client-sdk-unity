@@ -223,17 +223,9 @@ namespace com.rum {
             }
         }
 
-        private void WriteException(string type, Exception ex) {
-
-            this.WriteException("error", type, ex.Message, ex.StackTrace);
-        }
-
         private void WriteException(string ev, string type, string message, string stack) {
 
-            if (ev == "error") {
-
-                Debug.LogError(message + ":\n" + stack);
-            }
+            Debug.LogError(message + ":\n" + stack);
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
 

@@ -14,6 +14,9 @@
 * `SOCKET`链接支持`IPV6`接口
 * 兼容`DNS64/NAT64`网络环境
 
+#### 关于HOOK ####
+* HTTP HOOK: 半自动非侵入方式, 不会抓取请求内容, 参考`./Scripts/Main.cs`
+
 #### 一个例子 ####
 ```c#
 using System;
@@ -100,6 +103,3 @@ client.Connect("52.83.220.166:13609", false, false);
 * `HookHttp(UnityWebRequest req, int latency)`: 抓取以`UnityEngine.Networking.UnityWebRequest`方式发起的Http请求
     * `req`: **(UnityWebRequest)** `UnityWebRequest` 请求对象
     * `latency`: **(int)** 请求耗时(ms)
-
-#### HOOK ####
-* 抓取http状态, 半自动非侵入方式, 不会抓取请求内容, 参考`./Scripts/Main.cs`
