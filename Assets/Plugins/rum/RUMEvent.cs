@@ -119,9 +119,11 @@ namespace com.rum {
             }
         }
 
+        private object session_locker = new object();
+
         public void SetSession(long value) {
 
-            lock (check_locker) {
+            lock (session_locker) {
 
                 this._session = value;
             } 
@@ -277,9 +279,20 @@ namespace com.rum {
 
             foreach (IDictionary<string, object> item in items) {
 
+                if (!item.ContainsKey("rid")) {
+
+                    lock (rumid_locker) {
+
+                        item.Add("rid", this._rumId);
+                    }
+                }
+
                 if (!item.ContainsKey("sid")) {
 
-                    item.Add("sid", this._session);
+                    lock (session_locker) {
+
+                        item.Add("sid", this._session);
+                    }
                 }
 
                 this.AddEvent(item);
@@ -389,6 +402,11 @@ namespace com.rum {
 
                 this._rumId = null;
             }
+
+            lock (session_locker) {
+
+                this._session = 0;
+            } 
 
             lock (config_locker) {
 
@@ -581,14 +599,6 @@ namespace com.rum {
                 while (event_list.Count > 0 && items.Count < countLimit) {
 
                     IDictionary<string, object> item = (IDictionary<string, object>)event_list[0];
-
-                    if (!item.ContainsKey("rid")) {
-
-                        lock (rumid_locker) {
-
-                            item.Add("rid", this._rumId);
-                        }
-                    }
 
                     this.TrimEmptyKey(item);
                     
