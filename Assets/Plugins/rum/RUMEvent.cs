@@ -672,12 +672,12 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             }
 
+            this.UpdateStorageSize(storage_bytes.Length);
+
             if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
 
                 ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
             }
-
-            this.UpdateStorageSize(storage_bytes.Length);
 
             if (storage_bytes.Length < 1) {
 
@@ -973,8 +973,6 @@ namespace com.rum {
 
                 ErrorRecorderHolder.recordError(ex);
             }
-
-            this.UpdateStorageSize(storage_bytes.Length);
 
             if (storage_bytes.Length >= RUMConfig.STORAGE_SIZE_MAX) {
 
