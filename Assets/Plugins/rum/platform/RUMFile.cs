@@ -21,15 +21,17 @@ namespace com.rum {
             public int Status = 0;
         }
 
+        private static FileLocker File_Locker = new FileLocker();
+
         private static int LOCAL_FILE_MAX = 300; 
 
         private const string FILE_PRE = "rumlog_";
         private const string STORAGE_FILE = "rumlog_storage";
 
-        private int _read_index;
         private string _directory_path;
 
-        private FileLocker file_locker = new FileLocker();
+        private int _read_index;
+        private object index_locker = new object();
 
         public RUMFile(int pid) {
 
@@ -78,20 +80,24 @@ namespace com.rum {
 
         public RUMFile.Result ReadRumLog() {
 
-            int index = 0;
             string path = null;
 
-            while(index < 20) {
+            lock (index_locker) {
 
-                this._read_index = (this._read_index + 1) % LOCAL_FILE_MAX;
-                path = this._directory_path + "/" + FILE_PRE + this._read_index;
+                int index = 0;
 
-                if (new FileInfo(path).Exists) {
+                while(index < 20) {
 
-                    break;
+                    this._read_index = (this._read_index + 1) % LOCAL_FILE_MAX;
+                    path = this._directory_path + "/" + FILE_PRE + this._read_index;
+
+                    if (new FileInfo(path).Exists) {
+
+                        break;
+                    }
+
+                    index++;
                 }
-
-                index++;
             }
 
             RUMFile.Result res = this.ReadFile(path, true);
@@ -130,7 +136,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, string content, Encoding encoding) {
 
-            lock(file_locker) {
+            lock (File_Locker) {
 
                 try {
 
@@ -157,7 +163,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, byte[] content) {
 
-            lock(file_locker) {
+            lock (File_Locker) {
 
                 try {
 
@@ -184,7 +190,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete, Encoding encoding) {
 
-            lock(file_locker) {
+            lock (File_Locker) {
 
                 string content;
 
@@ -229,7 +235,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete) {
 
-            lock(file_locker) {
+            lock (File_Locker) {
 
                 byte[] content;
 
@@ -275,7 +281,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteFile(string path) {
 
-            lock(file_locker) {
+            lock (File_Locker) {
 
                 try {
 
@@ -304,7 +310,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteDirectory(string path) {
 
-            lock(file_locker) {
+            lock (File_Locker) {
 
                 try {
 

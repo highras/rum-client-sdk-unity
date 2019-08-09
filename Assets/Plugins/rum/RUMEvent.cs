@@ -40,6 +40,9 @@ namespace com.rum {
             { "3", EVENT_MAP_3 }
         };
 
+        private static int WriteIndex;
+        private static object Index_Locker = new object();
+
         private string _rumId;
         private bool _isFirst;
 
@@ -90,6 +93,8 @@ namespace com.rum {
 
         private void InitStorage() {
 
+            int index = 1;
+
             lock (check_locker) {
 
                 if (this._storage == null) {
@@ -110,6 +115,24 @@ namespace com.rum {
 
                         this._storage.Add(this._fileIndexKey, new Dictionary<string, object>());
                     }
+                }
+
+                IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
+
+                if (item.ContainsKey("index")) {
+
+                    index = Convert.ToInt32(item["index"]);
+                } else {
+
+                    item.Add("index", index);
+                }
+            }
+
+            lock (Index_Locker) {
+
+                if (RUMEvent.WriteIndex == 0) {
+
+                    RUMEvent.WriteIndex = index;
                 }
             }
 
@@ -174,12 +197,9 @@ namespace com.rum {
 
         public void WriteEvent(IDictionary<string, object> dict) {
 
+            this.StartWriteThread();
+
             lock (write_locker) {
-
-                if (write_locker.Status == 0) {
-
-                    this.StartWriteThread();
-                }
 
                 this._eventCache.Add(dict);
 
@@ -423,6 +443,14 @@ namespace com.rum {
 
                 this._delayCount = 0;
                 this._timestamp = 0;
+            }
+
+            lock (Index_Locker) {
+
+                if (RUMEvent.WriteIndex != 0) {
+
+                    RUMEvent.WriteIndex = 0;
+                }
             }
 
             lock (storagesize_locker) {
@@ -994,18 +1022,6 @@ namespace com.rum {
 
         private void SlipStorage(List<object> list) {
 
-            int index = 1;
-
-            IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
-
-            if (item.ContainsKey("index")) {
-
-                index = Convert.ToInt32(item["index"]);
-            } else {
-
-                item.Add("index", index);
-            }
-
             byte[] bytes = new byte[0];
 
             try {
@@ -1022,19 +1038,36 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             }
 
-            RUMFile.Result res = this._rumFile.WriteRumLog(index, bytes);
+            int index = 0;
+            bool success = false;
 
-            if (res.success) {
+            lock (Index_Locker) {
 
-                item["index"] = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
-            } else {
+                index = RUMEvent.WriteIndex;
 
-                ErrorRecorderHolder.recordError((Exception)res.content);
+                RUMFile.Result res = this._rumFile.WriteRumLog(index, bytes);
+                success = res.success;
+
+                if (success) {
+
+                    index = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
+
+                    if (index == 0) {
+
+                        index = 1;
+                    }
+
+                    ((IDictionary<string, object>)(this._storage[this._fileIndexKey]))["index"] = index;
+                    RUMEvent.WriteIndex = index;
+                } else {
+
+                    ErrorRecorderHolder.recordError((Exception)res.content);
+                }
             }
 
             if (this._debug) {
 
-                Debug.Log("[RUM] write to file: " + res.success + ",  index: " + index);
+                Debug.Log("[RUM] write to file: " + success + ",  index: " + index);
             }
         }
 

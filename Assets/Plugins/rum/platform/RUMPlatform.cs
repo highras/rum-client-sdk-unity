@@ -16,7 +16,7 @@ namespace com.rum {
         public Action AppBg_Action;
         public Action<int> LowMemory_Action;
         public Action<string> NetworkChange_Action;
-        public Action<IDictionary<string, object>>  SystemInfo_Action;
+        public Action<IDictionary<string, object>> SystemInfo_Action;
 
         private bool _isPause;
         private bool _isFocus;
@@ -224,8 +224,6 @@ namespace com.rum {
         }
 
         private void WriteException(string ev, string type, string message, string stack) {
-
-            Debug.LogError(message + ":\n" + stack);
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
 
