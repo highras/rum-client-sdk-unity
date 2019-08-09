@@ -18,6 +18,8 @@ namespace com.rum {
         public Action<string> NetworkChange_Action;
         public Action<IDictionary<string, object>> SystemInfo_Action;
 
+        private IDictionary<string, object> _infoDict;
+
         private bool _isPause;
         private bool _isFocus;
 
@@ -48,19 +50,7 @@ namespace com.rum {
             Application.logMessageReceived += OnLogCallback;
             Application.logMessageReceivedThreaded += OnLogCallbackThreaded;
 
-            this._nw = "NONE";
-            NetworkReachability internetReachability = Application.internetReachability;
-
-            if (internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
-
-                this._nw = "3G/4G";
-            }
-
-            if (internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork) {
-
-                this._nw = "WIFI";
-            }
-
+            this._nw = Application.internetReachability.ToString();
             this._lang = Application.systemLanguage.ToString();
             this._model = SystemInfo.deviceModel;
             this._os = SystemInfo.operatingSystem;
@@ -69,16 +59,108 @@ namespace com.rum {
             this._isMobile = Application.isMobilePlatform;
             this._memorySize = SystemInfo.systemMemorySize;
             this._unityVersion = Application.unityVersion;
-            this._installMode = Application.installMode;
+            this._installMode = Application.installMode.ToString();
             
             this._deviceToken = null;
             #if UNITY_IPHONE
             this._deviceToken = UnityEngine.iOS.NotificationServices.deviceToken;
             #endif
 
+            if (this._infoDict == null) {
+
+                this._infoDict = new Dictionary<string, object>();
+
+                this._infoDict.Add("network", this._nw);
+                this._infoDict.Add("systemLanguage", this._lang);
+                this._infoDict.Add("deviceToken", this._deviceToken);
+                this._infoDict.Add("deviceModel", this._model);
+                this._infoDict.Add("operatingSystem", this._os);
+                this._infoDict.Add("screenHeight", this._sh);
+                this._infoDict.Add("screenWidth", this._sw);
+                this._infoDict.Add("isMobile", this._isMobile);
+                this._infoDict.Add("systemMemorySize", this._memorySize);
+                this._infoDict.Add("unityVersion", this._unityVersion);
+                this._infoDict.Add("installMode", this._installMode);
+
+                //支持多种复制纹理功能的情况
+                this._infoDict.Add("copyTextureSupport", SystemInfo.copyTextureSupport.ToString());
+                //用户定义的设备名称
+                this._infoDict.Add("deviceName", SystemInfo.deviceName);
+                //返回程序运行所在的设备类型
+                this._infoDict.Add("deviceType", SystemInfo.deviceType.ToString());
+                //设备的唯一标识符。每一台设备都有唯一的标识符
+                this._infoDict.Add("deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier);
+                //显卡的唯一标识符ID
+                this._infoDict.Add("graphicsDeviceID", SystemInfo.graphicsDeviceID);
+                //显卡的名称
+                this._infoDict.Add("graphicsDeviceName", SystemInfo.graphicsDeviceName);
+                //显卡的类型
+                this._infoDict.Add("graphicsDeviceType", SystemInfo.graphicsDeviceType.ToString());
+                //显卡的供应商
+                this._infoDict.Add("graphicsDeviceVendor", SystemInfo.graphicsDeviceVendor);
+                //显卡供应商的唯一识别码ID
+                this._infoDict.Add("graphicsDeviceVendorID", SystemInfo.graphicsDeviceVendorID);
+                //显卡的类型和版本
+                this._infoDict.Add("graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion);
+                //显存大小
+                this._infoDict.Add("graphicsMemorySize", SystemInfo.graphicsMemorySize);
+                //是否支持多线程渲染
+                this._infoDict.Add("graphicsMultiThreaded", SystemInfo.graphicsMultiThreaded);
+                //显卡着色器的级别
+                this._infoDict.Add("graphicsShaderLevel", SystemInfo.graphicsShaderLevel);
+                //支持的最大纹理大小
+                this._infoDict.Add("maxTextureSize", SystemInfo.maxTextureSize);
+                //GPU支持的NPOT纹理
+                this._infoDict.Add("npotSupport", SystemInfo.npotSupport.ToString());
+                //当前处理器的数量
+                this._infoDict.Add("processorCount", SystemInfo.processorCount);
+                //处理器的频率
+                this._infoDict.Add("processorFrequency", SystemInfo.processorFrequency);
+                //处理器的名称
+                this._infoDict.Add("processorType", SystemInfo.processorType);
+                //支持渲染多少目标纹理
+                this._infoDict.Add("supportedRenderTargetCount", SystemInfo.supportedRenderTargetCount);
+                //是否支持2D数组纹理
+                this._infoDict.Add("supports2DArrayTextures", SystemInfo.supports2DArrayTextures);
+                //是否支持3D（体积）纹理
+                this._infoDict.Add("supports3DTextures", SystemInfo.supports3DTextures);
+                //是否支持获取加速度计
+                this._infoDict.Add("supportsAccelerometer", SystemInfo.supportsAccelerometer);
+                //是否支持获取用于回放的音频设备
+                this._infoDict.Add("supportsAudio", SystemInfo.supportsAudio);
+                //是否支持计算着色器
+                this._infoDict.Add("supportsComputeShaders", SystemInfo.supportsComputeShaders);
+                //是否支持获取陀螺仪
+                this._infoDict.Add("supportsGyroscope", SystemInfo.supportsGyroscope);
+                //是否支持图形特效
+                this._infoDict.Add("supportsImageEffects", SystemInfo.supportsImageEffects);
+                //是否支持实例化GPU的Draw Call
+                this._infoDict.Add("supportsInstancing", SystemInfo.supportsInstancing);
+                //是否支持定位功能
+                this._infoDict.Add("supportsLocationService", SystemInfo.supportsLocationService);
+                //是否支持运动向量
+                this._infoDict.Add("supportsMotionVectors", SystemInfo.supportsMotionVectors);
+                //是否支持阴影深度
+                this._infoDict.Add("supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling);
+                //是否支持渲染纹理
+                this._infoDict.Add("supportsRenderTextures", SystemInfo.supportsRenderTextures);
+                //是否支持立方体纹理
+                this._infoDict.Add("supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap);
+                //是否支持内置阴影
+                this._infoDict.Add("supportsShadows", SystemInfo.supportsShadows);
+                //是否支持稀疏纹理
+                this._infoDict.Add("supportsSparseTextures", SystemInfo.supportsSparseTextures);
+                //是否支持模版缓存
+                this._infoDict.Add("supportsStencil", SystemInfo.supportsStencil);
+                //是否支持用户触摸震动反馈
+                this._infoDict.Add("supportsVibration", SystemInfo.supportsVibration);
+                //不支持运行在当前设备的SystemInfo属性值
+                this._infoDict.Add("unsupportedIdentifier", SystemInfo.unsupportedIdentifier);
+            }
+
             if (!this.IsInvoking("OnInfo")) {
 
-                this.Invoke("OnInfo", 20.0f);
+                this.Invoke("OnInfo", 5.0f);
             }
 
             if (!this.IsInvoking("OnTimer")) {
@@ -151,54 +233,24 @@ namespace com.rum {
 
         private void OnInfo() {
 
-            IDictionary<string, object> dict = new Dictionary<string, object>();
+            if (this._infoDict != null && this.SystemInfo_Action != null) {
 
-            dict.Add("system_memory", this.GetMemorySize());
-            dict.Add("unity_version", this.GetUnityVersion());
-            dict.Add("install_mode", this.GetInstallMode());
-            dict.Add("device_token", this.GetDeviceToken());
-
-            if (this.SystemInfo_Action != null) {
-
-                this.SystemInfo_Action(dict);
+                this.SystemInfo_Action(this._infoDict);
             }
         }
 
         private void OnTimer() {
 
-            bool change = false;
-            NetworkReachability internetReachability = Application.internetReachability;
+            string nw = Application.internetReachability.ToString();
 
-            if (internetReachability == NetworkReachability.ReachableViaCarrierDataNetwork) {
+            if (this._nw != nw) {
 
-                if (this._nw != "3G/4G") {
+                this._nw = nw;
 
-                    change = true;
-                    this._nw = "3G/4G";
+                if (this.NetworkChange_Action != null) {
+
+                    this.NetworkChange_Action(this._nw);
                 }
-            }
-
-            if (internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork) {
-
-                if (this._nw != "WIFI") {
-
-                    change = true;
-                    this._nw = "WIFI";
-                }
-            }
-
-            if (internetReachability == NetworkReachability.NotReachable){
-
-                if (this._nw != "NONE") {
-
-                    change = true;
-                    this._nw = "NONE";
-                }
-            }
-
-            if (change && this.NetworkChange_Action != null) {
-
-                this.NetworkChange_Action(this._nw);
             }
         }
 
@@ -357,36 +409,11 @@ namespace com.rum {
             return this._androidID;
         }
 
-        private ApplicationInstallMode _installMode;
+        private string _installMode;
 
         public string GetInstallMode() {
 
-            if (this._installMode == ApplicationInstallMode.Store) {
-
-                return "Store";
-            }
-
-            if (this._installMode == ApplicationInstallMode.DeveloperBuild) {
-
-                return "DeveloperBuild";
-            }
-
-            if (this._installMode == ApplicationInstallMode.Adhoc) {
-
-                return "Adhoc";
-            }
-
-            if (this._installMode == ApplicationInstallMode.Enterprise) {
-
-                return "Enterprise";
-            }
-
-            if (this._installMode == ApplicationInstallMode.Editor) {
-
-                return "Editor";
-            }
-
-            return "Unknown";
+            return this._installMode;
         }
 
         private byte[] _deviceToken;
