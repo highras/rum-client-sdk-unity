@@ -40,8 +40,7 @@ namespace com.rum {
             { "3", EVENT_MAP_3 }
         };
 
-        private static int WriteIndex;
-        private static object Index_Locker = new object();
+        private int _writeIndex;
 
         private string _rumId;
         private bool _isFirst;
@@ -93,8 +92,6 @@ namespace com.rum {
 
         private void InitStorage() {
 
-            int index = 1;
-
             lock (check_locker) {
 
                 if (this._storage == null) {
@@ -117,6 +114,7 @@ namespace com.rum {
                     }
                 }
 
+                int index = 1;
                 IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
 
                 if (item.ContainsKey("index")) {
@@ -126,14 +124,8 @@ namespace com.rum {
 
                     item.Add("index", index);
                 }
-            }
 
-            lock (Index_Locker) {
-
-                if (RUMEvent.WriteIndex == 0) {
-
-                    RUMEvent.WriteIndex = index;
-                }
+                this._writeIndex = index;
             }
 
             if (this._openEvent != null) {
@@ -437,6 +429,7 @@ namespace com.rum {
             lock (check_locker) {
 
                 this._isFirst = false;
+                this._writeIndex = 0;
                 this._storageCount = 0;
             }
 
@@ -444,14 +437,6 @@ namespace com.rum {
 
                 this._delayCount = 0;
                 this._timestamp = 0;
-            }
-
-            lock (Index_Locker) {
-
-                if (RUMEvent.WriteIndex != 0) {
-
-                    RUMEvent.WriteIndex = 0;
-                }
             }
 
             lock (storagesize_locker) {
@@ -1039,36 +1024,29 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             }
 
-            int index = 0;
-            bool success = false;
+            int index = this._writeIndex;
 
-            lock (Index_Locker) {
+            RUMFile.Result res = this._rumFile.WriteRumLog(index, bytes);
 
-                index = RUMEvent.WriteIndex;
+            if (res.success) {
 
-                RUMFile.Result res = this._rumFile.WriteRumLog(index, bytes);
-                success = res.success;
+                index = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
 
-                if (success) {
+                if (index == 0) {
 
-                    index = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
-
-                    if (index == 0) {
-
-                        index = 1;
-                    }
-
-                    ((IDictionary<string, object>)(this._storage[this._fileIndexKey]))["index"] = index;
-                    RUMEvent.WriteIndex = index;
-                } else {
-
-                    ErrorRecorderHolder.recordError((Exception)res.content);
+                    index = 1;
                 }
+
+                ((IDictionary<string, object>)(this._storage[this._fileIndexKey]))["index"] = index;
+                this._writeIndex = index;
+            } else {
+
+                ErrorRecorderHolder.recordError((Exception)res.content);
             }
 
             if (this._debug) {
 
-                Debug.Log("[RUM] write to file: " + success + ",  index: " + index);
+                Debug.Log("[RUM] write to file: " + res.success + ",  index: " + index);
             }
         }
 

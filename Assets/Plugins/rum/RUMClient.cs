@@ -79,14 +79,17 @@ namespace com.rum {
             return this._event;
         }
 
+        private static object Pids_Locker = new object();
+        private static List<int> PIDS = new List<int>();
+
         private string _token;
         private string _uid;
         private string _appv;
 
-        private int _pid = 0;
         private bool _debug = true;
         private string _endpoint;
 
+        private int _pid = 0;
         private RUMEvent _rumEvent;
         private FPClient _baseClient;
 
@@ -104,6 +107,16 @@ namespace com.rum {
         private EventDelegate _eventDelegate;
 
         public RUMClient(int pid, string token, string uid, string appv, bool debug) {
+
+            lock (Pids_Locker) {
+
+                if (RUMClient.PIDS.Contains(pid)) {
+
+                    throw new Exception("The Same Project Id, Instance Limit!");
+                }
+
+                RUMClient.PIDS.Add(pid);
+            }
 
             Debug.Log("Hello RUM! rum@" + RUMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
 
@@ -134,7 +147,11 @@ namespace com.rum {
 
         public void Destroy() {
 
+            int pid = 0;
+
             lock (self_locker) {
+
+                pid = this._pid;
 
                 if (this._eventDelegate != null) {
 
@@ -197,6 +214,14 @@ namespace com.rum {
                 }
 
                 this._event.RemoveListener();
+            }
+
+            lock (Pids_Locker) {
+
+                if (RUMClient.PIDS.Contains(pid)) {
+
+                    RUMClient.PIDS.Remove(pid);
+                }
             }
         }
 

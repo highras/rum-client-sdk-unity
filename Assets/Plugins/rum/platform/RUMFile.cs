@@ -16,13 +16,6 @@ namespace com.rum {
             public object content;
         }
 
-        private class FileLocker {
-
-            public int Status = 0;
-        }
-
-        private static FileLocker File_Locker = new FileLocker();
-
         private static int LOCAL_FILE_MAX = 300; 
 
         private const string FILE_PRE = "rumlog_";
@@ -32,6 +25,8 @@ namespace com.rum {
 
         private int _read_index;
         private object index_locker = new object();
+        
+        private object file_locker = new object();
 
         public RUMFile(int pid) {
 
@@ -136,7 +131,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, string content, Encoding encoding) {
 
-            lock (File_Locker) {
+            lock (file_locker) {
 
                 try {
 
@@ -163,7 +158,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, byte[] content) {
 
-            lock (File_Locker) {
+            lock (file_locker) {
 
                 try {
 
@@ -190,7 +185,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete, Encoding encoding) {
 
-            lock (File_Locker) {
+            lock (file_locker) {
 
                 string content;
 
@@ -235,7 +230,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete) {
 
-            lock (File_Locker) {
+            lock (file_locker) {
 
                 byte[] content;
 
@@ -281,7 +276,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteFile(string path) {
 
-            lock (File_Locker) {
+            lock (file_locker) {
 
                 try {
 
@@ -310,7 +305,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteDirectory(string path) {
 
-            lock (File_Locker) {
+            lock (file_locker) {
 
                 try {
 
