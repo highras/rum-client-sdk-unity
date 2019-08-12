@@ -437,6 +437,7 @@ namespace com.rum {
             lock (check_locker) {
 
                 this._isFirst = false;
+                this._storageCount = 0;
             }
 
             lock (second_locker) {

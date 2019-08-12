@@ -25,10 +25,10 @@ public class Main : MonoBehaviour {
     void Start() {
 
         //TestCase
-        this._testCase = new TestCase();
+        // this._testCase = new TestCase();
 
         //SingleClientSend
-        // this._testCase = new SingleClientSend();
+        this._testCase = new SingleClientSend();
 
         if (this._testCase != null) {
 

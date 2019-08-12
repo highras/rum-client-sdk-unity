@@ -438,7 +438,7 @@ namespace com.rum {
 
                 if (req.UserAgent != null) {
 
-                    if (!string.IsNullOrEmpty(req.UserAgent)) { 
+                    if (!string.IsNullOrEmpty(req.UserAgent)) {
 
                         attrs.Add("Request-User-Agent", req.UserAgent);
                     }
