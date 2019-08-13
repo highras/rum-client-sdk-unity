@@ -68,6 +68,7 @@ namespace com.rum {
         private CheckLocker check_locker = new CheckLocker();
 
         private IDictionary<string, object> _storage;
+        private object storage_locker = new object();
 
         private Action _sendQuest;
         private Action _openEvent;
@@ -92,7 +93,9 @@ namespace com.rum {
 
         private void InitStorage() {
 
-            lock (check_locker) {
+            int index = 1;
+
+            lock (storage_locker) {
 
                 if (this._storage == null) {
 
@@ -114,7 +117,6 @@ namespace com.rum {
                     }
                 }
 
-                int index = 1;
                 IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._fileIndexKey];
 
                 if (item.ContainsKey("index")) {
@@ -124,6 +126,9 @@ namespace com.rum {
 
                     item.Add("index", index);
                 }
+            }
+
+            lock (self_locker) {
 
                 this._writeIndex = index;
             }
@@ -134,11 +139,11 @@ namespace com.rum {
             }
         }
 
-        private object session_locker = new object();
+        private object self_locker = new object();
 
         public void SetSession(long value) {
 
-            lock (session_locker) {
+            lock (self_locker) {
 
                 this._session = value;
             } 
@@ -173,15 +178,19 @@ namespace com.rum {
                 config_locker.Status = 1;
             }
 
-            lock (check_locker) {
+            ICollection<object> items = null;
+
+            lock (storage_locker) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
-                if (!this.IsNullOrEmpty(event_cache)) {
+                items = event_cache.Values;
+                event_cache = new Dictionary<string, object>();
+            }
 
-                    this.AddEvents(event_cache.Values);
-                    event_cache.Clear();
-                }
+            if (!this.IsNullOrEmpty(items)) {
+
+                this.WriteEvents(items);
             }
         }
 
@@ -250,7 +259,10 @@ namespace com.rum {
                         this._eventCache = new List<object>();
                     }
 
-                    this.WriteEvents(list);
+                    if (!this.IsNullOrEmpty(list)) {
+
+                        this.WriteEvents(list);
+                    }
 
                     if (this._sendQuest != null) {
 
@@ -281,27 +293,16 @@ namespace com.rum {
 
         public void WriteEvents(ICollection<object> items) {
 
-            lock (check_locker) {
-
-                this.AddEvents(items);
-            } 
-        }
-
-        private void AddEvents(ICollection<object> items) {
-
             foreach (IDictionary<string, object> item in items) {
 
-                if (!item.ContainsKey("rid")) {
+                lock (self_locker) {
 
-                    lock (rumid_locker) {
+                    if (!item.ContainsKey("rid")) {
 
                         item.Add("rid", this._rumId);
                     }
-                }
 
-                if (!item.ContainsKey("sid")) {
-
-                    lock (session_locker) {
+                    if (!item.ContainsKey("sid")) {
 
                         item.Add("sid", this._session);
                     }
@@ -318,26 +319,29 @@ namespace com.rum {
 
             if (!string.IsNullOrEmpty(storageKey)) {
 
-                IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
+                lock (storage_locker) {
 
-                if (!event_storage.ContainsKey(key)) {
+                    IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
 
-                    event_storage[key] = new List<object>();
-                }
+                    if (!event_storage.ContainsKey(key)) {
 
-                List<object> event_list = (List<object>)event_storage[key];
-
-                if (event_list.Count >= RUMConfig.EVENT_QUEUE_LIMIT) {
-
-                    event_list.RemoveAt(0);
-                    
-                    if (this._debug) {
-
-                        Debug.Log("[RUM] event(normal) queue limit & will be shift! " + Json.SerializeToString(dict));
+                        event_storage[key] = new List<object>();
                     }
-                }
 
-                event_list.Add(dict);
+                    List<object> event_list = (List<object>)event_storage[key];
+
+                    if (event_list.Count >= RUMConfig.EVENT_QUEUE_LIMIT) {
+
+                        event_list.RemoveAt(0);
+                        
+                        if (this._debug) {
+
+                            Debug.Log("[RUM] event(normal) queue limit & will be shift! " + Json.SerializeToString(dict));
+                        }
+                    }
+
+                    event_list.Add(dict);
+                }
             } else {
 
                 if (this._debug) {
@@ -347,11 +351,9 @@ namespace com.rum {
             }
         }
 
-        private object rumid_locker = new object();
-
         public string GetRumId() {
 
-            lock (rumid_locker) {
+            lock (self_locker) {
 
                 return this._rumId;
             }
@@ -369,11 +371,19 @@ namespace com.rum {
 
             lock (second_locker) {
 
+                if (value == 0) {
+
+                    this._delayCount = 0;
+                    this._timestamp = 0;
+                    return;
+                }
+
                 if (value < this._timestamp) {
 
                     this._delayCount = this._timestamp - value;
                 } else {
 
+                    this._delayCount = 0;
                     this._timestamp = value;
                 }
             }
@@ -383,17 +393,17 @@ namespace com.rum {
 
             bool build = false;
 
-            lock (rumid_locker) {
+            lock (self_locker) {
             
                 build = string.IsNullOrEmpty(this._rumId);
             }
 
-            lock (check_locker) {
+            if (build) {
 
-                if (build) {
+                this.BuildRumId();
+            }
 
-                    this.BuildRumId();
-                }
+            lock (self_locker) {
 
                 if (this._isFirst) {
 
@@ -410,27 +420,22 @@ namespace com.rum {
             this.StopWriteThread();
             this.StopCheckThread();
 
-            lock (rumid_locker) {
+            lock (self_locker) {
 
                 this._rumId = null;
-            }
-
-            lock (session_locker) {
-
                 this._session = 0;
+
+                this._storageSize = 0;
+                this._storageCount = 0;
+
+                this._isFirst = false;
+                this._writeIndex = 0;
             } 
 
             lock (config_locker) {
 
-                this._config = null;
                 config_locker.Status = 0;
-            }
-
-            lock (check_locker) {
-
-                this._isFirst = false;
-                this._writeIndex = 0;
-                this._storageCount = 0;
+                this._config = null;
             }
 
             lock (second_locker) {
@@ -439,30 +444,21 @@ namespace com.rum {
                 this._timestamp = 0;
             }
 
-            lock (storagesize_locker) {
-
-                this._storageSize = 0;
-            }
-
             this._sendQuest = null;
             this._openEvent = null;
         }
 
-        private object storagesize_locker = new object();
-
         public int GetStorageSize() {
 
-            lock (storagesize_locker) {
+            lock (self_locker) {
 
                 return this._storageSize;
             }
         }
 
-        private object sizelimit_locker = new object();
-
         public void SetSizeLimit(int value) {
 
-            lock (sizelimit_locker) {
+            lock (self_locker) {
 
                 if (value > 0) {
 
@@ -481,7 +477,7 @@ namespace com.rum {
         
         public void ClearRumId() {
 
-            lock (check_locker) {
+            lock (storage_locker) {
 
                 ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
             }
@@ -494,7 +490,7 @@ namespace com.rum {
 
         public void ClearEvents() {
 
-            lock (check_locker) {
+            lock (storage_locker) {
 
                 ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
             }
@@ -507,7 +503,7 @@ namespace com.rum {
 
         public void RemoveFromCache(ICollection<object> items) {
 
-            lock (check_locker) {
+            lock (storage_locker) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
@@ -539,15 +535,12 @@ namespace com.rum {
 
             int sizeLimit = 0;
 
-            lock (sizelimit_locker) {
+            lock (self_locker) {
 
                 sizeLimit = this._sizeLimit;
             } 
 
-            lock (check_locker) {
-
-                return this.GetEventsFromStorage(sizeLimit, true);
-            }
+            return this.GetEventsFromStorage(sizeLimit, true);
         }
 
         private List<object> GetFileEvents() {
@@ -560,19 +553,22 @@ namespace com.rum {
             List<object> items = new List<object>();
             int countLimit = this.GetCountLimit(size);
 
-            foreach (string map_key in this._eventMap.Values) {
+            lock (storage_locker) {
 
-                this.ShiftEvents(map_key, countLimit, ref items);
+                foreach (string map_key in this._eventMap.Values) {
 
-                if (items.Count >= countLimit) {
+                    this.ShiftEvents(map_key, countLimit, ref items);
 
-                    break;
+                    if (items.Count >= countLimit) {
+
+                        break;
+                    }
                 }
-            }
 
-            if (catchAble) {
+                if (catchAble) {
 
-                this.AddToCache(items);
+                    this.AddToCache(items);
+                }
             }
 
             return items;
@@ -580,19 +576,21 @@ namespace com.rum {
 
         private int GetCountLimit(int size) {
 
+            int storegeCount = 0;
             int storageSize = 0;
 
-            lock (storagesize_locker) {
+            lock (self_locker) {
 
                 storageSize = this._storageSize;
+                storegeCount = this._storageCount;
             }
 
-            if (size < 1 || storageSize < 1 || this._storageCount < 1) {
+            if (size < 1 || storageSize < 1 || storegeCount < 1) {
 
                 return 20;
             }
 
-            return (int) Math.Ceiling(size / (storageSize / this._storageCount * 1f));
+            return (int) Math.Ceiling(size / (storageSize / storegeCount * 1f));
         }
 
         private void ShiftEvents(string key, int countLimit, ref List<object> items) {
@@ -676,9 +674,12 @@ namespace com.rum {
 
                 using (MemoryStream outputStream = new MemoryStream()) {
 
-                    MsgPack.Serialize(this._storage, outputStream);
-                    outputStream.Seek(0, SeekOrigin.Begin);
+                    lock (storage_locker) {
 
+                        MsgPack.Serialize(this._storage, outputStream);
+                    }
+
+                    outputStream.Seek(0, SeekOrigin.Begin);
                     storage_bytes = outputStream.ToArray();
                 }
             } catch (Exception ex) {
@@ -690,7 +691,10 @@ namespace com.rum {
 
             if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
 
-                ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
+                lock (storage_locker) {
+
+                    ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
+                }
             }
 
             if (storage_bytes.Length < 1) {
@@ -715,18 +719,19 @@ namespace com.rum {
 
             int count = 0;
 
-            count += this.GetStorageCount(EVENT_MAP_1);
-            count += this.GetStorageCount(EVENT_MAP_2);
-            count += this.GetStorageCount(EVENT_MAP_3);
+            lock (storage_locker) {
+                
+                count += this.GetStorageCount(EVENT_MAP_1);
+                count += this.GetStorageCount(EVENT_MAP_2);
+                count += this.GetStorageCount(EVENT_MAP_3);
 
-            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
+                IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
+                count += event_cache.Values.Count;
+            }
 
-            count += event_cache.Values.Count;
+            lock (self_locker) {
 
-            this._storageCount = count;
-
-            lock (storagesize_locker) {
-
+                this._storageCount = count;
                 this._storageSize = size;
             }
         }
@@ -780,21 +785,26 @@ namespace com.rum {
 
         private string BuildRumId() {
 
+            bool first = false;
             string rum_id = this.UUID(0, 16, 'c');
 
-            IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._rumIdKey];
+            lock (storage_locker) {
 
-            if (item.ContainsKey("rid")) {
+                IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._rumIdKey];
 
-                rum_id = Convert.ToString(item["rid"]);
-            } else {
+                if (item.ContainsKey("rid")) {
 
-                this._isFirst = true;
-                item.Add("rid", rum_id);
+                    rum_id = Convert.ToString(item["rid"]);
+                } else {
+
+                    first = true;
+                    item.Add("rid", rum_id);
+                }
             }
 
-            lock (rumid_locker) {
+            lock (self_locker) {
 
+                this._isFirst = first;
                 return this._rumId = rum_id;
             }
         }
@@ -945,10 +955,9 @@ namespace com.rum {
 
                             return;
                         }
-
-                        this.CheckStorageSize();
                     }
 
+                    this.CheckStorageSize();
                     this._checkEvent.WaitOne(RUMConfig.LOCAL_STORAGE_DELAY);
                 }
             } catch (ThreadAbortException tex) {
@@ -978,9 +987,12 @@ namespace com.rum {
 
                 using (MemoryStream outputStream = new MemoryStream()) {
 
-                    MsgPack.Serialize(this._storage, outputStream);
-                    outputStream.Seek(0, SeekOrigin.Begin);
+                    lock (storage_locker) {
 
+                        MsgPack.Serialize(this._storage, outputStream);
+                    }
+
+                    outputStream.Seek(0, SeekOrigin.Begin);
                     storage_bytes = outputStream.ToArray();
                 }
             } catch (Exception ex) {
@@ -1024,7 +1036,12 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             }
 
-            int index = this._writeIndex;
+            int index = 0;
+
+            lock (self_locker) {
+
+                index = this._writeIndex;
+            }
 
             RUMFile.Result res = this._rumFile.WriteRumLog(index, bytes);
 
@@ -1037,8 +1054,15 @@ namespace com.rum {
                     index = 1;
                 }
 
-                ((IDictionary<string, object>)(this._storage[this._fileIndexKey]))["index"] = index;
-                this._writeIndex = index;
+                lock (storage_locker) {
+
+                    ((IDictionary<string, object>)(this._storage[this._fileIndexKey]))["index"] = index;
+                }
+
+                lock (self_locker) {
+
+                    this._writeIndex = index;
+                }
             } else {
 
                 ErrorRecorderHolder.recordError((Exception)res.content);
@@ -1071,7 +1095,7 @@ namespace com.rum {
 
                 if (!this.IsNullOrEmpty(items)) {
 
-                    this.AddEvents(items);
+                    this.WriteEvents(items);
                 }
             } 
 

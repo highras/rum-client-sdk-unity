@@ -25,7 +25,7 @@ namespace com.rum {
 
                     long c = 0;
 
-                    if (++Count >= 999) {
+                    if (++Count > 999) {
 
                         Count = 0;
                     }
@@ -53,16 +53,6 @@ namespace com.rum {
         }
 
         private class PingLocker {
-
-            public int Status = 0;
-        }
-
-        private class ConfigLocker {
-
-            public int Status = 0;
-        }
-
-        private class SendLocker {
 
             public int Status = 0;
         }
@@ -149,6 +139,25 @@ namespace com.rum {
 
             int pid = 0;
 
+            lock (tryconn_locker) {
+
+                tryconn_locker.Status = 0;
+                this._lastConnectTime = 0;
+            }
+
+            lock (ping_locker) {
+
+                ping_locker.Status = 0;
+
+                this._pingEid = 0;
+                this._writeCount = 0;
+
+                this._pingCount = 0;
+                this._lastPingTime = 0;
+
+                this._pingLatency = 0;
+            }
+
             lock (self_locker) {
 
                 pid = this._pid;
@@ -163,44 +172,11 @@ namespace com.rum {
                 this._token = null;
                 this._appv = null;
 
-                lock (session_locker) {
+                this._sendCount = 0;
+                this._configVersion = 0;
 
-                    this._session = 0;
-                }
-
-                lock (uid_locker) {
-
-                    this._uid = null;
-                }
-
-                lock (ping_locker) {
-
-                    ping_locker.Status = 0;
-
-                    this._pingEid = 0;
-                    this._writeCount = 0;
-
-                    this._pingCount = 0;
-                    this._lastPingTime = 0;
-
-                    this._pingLatency = 0;
-                }
-
-                lock (tryconn_locker) {
-
-                    tryconn_locker.Status = 0;
-                    this._lastConnectTime = 0;
-                }
-
-                lock (send_locker) {
-
-                    this._sendCount = 0;
-                }
-
-                lock (config_locker) {
-
-                    this._configVersion = 0;
-                }
+                this._session = 0;
+                this._uid = null;
 
                 if (this._baseClient != null) {
 
@@ -270,6 +246,7 @@ namespace com.rum {
                     }
 
                     self.StopPing();
+                    self._rumEvent.SetTimestamp(0);
 
                     lock (self_locker) {
 
@@ -278,15 +255,8 @@ namespace com.rum {
                             self._baseClient.Destroy();
                             self._baseClient = null;
                         }
-                    }
-
-                    lock (send_locker) {
 
                         self._sendCount = 0;
-                    }
-
-                    lock (config_locker) {
-
                         self._configVersion = 0;
                     }
 
@@ -308,11 +278,9 @@ namespace com.rum {
             }
         }
 
-        private object session_locker = new object();
-
         public long GetSession() {
 
-            lock (session_locker) {
+            lock (self_locker) {
 
                 return this._session;
             }
@@ -323,11 +291,9 @@ namespace com.rum {
             return this._rumEvent.GetRumId();
         }
 
-        private object uid_locker = new object();
-
         public void SetUid(string value) {
 
-            lock (uid_locker) {
+            lock (self_locker) {
 
                 if (!string.IsNullOrEmpty(this._uid)) {
 
@@ -340,15 +306,15 @@ namespace com.rum {
                 }
 
                 this._uid = value;
+            }
 
-                if (!string.IsNullOrEmpty(this._uid)) {
+            if (!string.IsNullOrEmpty(value)) {
 
-                    IDictionary<string, object> dict = new Dictionary<string, object>();
+                IDictionary<string, object> dict = new Dictionary<string, object>();
 
-                    dict.Add("uid", this._uid);
+                dict.Add("uid", value);
 
-                    this.AppendEvent("uid", dict);
-                }
+                this.AppendEvent("uid", dict);
             }
         }
 
@@ -372,14 +338,15 @@ namespace com.rum {
                 return;
             }
 
-            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-            dict.Add("url", url);
-            dict.Add("method", method);
-            dict.Add("status", status);
-            dict.Add("reqsize", reqsize);
-            dict.Add("respsize", respsize);
-            dict.Add("latency", latency);
+                { "url", url },
+                { "method", method },
+                { "status", status },
+                { "reqsize", reqsize },
+                { "respsize", respsize },
+                { "latency", latency }
+            };
 
             if (attrs != null) {
 
@@ -390,14 +357,15 @@ namespace com.rum {
 
             if (status <= 0 || status >= 300) {
 
-                IDictionary<string, object> err_dict = new Dictionary<string, object>();
+                IDictionary<string, object> err_dict = new Dictionary<string, object>() {
 
-                err_dict.Add("url", url);
-                err_dict.Add("method", method);
-                err_dict.Add("status", status);
-                err_dict.Add("reqsize", reqsize);
-                err_dict.Add("respsize", respsize);
-                err_dict.Add("latency", latency);
+                    { "url", url },
+                    { "method", method },
+                    { "status", status },
+                    { "reqsize", reqsize },
+                    { "respsize", respsize },
+                    { "latency", latency }
+                };
 
                 if (attrs != null) {
 
@@ -410,14 +378,15 @@ namespace com.rum {
 
             if (latency > 1000) {
 
-                IDictionary<string, object> lat_dict = new Dictionary<string, object>();
+                IDictionary<string, object> lat_dict = new Dictionary<string, object>() {
 
-                lat_dict.Add("url", url);
-                lat_dict.Add("method", method);
-                lat_dict.Add("status", status);
-                lat_dict.Add("reqsize", reqsize);
-                lat_dict.Add("respsize", respsize);
-                lat_dict.Add("latency", latency);
+                    { "url", url },
+                    { "method", method },
+                    { "status", status },
+                    { "reqsize", reqsize },
+                    { "respsize", respsize },
+                    { "latency", latency }
+                };
 
                 if (attrs != null) {
 
@@ -622,18 +591,21 @@ namespace com.rum {
 
                 RUMPlatform.Instance.NetworkChange_Action = (nw) => {
 
-                    IDictionary<string, object> dict = new Dictionary<string, object>();
+                    IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-                    dict.Add("nw", nw);
+                        { "nw", nw }
+                    };
+
                     self.WriteEvent("nwswitch", dict);
                 };
 
                 RUMPlatform.Instance.LowMemory_Action = (mem) => {
 
-                    IDictionary<string, object> dict = new Dictionary<string, object>();
-                    
-                    dict.Add("type", "low_memory");
-                    dict.Add("system_memory", mem);
+                    IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                        { "type", "low_memory" },
+                        { "system_memory", mem }
+                    };
 
                     self.WriteEvent("warn", dict);
                 };
@@ -659,24 +631,22 @@ namespace com.rum {
                 dict.Add("pid", this._pid);
             }
 
-            if (!dict.ContainsKey("sid")) {
+            lock (self_locker) {
 
-                lock (session_locker) {
+                if (!dict.ContainsKey("sid")) {
 
                     if (this._session > 0) {
 
                         dict.Add("sid", this._session);
                     }
                 }
-            }
 
-            if (!dict.ContainsKey("uid")) {
-
-                lock (uid_locker) {
+                if (!dict.ContainsKey("uid")) {
 
                     dict.Add("uid", this._uid);
                 }
             }
+
 
             if (!dict.ContainsKey("rid")) {
 
@@ -708,7 +678,7 @@ namespace com.rum {
 
         private void OpenEvent() {
 
-            lock (session_locker) {
+            lock (self_locker) {
 
                 if (this._session > 0) {
 
@@ -719,7 +689,12 @@ namespace com.rum {
                 this._rumEvent.SetSession(this._session);
             }
 
-            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                { "appv", this._appv },
+                { "v", RUMConfig.VERSION },
+                { "first", this._rumEvent.IsFirst() }
+            };
 
             if (RUMPlatform.HasInstance()) {
 
@@ -734,10 +709,6 @@ namespace com.rum {
                 dict.Add("lang", RUMPlatform.Instance.GetLang());
                 dict.Add("from", RUMPlatform.Instance.GetFrom());
             }
-            
-            dict.Add("appv", this._appv);
-            dict.Add("v", RUMConfig.VERSION);
-            dict.Add("first", this._rumEvent.IsFirst());
 
             this.WriteEvent("open", dict);
         }
@@ -856,29 +827,21 @@ namespace com.rum {
 
             long salt = MidGenerator.Gen();
 
-            IDictionary<string, object> payload = new Dictionary<string, object>();
+            IDictionary<string, object> payload = new Dictionary<string, object>() {
 
-            payload.Add("pid", this._pid);
-            payload.Add("sign", this.GenSign(salt));
-            payload.Add("salt", salt);
-            payload.Add("ss", this._rumEvent.GetStorageSize());
+                { "pid", this._pid },
+                { "sign", this.GenSign(salt) },
+                { "salt", salt },
+                { "ss", this._rumEvent.GetStorageSize() },
+                { "rid", this._rumEvent.GetRumId() }
+            };
 
-            lock (uid_locker) { 
+            lock (self_locker) {
 
                 payload.Add("uid", this._uid);
-            }
-
-            payload.Add("rid", this._rumEvent.GetRumId());
-
-            lock (session_locker) {
-
                 payload.Add("sid", this._session);
-            }
-
-            lock (config_locker) {
-
                 payload.Add("cv", this._configVersion);
-            } 
+            }
 
             lock (ping_locker) {
 
@@ -895,32 +858,10 @@ namespace com.rum {
                 payload.Add("teid", this._pingEid);
             }
 
-            byte[] bytes = new byte[0];
-
-            try {
-
-                using (MemoryStream outputStream = new MemoryStream()) {
-
-                    MsgPack.Serialize(payload, outputStream);
-                    outputStream.Seek(0, SeekOrigin.Begin);
-
-                    bytes = outputStream.ToArray();
-                }
-            } catch (Exception ex) {
-
-                ErrorRecorderHolder.recordError(ex);
-            }
-
-            FPData data = new FPData();
-            data.SetFlag(0x1);
-            data.SetMtype(0x1);
-            data.SetMethod("ping");
-            data.SetPayload(bytes);
-
-            long pingTime = FPManager.Instance.GetMilliTimestamp();
             RUMClient self = this;
+            long pingTime = FPManager.Instance.GetMilliTimestamp();
 
-            this.SendQuest(data, (cbd) => {
+            this.SendQuest("ping", payload, (cbd) => {
 
                 lock (ping_locker) {
 
@@ -955,7 +896,7 @@ namespace com.rum {
                 bool needLoad = false;
                 bool hasConfig = self._rumEvent.HasConfig();
 
-                lock (config_locker) {
+                lock (self_locker) {
 
                     if (self._configVersion != cv || (cv == 0 && !hasConfig)) {
 
@@ -972,8 +913,6 @@ namespace com.rum {
             }, RUMConfig.PING_INTERVAL);
         }
 
-        private ConfigLocker config_locker = new ConfigLocker();
-
         private void LoadConfig() {
 
             if (this._debug) {
@@ -983,18 +922,19 @@ namespace com.rum {
 
             long salt = MidGenerator.Gen();
 
-            IDictionary<string, object> payload = new Dictionary<string, object>();
+            IDictionary<string, object> payload = new Dictionary<string, object>() {
 
-            payload.Add("pid", this._pid);
-            payload.Add("sign", this.GenSign(salt));
-            payload.Add("salt", salt);
+                { "pid", this._pid },
+                { "sign", this.GenSign(salt) },
+                { "salt", salt },
+                { "rid", this._rumEvent.GetRumId() },
+                { "appv", this._appv },
+            };
 
-            lock (uid_locker) {
+            lock (self_locker) {
 
                 payload.Add("uid", this._uid);
             }
-
-            payload.Add("rid", this._rumEvent.GetRumId());
 
             if (RUMPlatform.HasInstance()) {
 
@@ -1008,39 +948,14 @@ namespace com.rum {
                 payload.Add("from", RUMPlatform.Instance.GetFrom());
             }
 
-            payload.Add("appv", this._appv);
-
-            byte[] bytes = new byte[0];
-
-            try {
-
-                using (MemoryStream outputStream = new MemoryStream()) {
-
-                    MsgPack.Serialize(payload, outputStream);
-                    outputStream.Seek(0, SeekOrigin.Begin);
-
-                    bytes = outputStream.ToArray();
-                }
-            } catch (Exception ex) {
-
-                ErrorRecorderHolder.recordError(ex);
-            }
-
-            FPData data = new FPData();
-            data.SetFlag(0x1);
-            data.SetMtype(0x1);
-            data.SetMethod("getconfig");
-            data.SetPayload(bytes);
-
             RUMClient self = this;
-
-            this.SendQuest(data, (cbd) => {
+            this.SendQuest("getconfig", payload, (cbd) => {
 
                 Exception ex = cbd.GetException();
 
                 if (ex != null) {
 
-                    lock (config_locker) {
+                    lock (self_locker) {
 
                         self._configVersion = 0;
                     }
@@ -1061,8 +976,6 @@ namespace com.rum {
             }, RUMConfig.SENT_TIMEOUT);
         }
 
-        private SendLocker send_locker = new SendLocker();
-
         private void SendEvent() {
 
             lock (ping_locker) {
@@ -1073,7 +986,7 @@ namespace com.rum {
                 }
             }
 
-            lock (send_locker) {
+            lock (self_locker) {
 
                 if (this._sendCount >= 3) {
 
@@ -1088,7 +1001,7 @@ namespace com.rum {
                 return;
             }
 
-            lock (send_locker) {
+            lock (self_locker) {
 
                 this._sendCount++;
             }
@@ -1100,40 +1013,18 @@ namespace com.rum {
 
             long salt = MidGenerator.Gen();
 
-            IDictionary<string, object> payload = new Dictionary<string, object>();
+            IDictionary<string, object> payload = new Dictionary<string, object>() {
 
-            payload.Add("pid", this._pid);
-            payload.Add("sign", this.GenSign(salt));
-            payload.Add("salt", salt);
-            payload.Add("events", items);
-
-            byte[] bytes = new byte[0];
-
-            try {
-
-                using (MemoryStream outputStream = new MemoryStream()) {
-
-                    MsgPack.Serialize(payload, outputStream);
-                    outputStream.Seek(0, SeekOrigin.Begin);
-
-                    bytes = outputStream.ToArray();
-                }
-            } catch (Exception ex) {
-
-                ErrorRecorderHolder.recordError(ex);
-            }
-
-            FPData data = new FPData();
-            data.SetFlag(0x1);
-            data.SetMtype(0x1);
-            data.SetMethod("adds");
-            data.SetPayload(bytes);
+                { "pid", this._pid },
+                { "sign", this.GenSign(salt) },
+                { "salt", salt },
+                { "events", items }
+            };
 
             RUMClient self = this;
+            this.SendQuest("adds", payload, (cbd) => {
 
-            this.SendQuest(data, (cbd) => {
-
-                lock (send_locker) {
+                lock (self_locker) {
 
                     if (self._sendCount > 0) {
 
@@ -1175,9 +1066,31 @@ namespace com.rum {
             }
         }
 
-        private void SendQuest(FPData data, CallbackDelegate callback, int timeout) {
+        private void SendQuest(string method, IDictionary<string, object> payload, CallbackDelegate callback, int timeout) {
 
             if (this._baseClient != null) {
+
+                byte[] bytes = new byte[0];
+
+                try {
+
+                    using (MemoryStream outputStream = new MemoryStream()) {
+
+                        MsgPack.Serialize(payload, outputStream);
+                        outputStream.Seek(0, SeekOrigin.Begin);
+
+                        bytes = outputStream.ToArray();
+                    }
+                } catch (Exception ex) {
+
+                    ErrorRecorderHolder.recordError(ex);
+                }
+
+                FPData data = new FPData();
+                data.SetFlag(0x1);
+                data.SetMtype(0x1);
+                data.SetMethod(method);
+                data.SetPayload(bytes);
 
                 this._baseClient.SendQuest(data, this.QuestCallback(callback), timeout);
             }
