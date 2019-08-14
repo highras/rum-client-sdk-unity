@@ -202,12 +202,14 @@ namespace com.rum {
 
             lock (write_locker) {
 
-                this._eventCache.Add(dict);
+                if (this._eventCache.Count < 5000) {
 
-                if (this._eventCache.Count >= 5000) {
+                    this._eventCache.Add(dict);
+                }
 
-                    this._eventCache.Clear();
-                    ErrorRecorderHolder.recordError(new Exception("Events Cache Limit!"));
+                if (this._eventCache.Count == 4998) {
+
+                    ErrorRecorderHolder.recordError(new Exception("Cache Events Limit!"));
                 }
             }
         }

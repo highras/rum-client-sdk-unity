@@ -180,7 +180,7 @@ namespace com.rum {
 
                 if (this._baseClient != null) {
 
-                    this._baseClient.Destroy();
+                    this._baseClient.Close();
                     this._baseClient = null;
                 }
 
@@ -252,7 +252,6 @@ namespace com.rum {
 
                         if (self._baseClient != null) {
 
-                            self._baseClient.Destroy();
                             self._baseClient = null;
                         }
 
