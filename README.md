@@ -29,8 +29,8 @@ using com.rum;
 RUMClient client = new RUMClient(
     41000013,
     "c23e9d90-bada-440d-8316-44790f615ec1",
-    null,
-    null,
+    "uid:xxxxxx-xxxxx-xxxx",
+    "appv:1.0.0",
     true
 );
 
