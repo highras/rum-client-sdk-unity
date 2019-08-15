@@ -42,12 +42,12 @@ client.GetEvent().AddListener("close", (evd) => {
 client.GetEvent().AddListener("ready", (evd) => {
 
     Debug.Log("ready!");
-    
-    client.SetUid("xxxxxx-xxxxx-xxxx");
-    client.CustomEvent("info", new Dictionary<string, object>());
 });
 
 client.Connect("52.83.220.166:13609", false, false);
+    
+client.SetUid("xxxxxx-xxxxx-xxxx");
+client.CustomEvent("info", new Dictionary<string, object>());
 
 // Destroy
 // client.Destroy();
