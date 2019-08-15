@@ -77,17 +77,16 @@ public class Main : MonoBehaviour {
 
     void ReadCallback(IAsyncResult asynchronousResult) {
 
-        int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
-
         HttpWebRequest request = (HttpWebRequest) asynchronousResult.AsyncState;
         HttpWebResponse response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
-
 
         using (var streamReader = new StreamReader(response.GetResponseStream())) {
 
             var resultString = streamReader.ReadToEnd();
             // Debug.Log(resultString);
         }
+
+        int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
 
         if (response.StatusCode != HttpStatusCode.OK) {
 
@@ -107,14 +106,6 @@ public class Main : MonoBehaviour {
 
         UnityWebRequest req = UnityWebRequest.Get(url);
         yield return req.SendWebRequest();
- 
-        int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
-
-        RUMClient client = _testCase.GetClient();
-        if (client != null) {
-
-            client.HookHttp(ref req, latency);
-        }
 
         if(req.isNetworkError || req.isHttpError) {
 
@@ -126,6 +117,14 @@ public class Main : MonoBehaviour {
  
             // Or retrieve results as binary data
             byte[] results = req.downloadHandler.data;
+        }
+ 
+        int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
+
+        RUMClient client = _testCase.GetClient();
+        if (client != null) {
+
+            client.HookHttp(ref req, latency);
         }
     }
 }
