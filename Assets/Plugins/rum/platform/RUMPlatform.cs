@@ -62,100 +62,114 @@ namespace com.rum {
             this._installMode = Application.installMode.ToString();
             
             this._deviceToken = null;
+            this._vendorIdentifier = null;
+
             #if UNITY_IPHONE
-            this._deviceToken = UnityEngine.iOS.NotificationServices.deviceToken;
+            byte[] token = UnityEngine.iOS.NotificationServices.deviceToken;
+            this._deviceToken = System.BitConverter.ToString(token).Replace("-", "");
+            this._vendorIdentifier = UnityEngine.iOS.Device.vendorIdentifier;
             #endif
 
             if (this._infoDict == null) {
 
-                this._infoDict = new Dictionary<string, object>();
+                this._infoDict = new Dictionary<string, object>() {
 
-                this._infoDict.Add("network", this._nw);
-                this._infoDict.Add("systemLanguage", this._lang);
-                this._infoDict.Add("deviceToken", this._deviceToken);
-                this._infoDict.Add("deviceModel", this._model);
-                this._infoDict.Add("operatingSystem", this._os);
-                this._infoDict.Add("screenHeight", this._sh);
-                this._infoDict.Add("screenWidth", this._sw);
-                this._infoDict.Add("isMobile", this._isMobile);
-                this._infoDict.Add("systemMemorySize", this._memorySize);
-                this._infoDict.Add("unityVersion", this._unityVersion);
-                this._infoDict.Add("installMode", this._installMode);
+                    { "network", this._nw },
+                    { "systemLanguage", this._lang },
+                    { "deviceModel", this._model },
+                    { "operatingSystem", this._os },
+                    { "screenHeight", this._sh },
+                    { "screenWidth", this._sw },
+                    { "isMobile", this._isMobile },
+                    { "systemMemorySize", this._memorySize },
+                    { "unityVersion", this._unityVersion },
+                    { "installMode", this._installMode },
 
-                //支持多种复制纹理功能的情况
-                this._infoDict.Add("copyTextureSupport", SystemInfo.copyTextureSupport.ToString());
-                //用户定义的设备名称
-                this._infoDict.Add("deviceName", SystemInfo.deviceName);
-                //返回程序运行所在的设备类型
-                this._infoDict.Add("deviceType", SystemInfo.deviceType.ToString());
-                //设备的唯一标识符。每一台设备都有唯一的标识符
-                this._infoDict.Add("deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier);
-                //显卡的唯一标识符ID
-                this._infoDict.Add("graphicsDeviceID", SystemInfo.graphicsDeviceID);
-                //显卡的名称
-                this._infoDict.Add("graphicsDeviceName", SystemInfo.graphicsDeviceName);
-                //显卡的类型
-                this._infoDict.Add("graphicsDeviceType", SystemInfo.graphicsDeviceType.ToString());
-                //显卡的供应商
-                this._infoDict.Add("graphicsDeviceVendor", SystemInfo.graphicsDeviceVendor);
-                //显卡供应商的唯一识别码ID
-                this._infoDict.Add("graphicsDeviceVendorID", SystemInfo.graphicsDeviceVendorID);
-                //显卡的类型和版本
-                this._infoDict.Add("graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion);
-                //显存大小
-                this._infoDict.Add("graphicsMemorySize", SystemInfo.graphicsMemorySize);
-                //是否支持多线程渲染
-                this._infoDict.Add("graphicsMultiThreaded", SystemInfo.graphicsMultiThreaded);
-                //显卡着色器的级别
-                this._infoDict.Add("graphicsShaderLevel", SystemInfo.graphicsShaderLevel);
-                //支持的最大纹理大小
-                this._infoDict.Add("maxTextureSize", SystemInfo.maxTextureSize);
-                //GPU支持的NPOT纹理
-                this._infoDict.Add("npotSupport", SystemInfo.npotSupport.ToString());
-                //当前处理器的数量
-                this._infoDict.Add("processorCount", SystemInfo.processorCount);
-                //处理器的频率
-                this._infoDict.Add("processorFrequency", SystemInfo.processorFrequency);
-                //处理器的名称
-                this._infoDict.Add("processorType", SystemInfo.processorType);
-                //支持渲染多少目标纹理
-                this._infoDict.Add("supportedRenderTargetCount", SystemInfo.supportedRenderTargetCount);
-                //是否支持2D数组纹理
-                this._infoDict.Add("supports2DArrayTextures", SystemInfo.supports2DArrayTextures);
-                //是否支持3D（体积）纹理
-                this._infoDict.Add("supports3DTextures", SystemInfo.supports3DTextures);
-                //是否支持获取加速度计
-                this._infoDict.Add("supportsAccelerometer", SystemInfo.supportsAccelerometer);
-                //是否支持获取用于回放的音频设备
-                this._infoDict.Add("supportsAudio", SystemInfo.supportsAudio);
-                //是否支持计算着色器
-                this._infoDict.Add("supportsComputeShaders", SystemInfo.supportsComputeShaders);
-                //是否支持获取陀螺仪
-                this._infoDict.Add("supportsGyroscope", SystemInfo.supportsGyroscope);
-                //是否支持图形特效
-                this._infoDict.Add("supportsImageEffects", SystemInfo.supportsImageEffects);
-                //是否支持实例化GPU的Draw Call
-                this._infoDict.Add("supportsInstancing", SystemInfo.supportsInstancing);
-                //是否支持定位功能
-                this._infoDict.Add("supportsLocationService", SystemInfo.supportsLocationService);
-                //是否支持运动向量
-                this._infoDict.Add("supportsMotionVectors", SystemInfo.supportsMotionVectors);
-                //是否支持阴影深度
-                this._infoDict.Add("supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling);
-                //是否支持渲染纹理
-                this._infoDict.Add("supportsRenderTextures", SystemInfo.supportsRenderTextures);
-                //是否支持立方体纹理
-                this._infoDict.Add("supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap);
-                //是否支持内置阴影
-                this._infoDict.Add("supportsShadows", SystemInfo.supportsShadows);
-                //是否支持稀疏纹理
-                this._infoDict.Add("supportsSparseTextures", SystemInfo.supportsSparseTextures);
-                //是否支持模版缓存
-                this._infoDict.Add("supportsStencil", SystemInfo.supportsStencil);
-                //是否支持用户触摸震动反馈
-                this._infoDict.Add("supportsVibration", SystemInfo.supportsVibration);
-                //不支持运行在当前设备的SystemInfo属性值
-                this._infoDict.Add("unsupportedIdentifier", SystemInfo.unsupportedIdentifier);
+                    //支持多种复制纹理功能的情况
+                    { "copyTextureSupport", SystemInfo.copyTextureSupport.ToString() },
+                    //用户定义的设备名称
+                    { "deviceName", SystemInfo.deviceName },
+                    //返回程序运行所在的设备类型
+                    { "deviceType", SystemInfo.deviceType.ToString() },
+                    //设备的唯一标识符。每一台设备都有唯一的标识符
+                    { "deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier },
+                    //显卡的唯一标识符ID
+                    { "graphicsDeviceID", SystemInfo.graphicsDeviceID },
+                    //显卡的名称
+                    { "graphicsDeviceName", SystemInfo.graphicsDeviceName },
+                    //显卡的类型
+                    { "graphicsDeviceType", SystemInfo.graphicsDeviceType.ToString() },
+                    //显卡的供应商
+                    { "graphicsDeviceVendor", SystemInfo.graphicsDeviceVendor },
+                    //显卡供应商的唯一识别码ID
+                    { "graphicsDeviceVendorID", SystemInfo.graphicsDeviceVendorID },
+                    //显卡的类型和版本
+                    { "graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion },
+                    //显存大小
+                    { "graphicsMemorySize", SystemInfo.graphicsMemorySize },
+                    //是否支持多线程渲染
+                    { "graphicsMultiThreaded", SystemInfo.graphicsMultiThreaded },
+                    //显卡着色器的级别
+                    { "graphicsShaderLevel", SystemInfo.graphicsShaderLevel },
+                    //支持的最大纹理大小
+                    { "maxTextureSize", SystemInfo.maxTextureSize },
+                    //GPU支持的NPOT纹理
+                    { "npotSupport", SystemInfo.npotSupport.ToString() },
+                    //当前处理器的数量
+                    { "processorCount", SystemInfo.processorCount },
+                    //处理器的频率
+                    { "processorFrequency", SystemInfo.processorFrequency },
+                    //处理器的名称
+                    { "processorType", SystemInfo.processorType },
+                    //支持渲染多少目标纹理
+                    { "supportedRenderTargetCount", SystemInfo.supportedRenderTargetCount },
+                    //是否支持2D数组纹理
+                    { "supports2DArrayTextures", SystemInfo.supports2DArrayTextures },
+                    //是否支持3D（体积）纹理
+                    { "supports3DTextures", SystemInfo.supports3DTextures },
+                    //是否支持获取加速度计
+                    { "supportsAccelerometer", SystemInfo.supportsAccelerometer },
+                    //是否支持获取用于回放的音频设备
+                    { "supportsAudio", SystemInfo.supportsAudio },
+                    //是否支持计算着色器
+                    { "supportsComputeShaders", SystemInfo.supportsComputeShaders },
+                    //是否支持获取陀螺仪
+                    { "supportsGyroscope", SystemInfo.supportsGyroscope },
+                    //是否支持图形特效
+                    { "supportsImageEffects", SystemInfo.supportsImageEffects },
+                    //是否支持实例化GPU的Draw Call
+                    { "supportsInstancing", SystemInfo.supportsInstancing },
+                    //是否支持定位功能
+                    { "supportsLocationService", SystemInfo.supportsLocationService },
+                    //是否支持运动向量
+                    { "supportsMotionVectors", SystemInfo.supportsMotionVectors },
+                    //是否支持阴影深度
+                    { "supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling },
+                    //是否支持渲染纹理
+                    { "supportsRenderTextures", SystemInfo.supportsRenderTextures },
+                    //是否支持立方体纹理
+                    { "supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap },
+                    //是否支持内置阴影
+                    { "supportsShadows", SystemInfo.supportsShadows },
+                    //是否支持稀疏纹理
+                    { "supportsSparseTextures", SystemInfo.supportsSparseTextures },
+                    //是否支持模版缓存
+                    { "supportsStencil", SystemInfo.supportsStencil },
+                    //是否支持用户触摸震动反馈
+                    { "supportsVibration", SystemInfo.supportsVibration },
+                    //不支持运行在当前设备的SystemInfo属性值
+                    { "unsupportedIdentifier", SystemInfo.unsupportedIdentifier }
+                };
+
+                if (!string.IsNullOrEmpty(this._deviceToken)) {
+
+                    this._infoDict.Add("deviceToken", this._deviceToken);
+                }
+
+                if (!string.IsNullOrEmpty(this._vendorIdentifier)) {
+
+                    this._infoDict.Add("vendorIdentifier", this._vendorIdentifier);
+                }
             }
 
             if (!this.IsInvoking("OnInfo")) {
@@ -337,6 +351,11 @@ namespace com.rum {
 
         private string _nw;
 
+        /**
+         *  NotReachable                     Network is not reachable. (NONE)
+         *  ReachableViaCarrierDataNetwork   Network is reachable via carrier data network. (2G/3G/4G)
+         *  ReachableViaLocalAreaNetwork     Network is reachable via WiFi or cable. (WIFI)
+         */
         public string GetNetwork() {
 
             return this._nw;
@@ -411,16 +430,31 @@ namespace com.rum {
 
         private string _installMode;
 
+        /**
+         *  Unknown         Application install mode unknown.
+         *  Store           Application installed via online store.
+         *  DeveloperBuild  Application installed via developer build.
+         *  Adhoc           Application installed via ad hoc distribution.
+         *  Enterprise      Application installed via enterprise distribution.
+         *  Editor          Application running in editor.
+         */
         public string GetInstallMode() {
 
             return this._installMode;
         }
 
-        private byte[] _deviceToken;
+        private string _deviceToken;
 
-        public byte[] GetDeviceToken() {
+        public string GetDeviceToken() {
 
             return this._deviceToken; 
+        }
+
+        private string _vendorIdentifier;
+
+        public string GetVendorIdentifier() {
+
+            return this._vendorIdentifier; 
         }
 
         public void AddSelfListener() {
