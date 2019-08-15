@@ -25,29 +25,29 @@ public class Main : MonoBehaviour {
     void Start() {
 
         //TestCase
-        // this._testCase = new TestCase();
+        this._testCase = new TestCase();
 
         //SingleClientSend
-        this._testCase = new SingleClientSend();
+        // this._testCase = new SingleClientSend();
 
         if (this._testCase != null) {
 
             this._testCase.StartTest();
         }
 
-        // if (!this.IsInvoking("SendHttpRequest")) {
+        if (!this.IsInvoking("SendHttpRequest")) {
 
-        //     InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
-        // }
+            InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
+        }
     }
 
     void SendHttpRequest() {
 
         // HttpWebRequest
-        AsyncGetWithWebRequest("http://www.baidu.com");
+        AsyncGetWithWebRequest("https://www.baidu.com");
 
         // UnityWebRequest
-        StartCoroutine(UnityWebRequestGet("http://www.google.com"));
+        StartCoroutine(UnityWebRequestGet("https://www.google.com"));
     }
 
     void Update() {}
