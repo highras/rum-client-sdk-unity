@@ -35,10 +35,10 @@ public class Main : MonoBehaviour {
             this._testCase.StartTest();
         }
 
-        // if (!this.IsInvoking("SendHttpRequest")) {
+        if (!this.IsInvoking("SendHttpRequest")) {
 
-        //     InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
-        // }
+            InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
+        }
     }
 
     void SendHttpRequest() {
@@ -73,13 +73,6 @@ public class Main : MonoBehaviour {
 
         var request = (HttpWebRequest) WebRequest.Create(new Uri(url));
         request.BeginGetResponse(new AsyncCallback(ReadCallback), request);
-
-        // fail: timeout or error...
-        // RUMClient client = _testCase.GetClient();
-        // if (client != null) {
-
-        //     client.HookHttp(request, null, 0);
-        // }
     }
 
     void ReadCallback(IAsyncResult asynchronousResult) {
@@ -89,16 +82,22 @@ public class Main : MonoBehaviour {
         HttpWebRequest request = (HttpWebRequest) asynchronousResult.AsyncState;
         HttpWebResponse response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
 
-        RUMClient client = _testCase.GetClient();
-        if (client != null) {
-            
-            client.HookHttp(request, response, latency);
-        }
 
         using (var streamReader = new StreamReader(response.GetResponseStream())) {
 
             var resultString = streamReader.ReadToEnd();
             // Debug.Log(resultString);
+        }
+
+        if (response.StatusCode != HttpStatusCode.OK) {
+
+            Debug.Log(response.StatusCode);
+        }
+
+        RUMClient client = _testCase.GetClient();
+        if (client != null) {
+            
+            client.HookHttp(ref request, ref response, latency);
         }
     }
 
@@ -106,29 +105,27 @@ public class Main : MonoBehaviour {
 
         _stime = DateTime.Now;
 
-        using(UnityWebRequest req = UnityWebRequest.Get(url)) {
+        UnityWebRequest req = UnityWebRequest.Get(url);
+        yield return req.SendWebRequest();
+ 
+        int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
 
-            yield return req.SendWebRequest();
-     
-            int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
+        RUMClient client = _testCase.GetClient();
+        if (client != null) {
 
-            RUMClient client = _testCase.GetClient();
-            if (client != null) {
+            client.HookHttp(ref req, latency);
+        }
 
-                client.HookHttp(req, latency);
-            }
+        if(req.isNetworkError || req.isHttpError) {
 
-            if(req.isNetworkError || req.isHttpError) {
+            Debug.Log(req.error);
+        } else {
 
-                // Debug.Log(req.error);
-            } else {
-
-                // Show results as text
-                // Debug.Log(req.downloadHandler.text);
-     
-                // Or retrieve results as binary data
-                byte[] results = req.downloadHandler.data;
-            }
+            // Show results as text
+            // Debug.Log(req.downloadHandler.text);
+ 
+            // Or retrieve results as binary data
+            byte[] results = req.downloadHandler.data;
         }
     }
 }
