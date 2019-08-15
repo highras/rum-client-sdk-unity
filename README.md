@@ -50,7 +50,7 @@ client.GetEvent().AddListener("ready", (evd) => {
 client.Connect("52.83.220.166:13609", false, false);
 
 // destory
-// client.Destory();
+// client.Destroy();
 // client = null;
 ```
 
