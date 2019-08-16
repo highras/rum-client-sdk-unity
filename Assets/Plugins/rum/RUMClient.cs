@@ -148,20 +148,11 @@ namespace com.rum {
             lock (tryconn_locker) {
 
                 tryconn_locker.Status = 0;
-                this._lastConnectTime = 0;
             }
 
             lock (ping_locker) {
 
                 ping_locker.Status = 0;
-
-                this._pingEid = 0;
-                this._writeCount = 0;
-
-                this._pingCount = 0;
-                this._lastPingTime = 0;
-
-                this._pingLatency = 0;
             }
 
             lock (self_locker) {
@@ -173,16 +164,6 @@ namespace com.rum {
                     FPManager.Instance.RemoveSecond(this._eventDelegate);
                     this._eventDelegate = null;
                 }
-
-                this._pid = 0;
-                this._token = null;
-                this._appv = null;
-
-                this._sendCount = 0;
-                this._configVersion = 0;
-
-                this._session = 0;
-                this._uid = null;
 
                 if (this._baseClient != null) {
 

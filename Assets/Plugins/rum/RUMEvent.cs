@@ -73,6 +73,8 @@ namespace com.rum {
         private Action _sendQuest;
         private Action _openEvent;
 
+        private bool _destroyed;
+
         public RUMEvent(int pid, bool debug, Action sendQuest, Action openEvent) {
 
             this._rumIdKey += pid;
@@ -218,6 +220,14 @@ namespace com.rum {
         private ManualResetEvent _writeEvent = new ManualResetEvent(false);
 
         private void StartWriteThread() {
+
+            lock (self_locker) {
+
+                if (this._destroyed) {
+
+                    return;
+                }
+            }
 
             lock (write_locker) {
 
@@ -419,20 +429,18 @@ namespace com.rum {
 
         public void Destroy() {
 
-            this.StopWriteThread();
-            this.StopCheckThread();
-
             lock (self_locker) {
 
-                this._rumId = null;
-                this._session = 0;
+                if (this._destroyed) {
 
-                this._storageSize = 0;
-                this._storageCount = 0;
+                    return;
+                }
 
-                this._isFirst = false;
-                this._writeIndex = 0;
-            } 
+                this._destroyed = true;
+            }
+
+            this.StopWriteThread();
+            this.StopCheckThread();
 
             lock (config_locker) {
 
@@ -554,6 +562,11 @@ namespace com.rum {
 
             List<object> items = new List<object>();
             int countLimit = this.GetCountLimit(size);
+            
+            if (countLimit <= 0) {
+
+                return items;
+            }
 
             lock (storage_locker) {
 
@@ -589,7 +602,7 @@ namespace com.rum {
 
             if (size < 1 || storageSize < 1 || storegeCount < 1) {
 
-                return 20;
+                return 0;
             }
 
             return (int) Math.Ceiling(size / (storageSize / storegeCount * 1f));
@@ -929,6 +942,14 @@ namespace com.rum {
 
         private void StartCheckThread() {
 
+            lock (self_locker) {
+
+                if (this._destroyed) {
+
+                    return;
+                }
+            }
+
             lock (check_locker) {
 
                 if (check_locker.Status != 0) {
@@ -1077,7 +1098,7 @@ namespace com.rum {
 
             if (this._debug) {
 
-                Debug.Log("[RUM] write to file: " + res.success + ",  index: " + index);
+                Debug.Log("[RUM] write to file: " + res.success + ",  index: " + (index - 1));
             }
         }
 
