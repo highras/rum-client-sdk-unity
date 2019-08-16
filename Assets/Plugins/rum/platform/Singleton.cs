@@ -2,48 +2,48 @@ using UnityEngine;
 
 namespace com.rum {
 
-	public class Singleton<T> : MonoBehaviour where T : Singleton<T> {
+    public class Singleton<T> : MonoBehaviour where T : Singleton<T> {
 
-		public static T Instance {
+        public static T Instance {
 
-			get {
+            get {
 
-				if (instance == null) {
+                if (instance == null) {
 
-					T[] managers = Object.FindObjectsOfType(typeof(T)) as T[];
+                    T[] managers = Object.FindObjectsOfType(typeof(T)) as T[];
 
-					if (managers.Length != 0) {
+                    if (managers.Length != 0) {
 
-						if (managers.Length == 1) {
+                        if (managers.Length == 1) {
 
-							instance = managers[0];
-							instance.gameObject.name = typeof(T).Name;
-							return instance;
-						} else {
+                            instance = managers[0];
+                            instance.gameObject.name = typeof(T).Name;
+                            return instance;
+                        } else {
 
-							Debug.LogError("Class " + typeof(T).Name + " exists multiple times in violation of singleton pattern. Destroying all copies");
+                            Debug.LogError("Class " + typeof(T).Name + " exists multiple times in violation of singleton pattern. Destroying all copies");
 
-							foreach (T manager in managers) {
+                            foreach (T manager in managers) {
 
-								Destroy(manager.gameObject);
-							}
-						}
-					}
+                                Destroy(manager.gameObject);
+                            }
+                        }
+                    }
 
-					var go = new GameObject(typeof(T).Name, typeof(T));
-					instance = go.GetComponent<T>();
-					DontDestroyOnLoad(go);
-				}
+                    var go = new GameObject(typeof(T).Name, typeof(T));
+                    instance = go.GetComponent<T>();
+                    DontDestroyOnLoad(go);
+                }
 
-				return instance;
-			}
+                return instance;
+            }
 
-			set {
+            set {
 
-				instance = value as T;
-			}
-		}
-		
-		private static T instance;
-	}
+                instance = value as T;
+            }
+        }
+        
+        private static T instance;
+    }
 }
