@@ -683,38 +683,37 @@ namespace com.rum {
 
         private IDictionary<string, object> StorageLoad() {
 
+            bool needClear = false;
             IDictionary<string, object> storage = null;
 
             RUMFile.Result res = this._rumFile.ReadStorage();
 
             if (res.success) {
 
-                byte[] storage_bytes = new byte[0];
-
                 try {
 
-                    storage_bytes = (byte[])res.content;
-                    bool needClear = storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX;
-
+                    byte[] storage_bytes = (byte[])res.content;
                     using (MemoryStream inputStream = new MemoryStream(storage_bytes)) {
 
                         storage = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
                     }
 
-                    if (needClear && storage.ContainsKey(this._rumEventKey)) {
-
-                        ((IDictionary<string, object>)storage[this._rumEventKey]).Clear();
-
-                        if (this._debug) {
-
-                            Debug.LogError("[RUM] storage size limit, clear events!");
-                        }
-                    }
+                    needClear = storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX;
                 } catch(Exception ex) {
 
                     Debug.LogError("storage_load_deserialize_content: " + ex.Message);
                 }
             } 
+
+            if (needClear && storage.ContainsKey(this._rumEventKey)) {
+
+                ((IDictionary<string, object>)storage[this._rumEventKey]).Clear();
+
+                if (this._debug) {
+
+                    Debug.LogError("[RUM] storage size limit, clear events!");
+                }
+            }
 
             if (storage == null) {
 
