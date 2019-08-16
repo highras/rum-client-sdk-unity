@@ -95,7 +95,7 @@ namespace com.rum {
 
         private void InitStorage() {
 
-            int index = 1;
+            int index = 0;
 
             lock (storage_locker) {
 
@@ -726,6 +726,28 @@ namespace com.rum {
 
         private void StorageSave() {
 
+            byte[] storage_bytes = this.CheckStorageBytes();
+
+            if (storage_bytes.Length < 1) {
+
+                return;
+            }
+
+            RUMFile.Result res = this._rumFile.WriteStorage(storage_bytes);
+
+            if (!res.success) {
+
+                if (this._debug) {
+
+                    Debug.Log("[RUM] fail to save storage!");
+                }
+
+                ErrorRecorderHolder.recordError((Exception)res.content);
+            }
+        }
+
+        private byte[] CheckStorageBytes() {
+
             byte[] storage_bytes = new byte[0];
 
             try {
@@ -745,8 +767,6 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             }
 
-            this.UpdateStorageSize(storage_bytes.Length);
-
             if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
 
                 if (this._debug) {
@@ -758,24 +778,13 @@ namespace com.rum {
 
                     ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
                 }
+
+                this.UpdateStorageSize(160);
+                return new byte[0];
             }
 
-            if (storage_bytes.Length < 1) {
-
-                return;
-            }
-
-            RUMFile.Result res = this._rumFile.WriteStorage(storage_bytes);
-
-            if (!res.success) {
-
-                if (this._debug) {
-
-                    Debug.Log("[RUM] fail to save storage!");
-                }
-
-                ErrorRecorderHolder.recordError((Exception)res.content);
-            }
+            this.UpdateStorageSize(storage_bytes.Length);
+            return storage_bytes;
         }
 
         private void UpdateStorageSize(int size) {
@@ -973,7 +982,7 @@ namespace com.rum {
                 }
 
                 check_locker.Status = 1;
-                this._checkEvent.Reset();            
+                this._checkEvent.Reset();
 
                 this._checkThread = new Thread(new ThreadStart(CheckThread));
 
@@ -1090,12 +1099,12 @@ namespace com.rum {
 
             if (res.success) {
 
-                index = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
+                if (this._debug) {
 
-                if (index == 0) {
-
-                    index = 1;
+                    Debug.Log("[RUM] write to file, index: " + index);
                 }
+
+                index = (index + 1) % RUMConfig.LOCAL_FILE_COUNT;
 
                 lock (storage_locker) {
 
@@ -1109,11 +1118,6 @@ namespace com.rum {
             } else {
 
                 ErrorRecorderHolder.recordError((Exception)res.content);
-            }
-
-            if (this._debug) {
-
-                Debug.Log("[RUM] write to file: " + res.success + ",  index: " + (index - 1));
             }
         }
 
