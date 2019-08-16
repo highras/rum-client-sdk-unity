@@ -681,6 +681,47 @@ namespace com.rum {
             }
         }
 
+        private IDictionary<string, object> StorageLoad() {
+
+            IDictionary<string, object> storage = null;
+
+            RUMFile.Result res = this._rumFile.ReadStorage();
+
+            if (res.success) {
+
+                byte[] storage_bytes = new byte[0];
+
+                try {
+
+                    storage_bytes = (byte[])res.content;
+
+                    if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
+
+                        if (this._debug) {
+
+                            Debug.LogError("[RUM] storage size limit, don't load it!");
+                        }
+                    } else {
+
+                        using (MemoryStream inputStream = new MemoryStream(storage_bytes)) {
+
+                            storage = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                        }
+                    }
+                } catch(Exception ex) {
+
+                    Debug.LogError("storage_load_deserialize_content: " + ex.Message);
+                }
+            } 
+
+            if (storage == null) {
+
+                storage = new Dictionary<string, object>();
+            }
+
+            return storage;
+        }
+
         private void StorageSave() {
 
             byte[] storage_bytes = new byte[0];
@@ -713,7 +754,7 @@ namespace com.rum {
 
                 if (this._debug) {
 
-                    Debug.Log("[RUM] storage size limit, will be clear!");
+                    Debug.LogError("[RUM] storage size limit, will be clear!");
                 }
             }
 
@@ -773,34 +814,6 @@ namespace com.rum {
             }
 
             return count;
-        }
-
-        private IDictionary<string, object> StorageLoad() {
-
-            IDictionary<string, object> storage = null;
-
-            RUMFile.Result res = this._rumFile.ReadStorage();
-
-            if (res.success) {
-
-                try {
-
-                    using (MemoryStream inputStream = new MemoryStream((byte[])res.content)) {
-
-                        storage = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
-                    }
-                } catch(Exception ex) {
-
-                    Debug.LogError("storage_load_deserialize_content: " + ex.Message);
-                }
-            } 
-
-            if (storage == null) {
-
-                storage = new Dictionary<string, object>();
-            }
-
-            return storage;
         }
 
         private string BuildRumId() {
