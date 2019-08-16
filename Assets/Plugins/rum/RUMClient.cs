@@ -825,11 +825,6 @@ namespace com.rum {
                 this._lastPingTime = FPManager.Instance.GetMilliTimestamp();
             }
 
-            if (this._debug) {
-
-                Debug.Log("[RUM] ping...");
-            }
-
             long lastEid = 0;
             int lastCount = 0;
 
@@ -893,7 +888,7 @@ namespace com.rum {
 
                 if (self._debug) {
 
-                    Debug.Log("[RUM] ping: " + Json.SerializeToString(dict));
+                    Debug.Log("[RUM] recv ping: " + Json.SerializeToString(dict));
                 }
 
                 self._rumEvent.SetTimestamp(Convert.ToInt64(dict["ts"]));
@@ -922,11 +917,6 @@ namespace com.rum {
         }
 
         private void LoadConfig() {
-
-            if (this._debug) {
-
-                Debug.Log("[RUM] load config...");
-            }
 
             long salt = MidGenerator.Gen();
 
@@ -976,7 +966,7 @@ namespace com.rum {
 
                 if (self._debug) {
 
-                    Debug.Log("[RUM] load config: " + Json.SerializeToString(dict));
+                    Debug.Log("[RUM] recv config: " + Json.SerializeToString(dict));
                 }
 
                 self._rumEvent.UpdateConfig((IDictionary<string, object>)dict["events"]);
@@ -1040,6 +1030,7 @@ namespace com.rum {
                     }
                 }
 
+                int count = items.Count;
                 self._rumEvent.RemoveFromCache(items);
 
                 Exception ex = cbd.GetException();
@@ -1053,7 +1044,7 @@ namespace com.rum {
 
                 if (self._debug) {
 
-                    Debug.Log("[RUM] sent success, count: " + items.Count);
+                    Debug.Log("[RUM] sent count: " + count);
                 }
             }, RUMConfig.SENT_TIMEOUT);
         }
