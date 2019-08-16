@@ -697,6 +697,11 @@ namespace com.rum {
 
                     ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
                 }
+
+                if (this._debug) {
+
+                    Debug.Log("[RUM] storage size limit, will be clear!");
+                }
             }
 
             if (storage_bytes.Length < 1) {
@@ -1099,12 +1104,12 @@ namespace com.rum {
 
                     this.WriteEvents(items);
                 }
+
+                if (this._debug) {
+
+                    Debug.Log("[RUM] success load from file!");
+                }
             } 
-
-            if (this._debug) {
-
-                Debug.Log("[RUM] load from file: " + res.success);
-            }
         }
 
         public void OnSecond(long timestamp) {

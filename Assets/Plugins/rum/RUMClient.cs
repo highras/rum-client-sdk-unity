@@ -722,6 +722,8 @@ namespace com.rum {
 
         private void CheckPingCount() {
 
+            bool needClose = false;
+
             lock (ping_locker) {
 
                 if (ping_locker.Status == 0) {
@@ -731,7 +733,14 @@ namespace com.rum {
 
                 if (this._pingCount >= 2) {
 
+                    needClose = true;
                     this._pingCount = 0;
+                }
+            }
+
+            if (needClose) {
+
+                lock (self_locker) {
 
                     if (this._baseClient != null) {
 
@@ -1044,7 +1053,7 @@ namespace com.rum {
 
                 if (self._debug) {
 
-                    Debug.Log("[RUM] sent success! " + items.Count);
+                    Debug.Log("[RUM] sent success, count: " + items.Count);
                 }
             }, RUMConfig.SENT_TIMEOUT);
         }
@@ -1067,31 +1076,34 @@ namespace com.rum {
 
         private void SendQuest(string method, IDictionary<string, object> payload, CallbackDelegate callback, int timeout) {
 
-            if (this._baseClient != null) {
+            byte[] bytes = new byte[0];
 
-                byte[] bytes = new byte[0];
+            try {
 
-                try {
+                using (MemoryStream outputStream = new MemoryStream()) {
 
-                    using (MemoryStream outputStream = new MemoryStream()) {
+                    MsgPack.Serialize(payload, outputStream);
+                    outputStream.Seek(0, SeekOrigin.Begin);
 
-                        MsgPack.Serialize(payload, outputStream);
-                        outputStream.Seek(0, SeekOrigin.Begin);
-
-                        bytes = outputStream.ToArray();
-                    }
-                } catch (Exception ex) {
-
-                    ErrorRecorderHolder.recordError(ex);
+                    bytes = outputStream.ToArray();
                 }
+            } catch (Exception ex) {
 
-                FPData data = new FPData();
-                data.SetFlag(0x1);
-                data.SetMtype(0x1);
-                data.SetMethod(method);
-                data.SetPayload(bytes);
+                ErrorRecorderHolder.recordError(ex);
+            }
 
-                this._baseClient.SendQuest(data, this.QuestCallback(callback), timeout);
+            FPData data = new FPData();
+            data.SetFlag(0x1);
+            data.SetMtype(0x1);
+            data.SetMethod(method);
+            data.SetPayload(bytes);
+
+            lock (self_locker) {
+
+                if (this._baseClient != null) {
+
+                    this._baseClient.SendQuest(data, this.QuestCallback(callback), timeout);
+                }
             }
         }
 
@@ -1144,9 +1156,15 @@ namespace com.rum {
                     }
                 }
 
-                if (this._baseClient.GetPackage().IsAnswer(data)) {
+                lock (self_locker) {
 
-                    isAnswerException = data.GetSS() != 0;
+                    if (this._baseClient != null) {
+
+                        if (this._baseClient.GetPackage().IsAnswer(data)) {
+
+                            isAnswerException = data.GetSS() != 0;
+                        }
+                    }
                 }
             }
 
