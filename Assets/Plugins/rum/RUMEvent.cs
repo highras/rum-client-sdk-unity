@@ -694,18 +694,20 @@ namespace com.rum {
                 try {
 
                     storage_bytes = (byte[])res.content;
+                    bool needClear = storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX;
 
-                    if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
+                    using (MemoryStream inputStream = new MemoryStream(storage_bytes)) {
+
+                        storage = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                    }
+
+                    if (needClear && storage.ContainsKey(this._rumEventKey)) {
+
+                        ((IDictionary<string, object>)storage[this._rumEventKey]).Clear();
 
                         if (this._debug) {
 
-                            Debug.LogError("[RUM] storage size limit, don't load it!");
-                        }
-                    } else {
-
-                        using (MemoryStream inputStream = new MemoryStream(storage_bytes)) {
-
-                            storage = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                            Debug.LogError("[RUM] storage size limit, clear events!");
                         }
                     }
                 } catch(Exception ex) {
@@ -747,14 +749,14 @@ namespace com.rum {
 
             if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
 
-                lock (storage_locker) {
-
-                    ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
-                }
-
                 if (this._debug) {
 
                     Debug.LogError("[RUM] storage size limit, will be clear!");
+                }
+
+                lock (storage_locker) {
+
+                    ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
                 }
             }
 
