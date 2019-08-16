@@ -98,17 +98,23 @@ namespace com.rum {
 
         public RUMClient(int pid, string token, string uid, string appv, bool debug) {
 
+            Debug.Log("Hello RUM! rum@" + RUMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
+
             lock (Pids_Locker) {
 
                 if (RUMClient.PIDS.Contains(pid)) {
 
-                    throw new Exception("The Same Project Id, Instance Limit!");
+                    if (debug) {
+
+                        throw new Exception("The Same Project Id, Instance Limit!");
+                    }
+
+                    Debug.LogError("[RUM] The Same Project Id, Instance Limit!");
+                    return;
                 }
 
                 RUMClient.PIDS.Add(pid);
             }
-
-            Debug.Log("Hello RUM! rum@" + RUMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
 
             this._pid = pid;
             this._token = token;
