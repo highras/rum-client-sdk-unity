@@ -200,8 +200,6 @@ namespace com.rum {
 
         public void WriteEvent(IDictionary<string, object> dict) {
 
-            this.StartWriteThread();
-
             lock (write_locker) {
 
                 if (this._eventCache.Count < 5000) {
@@ -214,6 +212,8 @@ namespace com.rum {
                     ErrorRecorderHolder.recordError(new Exception("Cache Events Limit!"));
                 }
             }
+
+            this.StartWriteThread();
         }
 
         private Thread _writeThread = null;
@@ -271,16 +271,7 @@ namespace com.rum {
                         this._eventCache = new List<object>();
                     }
 
-                    if (!this.IsNullOrEmpty(list)) {
-
-                        this.WriteEvents(list);
-                    }
-
-                    if (this._sendQuest != null) {
-
-                        this._sendQuest();
-                    }
-
+                    this.WriteStorage(list);
                     this.StartCheckThread();
                     this._writeEvent.WaitOne(RUMConfig.SENT_INTERVAL);
                 }
@@ -301,6 +292,21 @@ namespace com.rum {
                 write_locker.Status = 0;
                 this._writeEvent.Set();
             }
+        }
+
+        private void WriteStorage(ICollection<object> list) {
+
+            if (!this.IsNullOrEmpty(list)) {
+
+                this.WriteEvents(list);
+            }
+
+            if (this._sendQuest != null) {
+
+                this._sendQuest();
+            }
+
+            this.StorageSave();
         }
 
         public void WriteEvents(ICollection<object> items) {
@@ -1008,7 +1014,7 @@ namespace com.rum {
                         }
                     }
 
-                    this.CheckStorageSize();
+                    this.CheckStorage();
                     this._checkEvent.WaitOne(RUMConfig.LOCAL_STORAGE_DELAY);
                 }
             } catch (ThreadAbortException tex) {
@@ -1030,46 +1036,38 @@ namespace com.rum {
             }
         }
 
-        private void CheckStorageSize() {
+        private void CheckStorage() {
 
-            byte[] storage_bytes = new byte[0];
+            int size;
+            bool saveStorage = false;
 
-            try {
+            lock (self_locker) { 
 
-                using (MemoryStream outputStream = new MemoryStream()) {
-
-                    lock (storage_locker) {
-
-                        MsgPack.Serialize(this._storage, outputStream);
-                    }
-
-                    outputStream.Seek(0, SeekOrigin.Begin);
-                    storage_bytes = outputStream.ToArray();
-                }
-            } catch (Exception ex) {
-
-                ErrorRecorderHolder.recordError(ex);
+                size = this._storageSize;
             }
 
-            if (storage_bytes.Length >= RUMConfig.STORAGE_SIZE_MAX) {
+            if (size >= RUMConfig.STORAGE_SIZE_MAX) {
 
                 List<object> list = this.GetFileEvents();
 
                 if (!this.IsNullOrEmpty(list)) {
 
-                    this.SlipStorage(list);
+                    saveStorage = this.SlipStorage(list);
                 }
             }
 
-            if (storage_bytes.Length < RUMConfig.STORAGE_SIZE_MIN) {
+            if (size < RUMConfig.STORAGE_SIZE_MIN) {
 
-                this.ReStorage();
+                saveStorage = this.ReStorage();
             }
 
-            this.StorageSave();
+            if (saveStorage) {
+
+                this.StorageSave();
+            }
         }
 
-        private void SlipStorage(List<object> list) {
+        private bool SlipStorage(List<object> list) {
 
             byte[] bytes = new byte[0];
 
@@ -1117,10 +1115,13 @@ namespace com.rum {
             } else {
 
                 ErrorRecorderHolder.recordError((Exception)res.content);
+                this.WriteEvents(list);
             }
+
+            return res.success;
         }
 
-        private void ReStorage() {
+        private bool ReStorage() {
 
             RUMFile.Result res = this._rumFile.ReadRumLog();
 
@@ -1149,6 +1150,8 @@ namespace com.rum {
                     Debug.Log("[RUM] success load from file!");
                 }
             } 
+
+            return res.success;
         }
 
         public void OnSecond(long timestamp) {

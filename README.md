@@ -7,14 +7,14 @@
 #### 异步函数 ####
 * 异步函数均由子线程呼叫, 不要在其中调用仅UI线程可执行的函数, 不要阻塞事件和回调函数
 
-#### 关于连接 ####
-* 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
-
 #### 关于IPV6 ####
 * `SOCKET`链接支持`IPV6`接口
 * 兼容`DNS64/NAT64`网络环境
 
-#### 关于HOOK ####
+#### 其他 ####
+* 通过`Unity MainThread`调用`RUMPlatform.Instance.AddSelfListener();`来初始化`RUMPlatform`
+* `RUMClient`可在任意线程中构造和使用, 前提是`RUMPlatform`已被初始化
+* 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
 * HTTP HOOK: 半自动非侵入方式, 不会抓取请求内容, 参考`./Scripts/Main.cs`
 
 #### 一个例子 ####
@@ -25,6 +25,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using com.rum;
+
+/**
+ *
+ * 在Unity MainThread中初始化RUMPlatform
+ */
+//RUMPlatform.Instance.AddSelfListener();
 
 RUMClient client = new RUMClient(
     41000013,

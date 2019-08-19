@@ -21,55 +21,36 @@ namespace com.rum {
         private const string FILE_PRE = "rumlog_";
         private const string STORAGE_FILE = "rumlog_storage";
 
-        private string _directory_path;
-
         private int _read_index;
         private object index_locker = new object();
-        
         private object file_locker = new object();
+
+        private string _secureDataPath;
 
         public RUMFile(int pid) {
 
-            this._directory_path = this.GetSecureDataPath() + "/rum_events_" + pid;
-            this.InitDirectory();
+            this.InitDirectory(RUMPlatform.SecureDataPath + "/rum_events_" + pid);
         }
 
-        private void InitDirectory () {
+        private void InitDirectory (string secureDataPath) {
 
             try {
 
-                if (Directory.Exists(this._directory_path) == false) {
+                if (Directory.Exists(secureDataPath) == false) {
 
-                    Directory.CreateDirectory(this._directory_path);
+                    Directory.CreateDirectory(secureDataPath);
                 } 
+
+                this._secureDataPath = secureDataPath;
             } catch (Exception ex) {
 
                 ErrorRecorderHolder.recordError(ex);
             }
         }
 
-        private string GetSecureDataPath() {
-
-            string secureDataPath = Application.temporaryCachePath;
-
-            #if !UNITY_EDITOR && UNITY_ANDROID
-            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-            using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
-            using (var getFilesDir = currentActivity.Call<AndroidJavaObject>("getFilesDir")) {
-
-                secureDataPath = getFilesDir.Call<string>("getCanonicalPath");
-            }
-
-            #elif !UNITY_EDITOR && UNITY_IPHONE
-            secureDataPath = Application.persistentDataPath;
-            #endif
-
-            return secureDataPath;
-        }
-
         public RUMFile.Result WriteRumLog(int index, byte[] content) {
 
-            string path = this._directory_path + "/" + FILE_PRE + index;
+            string path = this._secureDataPath + "/" + FILE_PRE + index;
             return this.WriteFile(path, content);
         }
 
@@ -84,7 +65,7 @@ namespace com.rum {
                 while(index < 20) {
 
                     this._read_index = (this._read_index + 1) % LOCAL_FILE_MAX;
-                    path = this._directory_path + "/" + FILE_PRE + this._read_index;
+                    path = this._secureDataPath + "/" + FILE_PRE + this._read_index;
 
                     if (new FileInfo(path).Exists) {
 
@@ -107,13 +88,13 @@ namespace com.rum {
 
         public RUMFile.Result WriteStorage(byte[] content) {
 
-            string path = this._directory_path + "/" + STORAGE_FILE;
+            string path = this._secureDataPath + "/" + STORAGE_FILE;
             return this.WriteFile(path, content);
         }
 
         public RUMFile.Result ReadStorage() {
 
-            string path = this._directory_path + "/" + STORAGE_FILE;
+            string path = this._secureDataPath + "/" + STORAGE_FILE;
             RUMFile.Result res = this.ReadFile(path, false);
 
             if (!res.success) {
@@ -126,7 +107,7 @@ namespace com.rum {
 
         public RUMFile.Result ClearRumLog() {
 
-            return this.DeleteDirectory(this._directory_path); 
+            return this.DeleteDirectory(this._secureDataPath); 
         }
 
         public RUMFile.Result WriteFile(string path, string content, Encoding encoding) {

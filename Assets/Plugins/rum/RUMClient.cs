@@ -98,6 +98,11 @@ namespace com.rum {
 
         public RUMClient(int pid, string token, string uid, string appv, bool debug) {
 
+            if (!RUMPlatform.HasInit()) {
+
+                RUMPlatform.Instance.AddSelfListener(); 
+            }
+
             Debug.Log("Hello RUM! rum@" + RUMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
 
             lock (Pids_Locker) {
@@ -131,12 +136,10 @@ namespace com.rum {
             };
 
             FPManager.Instance.AddSecond(this._eventDelegate);
-
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(this._debug, WriteEvent));
-            RUMPlatform.Instance.InitPrefs(WriteEvent);
 
-            this._rumEvent.Init();
             this.AddPlatformListener();
+            this._rumEvent.Init();
         }
 
         private object self_locker = new object();
@@ -557,7 +560,12 @@ namespace com.rum {
 
             RUMClient self = this;
 
-            if (RUMPlatform.HasInstance()) {
+            if (RUMPlatform.HasInit()) {
+
+                RUMPlatform.Instance.WriteEvent_Action = (ev, dict) => {
+
+                    self.WriteEvent(ev, dict);
+                };
 
                 RUMPlatform.Instance.AppFg_Action = () => {
 
@@ -677,24 +685,20 @@ namespace com.rum {
 
             IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-                { "appv", this._appv },
                 { "v", RUMConfig.VERSION },
-                { "first", this._rumEvent.IsFirst() }
+                { "appv", this._appv },
+                { "first", this._rumEvent.IsFirst() },
+                { "sw", RUMPlatform.ScreenWidth },
+                { "sh", RUMPlatform.ScreenHeight },
+                { "manu", RUMPlatform.Manu },
+                { "model", RUMPlatform.DeviceModel },
+                { "os", RUMPlatform.OperatingSystem },
+                { "osv", RUMPlatform.SystemVersion },
+                { "nw", RUMPlatform.Network },
+                { "carrier", RUMPlatform.Carrier },
+                { "lang", RUMPlatform.SystemLanguage },
+                { "from", RUMPlatform.From }
             };
-
-            if (RUMPlatform.HasInstance()) {
-
-                dict.Add("sw", RUMPlatform.Instance.ScreenWidth());
-                dict.Add("sh", RUMPlatform.Instance.ScreenHeight());
-                dict.Add("manu", RUMPlatform.Instance.GetManu());
-                dict.Add("model", RUMPlatform.Instance.GetModel());
-                dict.Add("os", RUMPlatform.Instance.GetOS());
-                dict.Add("osv", RUMPlatform.Instance.GetOSV());
-                dict.Add("nw", RUMPlatform.Instance.GetNetwork());
-                dict.Add("carrier", RUMPlatform.Instance.GetCarrier());
-                dict.Add("lang", RUMPlatform.Instance.GetLang());
-                dict.Add("from", RUMPlatform.Instance.GetFrom());
-            }
 
             this.WriteEvent("open", dict);
         }
@@ -914,23 +918,19 @@ namespace com.rum {
                 { "salt", salt },
                 { "rid", this._rumEvent.GetRumId() },
                 { "appv", this._appv },
+                { "lang", RUMPlatform.SystemLanguage },
+                { "manu", RUMPlatform.Manu },
+                { "model", RUMPlatform.DeviceModel },
+                { "os", RUMPlatform.OperatingSystem },
+                { "osv", RUMPlatform.SystemVersion },
+                { "nw", RUMPlatform.Network },
+                { "carrier", RUMPlatform.Carrier },
+                { "from", RUMPlatform.From }
             };
 
             lock (self_locker) {
 
                 payload.Add("uid", this._uid);
-            }
-
-            if (RUMPlatform.HasInstance()) {
-
-                payload.Add("lang", RUMPlatform.Instance.GetLang());
-                payload.Add("manu", RUMPlatform.Instance.GetManu());
-                payload.Add("model", RUMPlatform.Instance.GetModel());
-                payload.Add("os", RUMPlatform.Instance.GetOS());
-                payload.Add("osv", RUMPlatform.Instance.GetOSV());
-                payload.Add("nw", RUMPlatform.Instance.GetNetwork());
-                payload.Add("carrier", RUMPlatform.Instance.GetCarrier());
-                payload.Add("from", RUMPlatform.Instance.GetFrom());
             }
 
             RUMClient self = this;

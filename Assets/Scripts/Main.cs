@@ -24,11 +24,13 @@ public class Main : MonoBehaviour {
 
     void Start() {
 
+        RUMPlatform.Instance.AddSelfListener();
+
         //TestCase
-        this._testCase = new TestCase();
+        // this._testCase = new TestCase();
 
         //SingleClientSend
-        // this._testCase = new SingleClientSend();
+        this._testCase = new SingleClientSend();
 
         if (this._testCase != null) {
 
@@ -50,7 +52,9 @@ public class Main : MonoBehaviour {
         StartCoroutine(UnityWebRequestGet("https://www.google.com"));
     }
 
-    void Update() {}
+    void Update() {
+
+    }
 
     void OnApplicationQuit() {
 

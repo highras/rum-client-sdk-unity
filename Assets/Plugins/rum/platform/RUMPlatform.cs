@@ -12,36 +12,68 @@ namespace com.rum {
 
     public class RUMPlatform:Singleton<RUMPlatform> {
 
+        /**
+         *  NotReachable                     Network is not reachable. (NONE)
+         *  ReachableViaCarrierDataNetwork   Network is reachable via carrier data network. (2G/3G/4G)
+         *  ReachableViaLocalAreaNetwork     Network is reachable via WiFi or cable. (WIFI)
+         */
+        public static string Network;
+
+        /**
+         *  Unknown         Application install mode unknown.
+         *  Store           Application installed via online store.
+         *  DeveloperBuild  Application installed via developer build.
+         *  Adhoc           Application installed via ad hoc distribution.
+         *  Enterprise      Application installed via enterprise distribution.
+         *  Editor          Application running in editor.
+         */
+        public static string InstallMode;
+
+        public static string SystemLanguage;
+        public static string DeviceModel;
+        public static string OperatingSystem;
+        public static int ScreenHeight;
+        public static int ScreenWidth;
+        public static bool IsMobilePlatform;
+        public static int SystemMemorySize;
+        public static string UnityVersion;
+        public static string DeviceToken;
+        public static string VendorIdentifier;
+        public static string AndroidID;
+        public static string SecureDataPath;
+
+        public static string Manu;
+        public static string SystemVersion;
+        public static string Carrier;
+        public static string From;
+
+        public static bool HasInit() {
+
+            lock (lock_obj) {
+
+                return RUMPlatform.isInit;
+            }
+        }
+
         public Action AppFg_Action;
         public Action AppBg_Action;
         public Action<int> LowMemory_Action;
         public Action<string> NetworkChange_Action;
         public Action<IDictionary<string, object>> SystemInfo_Action;
+        public Action<string, IDictionary<string, object>> WriteEvent_Action;
 
         private IDictionary<string, object> _infoDict;
 
         private bool _isPause;
         private bool _isFocus;
 
-        private static RUMPlatform instance_self = null;
+        private static bool isInit;
         private static object lock_obj = new object();
 
-        public static bool HasInstance() {
-
-            lock (lock_obj) {
-
-                return instance_self != null;
-            }
-        }
+        public void AddSelfListener() {}
 
         void Awake() {}
-
         void OnEnable() {
-
-            lock (lock_obj) {
-
-                instance_self = this;
-            }
 
             this._isPause = false;
             this._isFocus = false;
@@ -50,40 +82,136 @@ namespace com.rum {
             Application.logMessageReceived += OnLogCallback;
             Application.logMessageReceivedThreaded += OnLogCallbackThreaded;
 
-            this._nw = Application.internetReachability.ToString();
-            this._lang = Application.systemLanguage.ToString();
-            this._model = SystemInfo.deviceModel;
-            this._os = SystemInfo.operatingSystem;
-            this._sh = Screen.height;
-            this._sw = Screen.width;
-            this._isMobile = Application.isMobilePlatform;
-            this._memorySize = SystemInfo.systemMemorySize;
-            this._unityVersion = Application.unityVersion;
-            this._installMode = Application.installMode.ToString();
-            
-            this._deviceToken = null;
-            this._vendorIdentifier = null;
+            if (!this.IsInvoking("OnInfo")) {
 
-            #if UNITY_IPHONE
-            byte[] token = UnityEngine.iOS.NotificationServices.deviceToken;
-            this._deviceToken = System.BitConverter.ToString(token).Replace("-", "");
-            this._vendorIdentifier = UnityEngine.iOS.Device.vendorIdentifier;
-            #endif
+                this.Invoke("OnInfo", 5.0f);
+            }
+
+            if (!this.IsInvoking("OnTimer")) {
+
+                this.InvokeRepeating("OnTimer", 10.0f, 10.0f);
+            }
+
+            lock (lock_obj) {
+
+                if (RUMPlatform.isInit) {
+
+                    return;
+                }
+
+                RUMPlatform.SystemLanguage = Application.systemLanguage.ToString();
+                RUMPlatform.DeviceModel = SystemInfo.deviceModel;
+                RUMPlatform.Network = Application.internetReachability.ToString();
+                RUMPlatform.OperatingSystem = SystemInfo.operatingSystem;
+                RUMPlatform.ScreenHeight = Screen.height;
+                RUMPlatform.ScreenWidth = Screen.width;
+                RUMPlatform.IsMobilePlatform = Application.isMobilePlatform;
+                RUMPlatform.SystemMemorySize = SystemInfo.systemMemorySize;
+                RUMPlatform.UnityVersion = Application.unityVersion;
+                RUMPlatform.InstallMode = Application.installMode.ToString();
+                RUMPlatform.SecureDataPath = Application.temporaryCachePath;
+
+                #if !UNITY_EDITOR && UNITY_IPHONE
+                byte[] token = UnityEngine.iOS.NotificationServices.deviceToken;
+                if (token != null) {
+                    RUMPlatform.DeviceToken = System.BitConverter.ToString(token).Replace("-", "");
+                }
+                RUMPlatform.VendorIdentifier = UnityEngine.iOS.Device.vendorIdentifier;
+                RUMPlatform.SecureDataPath = Application.persistentDataPath;
+                #elif !UNITY_EDITOR && UNITY_ANDROID
+                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity")) {
+                    using (var getFilesDir = currentActivity.Call<AndroidJavaObject>("getFilesDir")) {
+                        RUMPlatform.SecureDataPath = getFilesDir.Call<string>("getCanonicalPath");
+                    }
+                    using (var contentResolver = currentActivity.Call<AndroidJavaObject> ("getContentResolver"))
+                    using (var secure = new AndroidJavaClass ("android.provider.Settings$Secure")) {
+                        RUMPlatform.AndroidID = secure.CallStatic<string> ("getString", contentResolver, "android_id");
+                    }
+                }
+                #endif
+
+                RUMPlatform.isInit = true;
+                Debug.Log("[RUMPlatform] InitComplete!");
+            }
+        }
+
+        void OnDisable() {
+
+            Application.lowMemory -= OnLowMemory;
+            Application.logMessageReceived -= OnLogCallback;
+            Application.logMessageReceivedThreaded -= OnLogCallbackThreaded;
+
+            if (this.IsInvoking("OnInfo")) {
+
+                this.CancelInvoke("OnInfo");
+            }
+
+            if (this.IsInvoking("OnTimer")) {
+
+                this.CancelInvoke("OnTimer");
+            }
+        }
+
+        void OnApplicationPause() {
+ 
+            if (!this._isPause) {
+             
+                if (this.AppBg_Action != null) {
+
+                    this.AppBg_Action();
+                }
+            } else {
+
+                this._isFocus = true;
+            }
+
+            this._isPause = true;
+        }
+
+        void OnApplicationFocus() {
+
+            if (this._isFocus) {
+             
+                this._isPause = false;
+                this._isFocus = false;
+            }
+             
+            if (this._isPause) {
+
+                this._isFocus = true;
+
+                if (this.AppFg_Action != null) {
+
+                    this.AppFg_Action();
+                }
+            }
+        }
+
+        void OnLowMemory() {
+
+            if (this.LowMemory_Action != null) {
+
+                this.LowMemory_Action(RUMPlatform.SystemMemorySize);
+            }
+        }
+
+        void OnInfo() {
 
             if (this._infoDict == null) {
 
                 this._infoDict = new Dictionary<string, object>() {
 
-                    { "network", this._nw },
-                    { "systemLanguage", this._lang },
-                    { "deviceModel", this._model },
-                    { "operatingSystem", this._os },
-                    { "screenHeight", this._sh },
-                    { "screenWidth", this._sw },
-                    { "isMobile", this._isMobile },
-                    { "systemMemorySize", this._memorySize },
-                    { "unityVersion", this._unityVersion },
-                    { "installMode", this._installMode },
+                    { "network", RUMPlatform.Network },
+                    { "systemLanguage", RUMPlatform.SystemLanguage },
+                    { "deviceModel", RUMPlatform.DeviceModel },
+                    { "operatingSystem", RUMPlatform.OperatingSystem },
+                    { "screenHeight", RUMPlatform.ScreenHeight },
+                    { "screenWidth", RUMPlatform.ScreenWidth },
+                    { "isMobile", RUMPlatform.IsMobilePlatform },
+                    { "systemMemorySize", RUMPlatform.SystemMemorySize },
+                    { "unityVersion", RUMPlatform.UnityVersion },
+                    { "installMode", RUMPlatform.InstallMode },
 
                     //支持多种复制纹理功能的情况
                     { "copyTextureSupport", SystemInfo.copyTextureSupport.ToString() },
@@ -158,307 +286,73 @@ namespace com.rum {
                     //是否支持用户触摸震动反馈
                     { "supportsVibration", SystemInfo.supportsVibration },
                     //不支持运行在当前设备的SystemInfo属性值
-                    { "unsupportedIdentifier", SystemInfo.unsupportedIdentifier }
+                    { "unsupportedIdentifier", SystemInfo.unsupportedIdentifier },
+                    //AndroidID only for android 
+                    { "androidID", RUMPlatform.AndroidID },
+                    //DeviceToken only for ios
+                    { "deviceToken", RUMPlatform.DeviceToken },
+                    //vendorIdentifier only for ios
+                    { "vendorIdentifier", RUMPlatform.VendorIdentifier },
+                    //SecureDataPath
+                    { "secureDataPath", RUMPlatform.SecureDataPath }
                 };
-
-                if (!string.IsNullOrEmpty(this._deviceToken)) {
-
-                    this._infoDict.Add("deviceToken", this._deviceToken);
-                }
-
-                if (!string.IsNullOrEmpty(this._vendorIdentifier)) {
-
-                    this._infoDict.Add("vendorIdentifier", this._vendorIdentifier);
-                }
             }
 
-            if (!this.IsInvoking("OnInfo")) {
-
-                this.Invoke("OnInfo", 5.0f);
-            }
-
-            if (!this.IsInvoking("OnTimer")) {
-
-                this.InvokeRepeating("OnTimer", 10.0f, 10.0f);
-            }
-        }
-
-        void Start() {}
-
-        void OnDisable() {
-
-            Application.lowMemory -= OnLowMemory;
-            Application.logMessageReceived -= OnLogCallback;
-            Application.logMessageReceivedThreaded -= OnLogCallbackThreaded;
-
-            if (this.IsInvoking("OnInfo")) {
-
-                this.CancelInvoke("OnInfo");
-            }
-
-            if (this.IsInvoking("OnTimer")) {
-
-                this.CancelInvoke("OnTimer");
-            }
-        }
-
-        void OnApplicationPause() {
- 
-            if (!this._isPause) {
-             
-                if (this.AppBg_Action != null) {
-
-                    this.AppBg_Action();
-                }
-            } else {
-
-                this._isFocus = true;
-            }
-
-            this._isPause = true;
-        }
-
-        void OnApplicationFocus() {
-
-            if (this._isFocus) {
-             
-                this._isPause = false;
-                this._isFocus = false;
-            }
-             
-            if (this._isPause) {
-
-                this._isFocus = true;
-
-                if (this.AppFg_Action != null) {
-
-                    this.AppFg_Action();
-                }
-            }
-        }
-
-        void OnLowMemory() {
-
-            if (this.LowMemory_Action != null) {
-
-                this.LowMemory_Action(this.GetMemorySize());
-            }
-        }
-
-        private void OnInfo() {
-
-            if (this._infoDict != null && this.SystemInfo_Action != null) {
+            if (this.SystemInfo_Action != null) {
 
                 this.SystemInfo_Action(this._infoDict);
             }
         }
 
-        private void OnTimer() {
+        void OnTimer() {
 
-            string nw = Application.internetReachability.ToString();
+            string network = Application.internetReachability.ToString();
 
-            if (this._nw != nw) {
+            if (RUMPlatform.Network != network) {
 
-                this._nw = nw;
+                RUMPlatform.Network = network;
 
                 if (this.NetworkChange_Action != null) {
 
-                    this.NetworkChange_Action(this._nw);
+                    this.NetworkChange_Action(RUMPlatform.Network);
                 }
             }
         }
 
-        private void OnLogCallback(string logString, string stackTrace, LogType type) {
+        void OnLogCallback(string logString, string stackTrace, LogType type) {
 
             if (type == LogType.Assert) {
 
-                this.WriteException("crash", "main_assert", logString, stackTrace);
+                this.OnException("crash", "main_assert", logString, stackTrace);
             }
 
             if (type == LogType.Exception) {
 
-                this.WriteException("error", "main_exception", logString, stackTrace);
+                this.OnException("error", "main_exception", logString, stackTrace);
             }
         }
 
-        private void OnLogCallbackThreaded(string logString, string stackTrace, LogType type) {
+        void OnLogCallbackThreaded(string logString, string stackTrace, LogType type) {
 
             if (type == LogType.Exception) {
 
-                this.WriteException("error", "threaded_exception", logString, stackTrace);
+                this.OnException("error", "threaded_exception", logString, stackTrace);
             }
         }
 
-        private void WriteException(string ev, string type, string message, string stack) {
+        void OnException(string ev, string type, string message, string stack) {
 
-            IDictionary<string, object> dict = new Dictionary<string, object>();
+            IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-            dict.Add("type", type);
+                { "type", type },
+                { "message", message },
+                { "stack", stack }
+            };
 
-            if (!string.IsNullOrEmpty(message)) {
+            if (this.WriteEvent_Action != null) {
 
-                dict.Add("message", message);
+                this.WriteEvent_Action(ev, dict);
             }
-
-            if (!string.IsNullOrEmpty(stack)) {
-
-                dict.Add("stack", stack);
-            }
-
-            if (this._writeEvent != null) {
-
-                this._writeEvent(ev, dict);
-            }
-        }
-
-        private Action<string, IDictionary<string, object>> _writeEvent;
-
-        public void InitPrefs(Action<string, IDictionary<string, object>> writeEvent) {
-
-            this._writeEvent = writeEvent;
-        }
-
-        private string _lang;
-
-        public string GetLang() {
-
-            return this._lang;
-        }
-
-        public string GetManu() {
-
-            return null;
-        }
-
-        private string _model;
-
-        public string GetModel() {
-
-            return this._model;
-        }
-
-        private string _os;
-
-        public string GetOS() {
-
-            return this._os;
-        }
-
-        public string GetOSV() {
-
-            return null;
-        }
-
-        private string _nw;
-
-        /**
-         *  NotReachable                     Network is not reachable. (NONE)
-         *  ReachableViaCarrierDataNetwork   Network is reachable via carrier data network. (2G/3G/4G)
-         *  ReachableViaLocalAreaNetwork     Network is reachable via WiFi or cable. (WIFI)
-         */
-        public string GetNetwork() {
-
-            return this._nw;
-        }
-
-        private bool _isMobile;
-
-        public bool IsMobile() {
-
-            return this._isMobile;
-        }
-
-        private int _sh;
-
-        public int ScreenHeight() {
-
-            return this._sh;
-        }
-
-        private int _sw;
-
-        public int ScreenWidth() {
-
-            return this._sw;
-        }
-
-        public string GetCarrier() {
-
-            return null;
-        }
-
-        public string GetFrom() {
-
-            return null;
-        }
-
-        private int _memorySize;
-
-        public int GetMemorySize() {
-
-            return this._memorySize;
-        }
-
-        private string _unityVersion;
-
-        public string GetUnityVersion(){
-
-            return this._unityVersion;
-        }
-
-        private string _androidID;
-
-        public string GetAndroidID () {
-
-            if (!string.IsNullOrEmpty(this._androidID)) {
-
-                return this._androidID;
-            }
-
-            #if !UNITY_EDITOR && UNITY_ANDROID
-            using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-            using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
-            using (var contentResolver = currentActivity.Call<AndroidJavaObject> ("getContentResolver"))
-            using (var secure = new AndroidJavaClass ("android.provider.Settings$Secure")) {
-
-                this._androidID = secure.CallStatic<string> ("getString", contentResolver, "android_id");
-            }
-            #endif
-
-            return this._androidID;
-        }
-
-        private string _installMode;
-
-        /**
-         *  Unknown         Application install mode unknown.
-         *  Store           Application installed via online store.
-         *  DeveloperBuild  Application installed via developer build.
-         *  Adhoc           Application installed via ad hoc distribution.
-         *  Enterprise      Application installed via enterprise distribution.
-         *  Editor          Application running in editor.
-         */
-        public string GetInstallMode() {
-
-            return this._installMode;
-        }
-
-        private string _deviceToken;
-
-        public string GetDeviceToken() {
-
-            return this._deviceToken; 
-        }
-
-        private string _vendorIdentifier;
-
-        public string GetVendorIdentifier() {
-
-            return this._vendorIdentifier; 
-        }
-
-        public void AddSelfListener() {
-
         }
     }
 }
