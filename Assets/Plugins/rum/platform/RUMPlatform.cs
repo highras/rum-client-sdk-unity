@@ -70,7 +70,7 @@ namespace com.rum {
         private static bool isInit;
         private static object lock_obj = new object();
 
-        public void AddSelfListener() {}
+        public void InitSelfListener() {}
 
         void Awake() {}
         void OnEnable() {
@@ -132,7 +132,7 @@ namespace com.rum {
                 #endif
 
                 RUMPlatform.isInit = true;
-                Debug.Log("[RUMPlatform] InitComplete!");
+                Debug.Log("[RUMPlatform] Init Complete!");
             }
         }
 

@@ -13,7 +13,7 @@
 
 #### 其他 ####
 * `RUMClient`可在任意线程中构造实例和调用函数, 前提是`RUMPlatform`已被初始化
-* `RUMPlatform`初始化, 在`Unity`主线程中调用`RUMPlatform.Instance.AddSelfListener();`
+* `RUMPlatform`初始化, 在`Unity`主线程中调用`RUMPlatform.Instance.InitSelfListener();`
 * 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
 * HTTP HOOK: 半自动非侵入方式, 不会抓取请求内容, 参考`./Scripts/Main.cs`
 
@@ -29,7 +29,7 @@ using com.rum;
 /**
  * 在UnityMainThread中初始化RUMPlatform
  */
-//RUMPlatform.Instance.AddSelfListener();
+//RUMPlatform.Instance.InitSelfListener();
 
 RUMClient client = new RUMClient(
     41000013,

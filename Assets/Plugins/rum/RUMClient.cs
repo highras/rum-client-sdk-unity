@@ -100,10 +100,10 @@ namespace com.rum {
 
             if (!RUMPlatform.HasInit()) {
 
-                RUMPlatform.Instance.AddSelfListener(); 
+                RUMPlatform.Instance.InitSelfListener(); 
             }
 
-            Debug.Log("Hello RUM! rum@" + RUMConfig.VERSION + ", fpnn@" + FPConfig.VERSION);
+            Debug.Log("[RUM] rum_sdk@" + RUMConfig.VERSION + ", fpnn_sdk@" + FPConfig.VERSION);
 
             lock (Pids_Locker) {
 
