@@ -978,7 +978,7 @@ namespace com.rum {
 
             lock (self_locker) {
 
-                if (this._sendCount >= RUMConfig.SENT_COUNT_LIMIT) {
+                if (this._sendCount >= RUMConfig.SENT_CONCURRENT) {
 
                     return;
                 }
