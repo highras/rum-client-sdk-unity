@@ -246,6 +246,7 @@ namespace com.rum {
                     this._writeThread.Name = "rum_write_thread";
                 }
 
+                this._writeThread.IsBackground = true;
                 this._writeThread.Start();
             }
         }
@@ -996,6 +997,7 @@ namespace com.rum {
                     this._checkThread.Name = "rum_check_thread";
                 }
 
+                this._checkThread.IsBackground = true;
                 this._checkThread.Start();
             }
         }

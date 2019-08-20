@@ -4,10 +4,10 @@ namespace com.rum {
 
     public class RUMConfig {
 
-        public static string VERSION = "1.2.1";
+        public static string VERSION = "1.2.2";
         
         public static int PING_INTERVAL = 20 * 1000;                    //与Agent之间的连通性检查以及config更新检查的时间间隔(ms)
-        public static int SENT_INTERVAL = 1 * 1000;                     //事件发送时间间隔(ms)
+        public static int SENT_INTERVAL = 500;                          //事件发送时间间隔(ms)
         public static int CONNCT_INTERVAL = 40 * 1000;                  //客户端尝试重新连接的时间间隔(ms)
         public static int SENT_TIMEOUT = 20 * 1000;                     //事件发送的超时时间(ms)
         public static int EVENT_QUEUE_LIMIT = 11 * 1000;                //事件队列长度限制(1024 * 1024B / 100B)
