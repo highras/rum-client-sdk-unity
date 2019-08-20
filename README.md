@@ -98,11 +98,11 @@ client.CustomEvent("info", new Dictionary<string, object>());
     * `latency`: **(int)** 请求耗时(ms)
     * `attrs`: **(IDictionary[string,object])** 自定义内容
 
-* `HookHttp(ref HttpWebRequest req, ref HttpWebResponse res, int latency)`: 抓取以`System.Net.HttpWebRequest`方式发起的Http请求
+* `HookHttp(HttpWebRequest req, HttpWebResponse res, int latency)`: 抓取以`System.Net.HttpWebRequest`方式发起的Http请求
     * `req`: **(HttpWebRequest)** `HttpWebRequest` 请求对象
     * `res`: **(HttpWebResponse)** `HttpWebResponse` 响应对象
     * `latency`: **(int)** 请求耗时(ms)
 
-* `HookHttp(ref UnityWebRequest req, int latency)`: 抓取以`UnityEngine.Networking.UnityWebRequest`方式发起的Http请求
+* `HookHttp(UnityWebRequest req, int latency)`: 抓取以`UnityEngine.Networking.UnityWebRequest`方式发起的Http请求
     * `req`: **(UnityWebRequest)** `UnityWebRequest` 请求对象
     * `latency`: **(int)** 请求耗时(ms)

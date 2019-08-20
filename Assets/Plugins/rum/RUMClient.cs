@@ -387,7 +387,7 @@ namespace com.rum {
             }
         }
 
-        public void HookHttp(ref System.Net.HttpWebRequest req, ref System.Net.HttpWebResponse res, int latency) {
+        public void HookHttp(System.Net.HttpWebRequest req, System.Net.HttpWebResponse res, int latency) {
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
             IDictionary<string, object> attrs = new Dictionary<string, object>();
@@ -463,7 +463,7 @@ namespace com.rum {
             this.HttpEvent(dict);
         }
 
-        public void HookHttp(ref UnityEngine.Networking.UnityWebRequest req, int latency) {
+        public void HookHttp(UnityEngine.Networking.UnityWebRequest req, int latency) {
 
             IDictionary<string, object> dict = new Dictionary<string, object>();
             IDictionary<string, object> attrs = new Dictionary<string, object>();
