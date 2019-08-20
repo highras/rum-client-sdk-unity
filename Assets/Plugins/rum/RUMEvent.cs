@@ -708,7 +708,7 @@ namespace com.rum {
                     needClear = storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX;
                 } catch(Exception ex) {
 
-                    Debug.LogError(ex);
+                    ErrorRecorderHolder.recordError(ex);
                 }
             } 
 
