@@ -577,9 +577,14 @@ namespace com.rum {
                     self.WriteEvent("bg", new Dictionary<string, object>());
                 };
 
-                RUMPlatform.Instance.SystemInfo_Action = (dict) => {
+                RUMPlatform.Instance.SystemInfo_Action = (info) => {
 
-                    dict.Add("type", "system_info");
+                    IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                        { "type", "unity_system_info" },
+                        { "system_info", info }
+                    };
+
                     self.WriteEvent("info", dict);
                 };
 
@@ -973,7 +978,7 @@ namespace com.rum {
 
             lock (self_locker) {
 
-                if (this._sendCount >= 3) {
+                if (this._sendCount >= RUMConfig.SENT_COUNT_LIMIT) {
 
                     return;
                 }

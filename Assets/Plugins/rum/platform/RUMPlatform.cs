@@ -294,7 +294,9 @@ namespace com.rum {
                     //vendorIdentifier only for ios
                     { "vendorIdentifier", RUMPlatform.VendorIdentifier },
                     //SecureDataPath
-                    { "secureDataPath", RUMPlatform.SecureDataPath }
+                    { "secureDataPath", RUMPlatform.SecureDataPath },
+                    //TimeZone
+                    { "timeZone", DateTime.Now.ToString("%z") }
                 };
             }
 
