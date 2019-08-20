@@ -1,19 +1,17 @@
 # fpnn rum sdk unity #
 
-#### 关于三方包依赖 ####
+#### 依赖 ####
 * [fpnn.unitypackage](https://github.com/highras/fpnn-sdk-unity)
 * [Json&MsgPack.unitypackage](https://github.com/deniszykov/msgpack-unity3d)
 
-#### 异步函数 ####
-* 异步函数均由子线程呼叫, 不要在其中调用仅UI线程可执行的函数, 不要阻塞事件和回调函数
-
-#### 关于IPV6 ####
+#### IPV6 ####
 * `SOCKET`链接支持`IPV6`接口
 * 兼容`DNS64/NAT64`网络环境
 
 #### 其他 ####
 * `RUMClient`可在任意线程中构造实例和调用函数, 前提是`RUMPlatform`已被初始化
 * `RUMPlatform`初始化, 在`Unity`主线程中调用`RUMPlatform.Instance.InitSelfListener();`
+* 异步函数均由子线程呼叫, 不要在其中调用仅`Unity`主线程中可执行的函数, 不要阻塞事件和回调函数
 * 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
 * HTTP HOOK: 半自动非侵入方式, 不会抓取请求内容, 参考`./Scripts/Main.cs`
 
