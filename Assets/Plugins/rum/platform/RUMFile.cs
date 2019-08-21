@@ -16,23 +16,31 @@ namespace com.rum {
             public object content;
         }
 
-        private static int LOCAL_FILE_MAX = 300; 
+        private const int LOCAL_FILE_MAX = 300; 
 
         private const string FILE_PRE = "rumlog_";
         private const string STORAGE_FILE = "rumlog_storage";
 
+        private static object File_Locker = new object();
+
         private int _read_index;
         private object index_locker = new object();
-        private object file_locker = new object();
 
+        private bool _debug;
         private string _secureDataPath;
 
-        public RUMFile(int pid) {
+        public RUMFile(int pid, bool debug) {
 
+            this._debug = debug;
             this.InitDirectory(RUMPlatform.SecureDataPath + "/rum_events_" + pid);
         }
 
         private void InitDirectory (string secureDataPath) {
+
+            if (this._debug) {
+
+                Debug.Log("[RUM] local path: " + secureDataPath);
+            }
 
             try {
 
@@ -112,7 +120,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, string content, Encoding encoding) {
 
-            lock (file_locker) {
+            lock (File_Locker) {
 
                 try {
 
@@ -139,7 +147,7 @@ namespace com.rum {
 
         public RUMFile.Result WriteFile(string path, byte[] content) {
 
-            lock (file_locker) {
+            lock (File_Locker) {
 
                 try {
 
@@ -166,7 +174,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete, Encoding encoding) {
 
-            lock (file_locker) {
+            lock (File_Locker) {
 
                 string content;
 
@@ -211,7 +219,7 @@ namespace com.rum {
 
         public RUMFile.Result ReadFile(string path, bool delete) {
 
-            lock (file_locker) {
+            lock (File_Locker) {
 
                 byte[] content;
 
@@ -257,7 +265,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteFile(string path) {
 
-            lock (file_locker) {
+            lock (File_Locker) {
 
                 try {
 
@@ -286,7 +294,7 @@ namespace com.rum {
 
         public RUMFile.Result DeleteDirectory(string path) {
 
-            lock (file_locker) {
+            lock (File_Locker) {
 
                 try {
 

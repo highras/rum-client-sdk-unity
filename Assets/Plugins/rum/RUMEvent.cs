@@ -85,7 +85,7 @@ namespace com.rum {
             this._sendQuest = sendQuest;
             this._openEvent = openEvent;
             this._sizeLimit = RUMConfig.SENT_SIZE_LIMIT;
-            this._rumFile = new RUMFile(pid);
+            this._rumFile = new RUMFile(pid, debug);
         }
 
         public void Init() {

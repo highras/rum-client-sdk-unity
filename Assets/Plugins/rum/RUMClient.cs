@@ -1195,39 +1195,32 @@ namespace com.rum {
 
             public override void recordError(Exception ex) {
 
-                this.WriteDebug("rum_exception", ex);
-
                 if (this._debug) {
 
                     Debug.LogError(ex);
                 } 
+
+                this.WriteDebug("rum_exception", ex);
             }
 
             private void WriteDebug(string type, Exception ex) {
 
-                this.WriteException("debug", type, ex.Message, ex.StackTrace);
+                this.OnException("debug", type, ex.Message, ex.StackTrace);
             }
 
             private void WriteException(string type, Exception ex) {
 
-                this.WriteException("error", type, ex.Message, ex.StackTrace);
+                this.OnException("error", type, ex.Message, ex.StackTrace);
             }
 
-            private void WriteException(string ev, string type, string message, string stack) {
+            private void OnException(string ev, string type, string message, string stack) {
 
-                IDictionary<string, object> dict = new Dictionary<string, object>();
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-                dict.Add("type", type);
-
-                if (!string.IsNullOrEmpty(message)) {
-
-                    dict.Add("message", message);
-                }
-
-                if (!string.IsNullOrEmpty(stack)) {
-
-                    dict.Add("stack", stack);
-                }
+                    { "type", type },
+                    { "message", message },
+                    { "stack", stack }
+                };
 
                 if (this._writeEvent != null) {
 
