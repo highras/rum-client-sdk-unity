@@ -273,7 +273,7 @@ namespace com.rum {
                     { "supportsMotionVectors", SystemInfo.supportsMotionVectors },
                     //是否支持阴影深度
                     { "supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling },
-                    //是否支持渲染纹理
+                    //是否支持渲染纹理 always returns true
                     { "supportsRenderTextures", SystemInfo.supportsRenderTextures },
                     //是否支持立方体纹理
                     { "supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap },
@@ -281,7 +281,7 @@ namespace com.rum {
                     { "supportsShadows", SystemInfo.supportsShadows },
                     //是否支持稀疏纹理
                     { "supportsSparseTextures", SystemInfo.supportsSparseTextures },
-                    //是否支持模版缓存
+                    //是否支持模版缓存 always returns true
                     { "supportsStencil", SystemInfo.supportsStencil },
                     //是否支持用户触摸震动反馈
                     { "supportsVibration", SystemInfo.supportsVibration },

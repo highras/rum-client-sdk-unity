@@ -101,7 +101,7 @@ namespace com.rum {
 
                 if (this._storage == null) {
 
-                    this._storage = this.StorageLoad(); 
+                    this._storage = this.LoadStorage(); 
 
                     if (!this._storage.ContainsKey(this._rumIdKey)) {
 
@@ -307,7 +307,7 @@ namespace com.rum {
                 this._sendQuest();
             }
 
-            this.StorageSave();
+            this.SaveStorage();
         }
 
         public void WriteEvents(ICollection<object> items) {
@@ -688,12 +688,12 @@ namespace com.rum {
             }
         }
 
-        private IDictionary<string, object> StorageLoad() {
+        private IDictionary<string, object> LoadStorage() {
 
             bool needClear = false;
             IDictionary<string, object> storage = null;
 
-            RUMFile.Result res = this._rumFile.ReadStorage();
+            RUMFile.Result res = this._rumFile.LoadStorage();
 
             if (res.success) {
 
@@ -730,7 +730,7 @@ namespace com.rum {
             return storage;
         }
 
-        private void StorageSave() {
+        private void SaveStorage() {
 
             byte[] storage_bytes = this.CheckStorageBytes();
 
@@ -739,7 +739,7 @@ namespace com.rum {
                 return;
             }
 
-            RUMFile.Result res = this._rumFile.WriteStorage(storage_bytes);
+            RUMFile.Result res = this._rumFile.SaveStorage(storage_bytes);
 
             if (!res.success) {
 
@@ -1041,7 +1041,7 @@ namespace com.rum {
         private void CheckStorage() {
 
             int size;
-            bool saveStorage = false;
+            bool needSave = false;
 
             lock (self_locker) { 
 
@@ -1054,18 +1054,18 @@ namespace com.rum {
 
                 if (!this.IsNullOrEmpty(list)) {
 
-                    saveStorage = this.SlipStorage(list);
+                    needSave = this.SlipStorage(list);
                 }
             }
 
             if (size < RUMConfig.STORAGE_SIZE_MIN) {
 
-                saveStorage = this.ReStorage();
+                needSave = this.ReStorage();
             }
 
-            if (saveStorage) {
+            if (needSave) {
 
-                this.StorageSave();
+                this.SaveStorage();
             }
         }
 
@@ -1094,7 +1094,7 @@ namespace com.rum {
                 index = this._writeIndex;
             }
 
-            RUMFile.Result res = this._rumFile.WriteRumLog(index, bytes);
+            RUMFile.Result res = this._rumFile.SaveRumLog(index, bytes);
 
             if (res.success) {
 
@@ -1125,7 +1125,7 @@ namespace com.rum {
 
         private bool ReStorage() {
 
-            RUMFile.Result res = this._rumFile.ReadRumLog();
+            RUMFile.Result res = this._rumFile.LoadRumLog();
 
             if (res.success) {
 

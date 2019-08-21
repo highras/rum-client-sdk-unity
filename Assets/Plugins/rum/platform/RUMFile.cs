@@ -56,13 +56,13 @@ namespace com.rum {
             }
         }
 
-        public RUMFile.Result WriteRumLog(int index, byte[] content) {
+        public RUMFile.Result SaveRumLog(int index, byte[] content) {
 
             string path = this._secureDataPath + "/" + FILE_PRE + index;
             return this.WriteFile(path, content);
         }
 
-        public RUMFile.Result ReadRumLog() {
+        public RUMFile.Result LoadRumLog() {
 
             string path = null;
 
@@ -94,13 +94,13 @@ namespace com.rum {
             return res;
         }
 
-        public RUMFile.Result WriteStorage(byte[] content) {
+        public RUMFile.Result SaveStorage(byte[] content) {
 
             string path = this._secureDataPath + "/" + STORAGE_FILE;
             return this.WriteFile(path, content);
         }
 
-        public RUMFile.Result ReadStorage() {
+        public RUMFile.Result LoadStorage() {
 
             string path = this._secureDataPath + "/" + STORAGE_FILE;
             RUMFile.Result res = this.ReadFile(path, false);
