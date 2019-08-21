@@ -169,15 +169,15 @@ namespace com.rum {
                     this._eventDelegate = null;
                 }
 
+                if (this._rumEvent != null) {
+
+                    this._rumEvent.Destroy();
+                }
+
                 if (this._baseClient != null) {
 
                     this._baseClient.Close();
                     this._baseClient = null;
-                }
-
-                if (this._rumEvent != null) {
-
-                    this._rumEvent.Destroy();
                 }
 
                 this._event.RemoveListener();
