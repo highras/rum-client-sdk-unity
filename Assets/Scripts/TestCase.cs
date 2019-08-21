@@ -137,11 +137,11 @@ namespace com.test {
                     if (++count % 2 != 0) {
 
                         self.CreateClinet();
-                        // Thread.Sleep(1 * 1000);
+                        Thread.Sleep(3 * 1000);
                     }else {
 
                         self.DestroyClinet();
-                        Thread.Sleep(1 * 1000);
+                        // Thread.Sleep(1 * 1000);
                     }
                 }
             }catch(Exception ex) {
