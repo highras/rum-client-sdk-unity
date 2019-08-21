@@ -32,7 +32,8 @@ namespace com.rum {
 
                     c = Count;
 
-                    sb.Clear();
+                    //.Net >= 4.0  sb.Clear();
+                    sb.Length = 0;
                     sb.Append(FPManager.Instance.GetMilliTimestamp());
 
                     if (c < 100) {

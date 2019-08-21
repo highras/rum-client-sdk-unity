@@ -137,7 +137,7 @@ namespace com.test {
                     if (++count % 2 != 0) {
 
                         self.CreateClinet();
-                        Thread.Sleep(5 * 1000);
+                        Thread.Sleep(1 * 1000);
                     }else {
 
                         self.DestroyClinet();
