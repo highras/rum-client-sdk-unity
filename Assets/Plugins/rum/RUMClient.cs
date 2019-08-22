@@ -169,6 +169,9 @@ namespace com.rum {
                     this._eventDelegate = null;
                 }
 
+                this._event.FireEvent(new EventData("close"));
+                this._event.RemoveListener();
+
                 if (this._rumEvent != null) {
 
                     this._rumEvent.Destroy();
@@ -179,8 +182,6 @@ namespace com.rum {
                     this._baseClient.Close();
                     this._baseClient = null;
                 }
-
-                this._event.RemoveListener();
             }
 
             lock (Pids_Locker) {
