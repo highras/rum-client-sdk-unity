@@ -281,11 +281,11 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             } finally {
 
-                this.StopWriteThread(false);
+                this.StopWriteThread();
             }
         }
 
-        private void StopWriteThread(bool destroy) {
+        private void StopWriteThread() {
 
             lock (write_locker) {
 
@@ -294,11 +294,6 @@ namespace com.rum {
                     write_locker.Status = 0;
                     this._writeEvent.Set();
                 }
-            }
-
-            if (destroy) {
-
-                this._writeEvent.Close();
             }
         }
 
@@ -453,8 +448,8 @@ namespace com.rum {
                 this._destroyed = true;
             }
 
-            this.StopWriteThread(true);
-            this.StopCheckThread(true);
+            this.StopWriteThread();
+            this.StopCheckThread();
 
             lock (config_locker) {
 
@@ -1031,11 +1026,11 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             } finally {
 
-                this.StopCheckThread(false);
+                this.StopCheckThread();
             }
         }
 
-        private void StopCheckThread(bool destroy) {
+        private void StopCheckThread() {
 
             lock (check_locker) {
 
@@ -1044,11 +1039,6 @@ namespace com.rum {
                     check_locker.Status = 0;
                     this._checkEvent.Set();
                 }
-            }
-
-            if (destroy) {
-
-                this._checkEvent.Close();
             }
         }
 
