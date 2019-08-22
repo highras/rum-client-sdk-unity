@@ -246,7 +246,6 @@ namespace com.rum {
                     this._writeThread.Name = "rum_write_thread";
                 }
 
-                this._writeThread.IsBackground = true;
                 this._writeThread.Start();
             }
         }
@@ -282,16 +281,24 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             } finally {
 
-                this.StopWriteThread();
+                this.StopWriteThread(false);
             }
         }
 
-        private void StopWriteThread() {
+        private void StopWriteThread(bool destroy) {
 
             lock (write_locker) {
 
-                write_locker.Status = 0;
-                this._writeEvent.Set();
+                if (write_locker.Status != 0) {
+
+                    write_locker.Status = 0;
+                    this._writeEvent.Set();
+                }
+            }
+
+            if (destroy) {
+
+                this._writeEvent.Close();
             }
         }
 
@@ -446,8 +453,8 @@ namespace com.rum {
                 this._destroyed = true;
             }
 
-            this.StopWriteThread();
-            this.StopCheckThread();
+            this.StopWriteThread(true);
+            this.StopCheckThread(true);
 
             lock (config_locker) {
 
@@ -997,7 +1004,6 @@ namespace com.rum {
                     this._checkThread.Name = "rum_check_thread";
                 }
 
-                this._checkThread.IsBackground = true;
                 this._checkThread.Start();
             }
         }
@@ -1025,16 +1031,24 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             } finally {
 
-                this.StopCheckThread();
+                this.StopCheckThread(false);
             }
         }
 
-        private void StopCheckThread() {
+        private void StopCheckThread(bool destroy) {
 
             lock (check_locker) {
 
-                check_locker.Status = 0;
-                this._checkEvent.Set();            
+                if (check_locker.Status != 0) {
+
+                    check_locker.Status = 0;
+                    this._checkEvent.Set();
+                }
+            }
+
+            if (destroy) {
+
+                this._checkEvent.Close();
             }
         }
 
