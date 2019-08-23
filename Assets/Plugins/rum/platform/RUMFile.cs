@@ -16,14 +16,12 @@ namespace com.rum {
             public object content;
         }
 
-        private const int LOCAL_FILE_MAX = 300; 
-
         private const string FILE_PRE = "rumlog_";
         private const string STORAGE_FILE = "rumlog_storage";
 
         private static object File_Locker = new object();
 
-        private int _read_index;
+        private int _nextIndex;
         private object index_locker = new object();
 
         private bool _debug;
@@ -32,7 +30,7 @@ namespace com.rum {
         public RUMFile(int pid, bool debug) {
 
             this._debug = debug;
-            this.InitDirectory(RUMPlatform.SecureDataPath + "/rum_events_" + pid);
+            this.InitDirectory(String.Format("{0}/{1}{2}", RUMPlatform.SecureDataPath, "rum_events_", pid));
         }
 
         private void InitDirectory (string secureDataPath) {
@@ -58,7 +56,7 @@ namespace com.rum {
 
         public RUMFile.Result SaveRumLog(int index, byte[] content) {
 
-            string path = this._secureDataPath + "/" + FILE_PRE + index;
+            string path = String.Format("{0}/{1}{2}", this._secureDataPath, FILE_PRE, index);
             return this.WriteFile(path, content);
         }
 
@@ -70,17 +68,16 @@ namespace com.rum {
 
                 int index = 0;
 
-                while(index < 20) {
+                for (int i = 0; i < 20; i++) {
 
-                    this._read_index = (this._read_index + 1) % LOCAL_FILE_MAX;
-                    path = this._secureDataPath + "/" + FILE_PRE + this._read_index;
+                    index = this._nextIndex % RUMConfig.FILE_MAX_COUNT;
+                    path = String.Format("{0}/{1}{2}", this._secureDataPath, FILE_PRE, index);
+                    this._nextIndex = ++index;
 
                     if (new FileInfo(path).Exists) {
 
                         break;
                     }
-
-                    index++;
                 }
             }
 
@@ -96,13 +93,13 @@ namespace com.rum {
 
         public RUMFile.Result SaveStorage(byte[] content) {
 
-            string path = this._secureDataPath + "/" + STORAGE_FILE;
+            string path = String.Format("{0}/{1}", this._secureDataPath, STORAGE_FILE);
             return this.WriteFile(path, content);
         }
 
         public RUMFile.Result LoadStorage() {
 
-            string path = this._secureDataPath + "/" + STORAGE_FILE;
+            string path = String.Format("{0}/{1}", this._secureDataPath, STORAGE_FILE);
             RUMFile.Result res = this.ReadFile(path, false);
 
             if (!res.success) {

@@ -24,11 +24,10 @@ using UnityEngine;
 
 using com.rum;
 
-/**
- * 在UnityMainThread中初始化RUMPlatform
- */
-//RUMPlatform.Instance.InitSelfListener();
+// UnityMainThread
+RUMPlatform.Instance.InitSelfListener();
 
+// AnyThread
 RUMClient client = new RUMClient(
     41000013,
     "c23e9d90-bada-440d-8316-44790f615ec1",
@@ -64,9 +63,9 @@ client.CustomEvent("info", new Dictionary<string, object>());
     * `close`: 连接关闭
 
 #### API ####
-* `Constructor(int pid, string token, string uid, string appv, bool debug)`: 构造RUMClient
+* `Constructor(int pid, string secret, string uid, string appv, bool debug)`: 构造RUMClient
     * `pid`: **(int)** 应用ID, RUM项目控制台获取
-    * `token`: **(string)** 应用Token, RUM项目控制台获取
+    * `secret`: **(string)** 应用SecretKey, RUM项目控制台获取
     * `uid`: **(string)** 应用开放用户ID 
     * `appv`: **(string)** 应用版本号
     * `debug`: **(bool)** 是否开启调试日志

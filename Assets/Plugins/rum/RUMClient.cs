@@ -73,7 +73,7 @@ namespace com.rum {
         private static object Pids_Locker = new object();
         private static List<int> PIDS = new List<int>();
 
-        private string _token;
+        private string _secret;
         private string _uid;
         private string _appv;
 
@@ -97,7 +97,7 @@ namespace com.rum {
 
         private EventDelegate _eventDelegate;
 
-        public RUMClient(int pid, string token, string uid, string appv, bool debug) {
+        public RUMClient(int pid, string secret, string uid, string appv, bool debug) {
 
             if (!RUMPlatform.HasInit()) {
 
@@ -123,7 +123,7 @@ namespace com.rum {
             }
 
             this._pid = pid;
-            this._token = token;
+            this._secret = secret;
             this._uid = uid;
             this._appv = appv;
             this._debug = debug;
@@ -1051,7 +1051,7 @@ namespace com.rum {
 
                 sb.Append(Convert.ToString(this._pid));
                 sb.Append(":");
-                sb.Append(this._token);
+                sb.Append(this._secret);
                 sb.Append(":");
                 sb.Append(Convert.ToString(salt));
 
