@@ -90,6 +90,14 @@ namespace com.rum {
 
         public void Init() {
 
+            lock (self_locker) {
+
+                if (this._destroyed) {
+
+                    return;
+                }
+            }
+
             this.StartWriteThread();
         }
 
@@ -200,6 +208,14 @@ namespace com.rum {
 
         public void WriteEvent(IDictionary<string, object> dict) {
 
+            lock (self_locker) {
+
+                if (this._destroyed) {
+
+                    return;
+                }
+            }
+
             lock (write_locker) {
 
                 if (this._eventCache.Count < 5000) {
@@ -221,14 +237,6 @@ namespace com.rum {
 
         private void StartWriteThread() {
 
-            lock (self_locker) {
-
-                if (this._destroyed) {
-
-                    return;
-                }
-            }
-
             lock (write_locker) {
 
                 if (write_locker.Status != 0) {
@@ -237,16 +245,23 @@ namespace com.rum {
                 }
 
                 write_locker.Status = 1;
-                this._writeEvent.Reset();
 
-                this._writeThread = new Thread(new ThreadStart(WriteThread));
+                try {
 
-                if (this._writeThread.Name == null) {
+                    this._writeEvent.Reset();
 
-                    this._writeThread.Name = "rum_write_thread";
+                    this._writeThread = new Thread(new ThreadStart(WriteThread));
+
+                    if (this._writeThread.Name == null) {
+
+                        this._writeThread.Name = "RUM-WRITE";
+                    }
+
+                    this._writeThread.Start();
+                } catch(Exception ex) {
+
+                    ErrorRecorderHolder.recordError(ex);
                 }
-
-                this._writeThread.Start();
             }
         }
 
@@ -292,7 +307,14 @@ namespace com.rum {
                 if (write_locker.Status != 0) {
 
                     write_locker.Status = 0;
-                    this._writeEvent.Set();
+
+                    try {
+
+                        this._writeEvent.Set();
+                    } catch(Exception ex) {
+
+                        ErrorRecorderHolder.recordError(ex);
+                    }
                 }
             }
         }
@@ -449,6 +471,12 @@ namespace com.rum {
             }
 
             this.StopWriteThread();
+
+            lock (write_locker) {
+
+                this._eventCache.Clear();
+            }
+
             this.StopCheckThread();
 
             lock (config_locker) {
@@ -990,16 +1018,23 @@ namespace com.rum {
                 }
 
                 check_locker.Status = 1;
-                this._checkEvent.Reset();
 
-                this._checkThread = new Thread(new ThreadStart(CheckThread));
+                try {
 
-                if (this._checkThread.Name == null) {
+                    this._checkEvent.Reset();
 
-                    this._checkThread.Name = "rum_check_thread";
+                    this._checkThread = new Thread(new ThreadStart(CheckThread));
+
+                    if (this._checkThread.Name == null) {
+
+                        this._checkThread.Name = "RUM-CHECK";
+                    }
+
+                    this._checkThread.Start();
+                } catch(Exception ex) {
+
+                    ErrorRecorderHolder.recordError(ex);
                 }
-
-                this._checkThread.Start();
             }
         }
 
@@ -1037,7 +1072,14 @@ namespace com.rum {
                 if (check_locker.Status != 0) {
 
                     check_locker.Status = 0;
-                    this._checkEvent.Set();
+
+                    try {
+
+                        this._checkEvent.Set();
+                    } catch(Exception ex) {
+
+                        ErrorRecorderHolder.recordError(ex);
+                    }
                 }
             }
         }
