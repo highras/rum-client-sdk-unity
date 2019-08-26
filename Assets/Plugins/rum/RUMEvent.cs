@@ -242,46 +242,25 @@ namespace com.rum {
 
                     return;
                 }
+
+                write_locker.Status = 1;
+
+                try {
+
+                    this._writeThread = new Thread(new ThreadStart(WriteThread));
+
+                    if (this._writeThread.Name == null) {
+
+                        this._writeThread.Name = "RUM-WRITE";
+                    }
+
+                    this._writeThread.Start();
+                    this._writeEvent.Reset();
+                } catch(Exception ex) {
+
+                    ErrorRecorderHolder.recordError(ex);
+                }
             }
-
-            RUMEvent self = this;
-
-            FPManager.Instance.ExecTask((state) => {
-
-                lock (self_locker) {
-
-                    if (self._destroyed) {
-
-                        return;
-                    }
-                }
-
-                lock (write_locker) {
-
-                    if (write_locker.Status != 0) {
-
-                        return;
-                    }
-
-                    write_locker.Status = 1;
-
-                    try {
-
-                        self._writeThread = new Thread(new ThreadStart(WriteThread));
-
-                        if (self._writeThread.Name == null) {
-
-                            self._writeThread.Name = "RUM-WRITE";
-                        }
-
-                        self._writeThread.Start();
-                        self._writeEvent.Reset();
-                    } catch(Exception ex) {
-
-                        ErrorRecorderHolder.recordError(ex);
-                    }
-                }
-            }, null);
         }
 
         private void WriteThread() {
@@ -1031,46 +1010,25 @@ namespace com.rum {
 
                     return;
                 }
+
+                check_locker.Status = 1;
+
+                try {
+
+                    this._checkThread = new Thread(new ThreadStart(CheckThread));
+
+                    if (this._checkThread.Name == null) {
+
+                        this._checkThread.Name = "RUM-CHECK";
+                    }
+
+                    this._checkThread.Start();
+                    this._checkEvent.Reset();
+                } catch(Exception ex) {
+
+                    ErrorRecorderHolder.recordError(ex);
+                }
             }
-
-            RUMEvent self = this;
-
-            FPManager.Instance.ExecTask((state) => {
-
-                lock (self_locker) {
-
-                    if (self._destroyed) {
-
-                        return;
-                    }
-                }
-
-                lock (check_locker) {
-
-                    if (check_locker.Status != 0) {
-
-                        return;
-                    }
-
-                    check_locker.Status = 1;
-
-                    try {
-
-                        self._checkThread = new Thread(new ThreadStart(CheckThread));
-
-                        if (self._checkThread.Name == null) {
-
-                            self._checkThread.Name = "RUM-CHECK";
-                        }
-
-                        self._checkThread.Start();
-                        self._checkEvent.Reset();
-                    } catch(Exception ex) {
-
-                        ErrorRecorderHolder.recordError(ex);
-                    }
-                }
-            }, null);
         }
 
         private void CheckThread() {

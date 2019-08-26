@@ -66,6 +66,7 @@ namespace com.rum {
 
         private bool _isPause;
         private bool _isFocus;
+        private NetworkReachability _netWork;
 
         private static bool isInit;
         private static object lock_obj = new object();
@@ -77,6 +78,7 @@ namespace com.rum {
 
             this._isPause = false;
             this._isFocus = false;
+            this._netWork = Application.internetReachability;
 
             Application.lowMemory += OnLowMemory;
             Application.logMessageReceived += OnLogCallback;
@@ -101,9 +103,9 @@ namespace com.rum {
 
                 FPManager.Instance.Init();
 
+                RUMPlatform.Network = this._netWork.ToString();
                 RUMPlatform.SystemLanguage = Application.systemLanguage.ToString();
                 RUMPlatform.DeviceModel = SystemInfo.deviceModel;
-                RUMPlatform.Network = Application.internetReachability.ToString();
                 RUMPlatform.OperatingSystem = SystemInfo.operatingSystem;
                 RUMPlatform.ScreenHeight = Screen.height;
                 RUMPlatform.ScreenWidth = Screen.width;
@@ -310,11 +312,12 @@ namespace com.rum {
 
         void OnTimer() {
 
-            string network = Application.internetReachability.ToString();
+            NetworkReachability network = Application.internetReachability;
 
-            if (RUMPlatform.Network != network) {
+            if (this._netWork != network) {
 
-                RUMPlatform.Network = network;
+                this._netWork = network;
+                RUMPlatform.Network = this._netWork.ToString();
 
                 if (this.NetworkChange_Action != null) {
 
