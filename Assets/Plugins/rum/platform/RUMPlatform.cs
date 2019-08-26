@@ -99,6 +99,8 @@ namespace com.rum {
                     return;
                 }
 
+                FPManager.Instance.Init();
+
                 RUMPlatform.SystemLanguage = Application.systemLanguage.ToString();
                 RUMPlatform.DeviceModel = SystemInfo.deviceModel;
                 RUMPlatform.Network = Application.internetReachability.ToString();

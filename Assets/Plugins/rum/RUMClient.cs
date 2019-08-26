@@ -99,12 +99,12 @@ namespace com.rum {
 
         public RUMClient(int pid, string secret, string uid, string appv, bool debug) {
 
+            Debug.Log("[RUM] rum_sdk@" + RUMConfig.VERSION + ", fpnn_sdk@" + FPConfig.VERSION);
+
             if (!RUMPlatform.HasInit()) {
 
                 RUMPlatform.Instance.InitSelfListener(); 
             }
-
-            Debug.Log("[RUM] rum_sdk@" + RUMConfig.VERSION + ", fpnn_sdk@" + FPConfig.VERSION);
 
             lock (Pids_Locker) {
 

@@ -28,7 +28,6 @@ namespace com.rum {
         }
 
         private const string EVENT_CACHE = "event_cache";
-        private const string EVENT_MAP_0 = "event_map_0";
         private const string EVENT_MAP_1 = "event_map_1";
         private const string EVENT_MAP_2 = "event_map_2";
         private const string EVENT_MAP_3 = "event_map_3";
@@ -89,14 +88,6 @@ namespace com.rum {
         }
 
         public void Init() {
-
-            lock (self_locker) {
-
-                if (this._destroyed) {
-
-                    return;
-                }
-            }
 
             this.StartWriteThread();
         }
@@ -237,32 +228,60 @@ namespace com.rum {
 
         private void StartWriteThread() {
 
+            lock (self_locker) {
+
+                if (this._destroyed) {
+
+                    return;
+                }
+            }
+
             lock (write_locker) {
 
                 if (write_locker.Status != 0) {
 
                     return;
                 }
+            }
 
-                write_locker.Status = 1;
+            RUMEvent self = this;
 
-                try {
+            FPManager.Instance.ExecTask((state) => {
 
-                    this._writeEvent.Reset();
+                lock (self_locker) {
 
-                    this._writeThread = new Thread(new ThreadStart(WriteThread));
+                    if (self._destroyed) {
 
-                    if (this._writeThread.Name == null) {
+                        return;
+                    }
+                }
 
-                        this._writeThread.Name = "RUM-WRITE";
+                lock (write_locker) {
+
+                    if (write_locker.Status != 0) {
+
+                        return;
                     }
 
-                    this._writeThread.Start();
-                } catch(Exception ex) {
+                    write_locker.Status = 1;
 
-                    ErrorRecorderHolder.recordError(ex);
+                    try {
+
+                        self._writeThread = new Thread(new ThreadStart(WriteThread));
+
+                        if (self._writeThread.Name == null) {
+
+                            self._writeThread.Name = "RUM-WRITE";
+                        }
+
+                        self._writeThread.Start();
+                        self._writeEvent.Reset();
+                    } catch(Exception ex) {
+
+                        ErrorRecorderHolder.recordError(ex);
+                    }
                 }
-            }
+            }, null);
         }
 
         private void WriteThread() {
@@ -373,24 +392,19 @@ namespace com.rum {
 
                     List<object> event_list = (List<object>)event_storage[key];
 
-                    if (event_list.Count >= RUMConfig.EVENT_QUEUE_LIMIT) {
+                    if (event_list.Count < RUMConfig.EVENT_QUEUE_LIMIT) {
 
-                        event_list.RemoveAt(0);
-                        
-                        if (this._debug) {
-
-                            Debug.Log("[RUM] event(normal) queue limit & will be shift! " + Json.SerializeToString(dict));
-                        }
+                        event_list.Add(dict);
                     }
 
-                    event_list.Add(dict);
+                    if (event_list.Count == (RUMConfig.EVENT_QUEUE_LIMIT - 2)) {
+
+                        ErrorRecorderHolder.recordError(new Exception(String.Format("Event Queue Limit! ev: {0}", key)));
+                    }
                 }
             } else {
 
-                if (this._debug) {
-
-                    Debug.Log("[RUM] disable event & will be discard! " + key);
-                } 
+                ErrorRecorderHolder.recordError(new Exception(String.Format("Event Disable! ev: {0}", key)));
             }
         }
 
@@ -816,6 +830,7 @@ namespace com.rum {
                 }
 
                 this.UpdateStorageSize(160);
+                ErrorRecorderHolder.recordError(new Exception("Storage Size Limit!"));
                 return new byte[0];
             }
 
@@ -1016,26 +1031,46 @@ namespace com.rum {
 
                     return;
                 }
+            }
 
-                check_locker.Status = 1;
+            RUMEvent self = this;
 
-                try {
+            FPManager.Instance.ExecTask((state) => {
 
-                    this._checkEvent.Reset();
+                lock (self_locker) {
 
-                    this._checkThread = new Thread(new ThreadStart(CheckThread));
+                    if (self._destroyed) {
 
-                    if (this._checkThread.Name == null) {
+                        return;
+                    }
+                }
 
-                        this._checkThread.Name = "RUM-CHECK";
+                lock (check_locker) {
+
+                    if (check_locker.Status != 0) {
+
+                        return;
                     }
 
-                    this._checkThread.Start();
-                } catch(Exception ex) {
+                    check_locker.Status = 1;
 
-                    ErrorRecorderHolder.recordError(ex);
+                    try {
+
+                        self._checkThread = new Thread(new ThreadStart(CheckThread));
+
+                        if (self._checkThread.Name == null) {
+
+                            self._checkThread.Name = "RUM-CHECK";
+                        }
+
+                        self._checkThread.Start();
+                        self._checkEvent.Reset();
+                    } catch(Exception ex) {
+
+                        ErrorRecorderHolder.recordError(ex);
+                    }
                 }
-            }
+            }, null);
         }
 
         private void CheckThread() {
@@ -1096,12 +1131,7 @@ namespace com.rum {
 
             if (size >= RUMConfig.STORAGE_SIZE_MAX) {
 
-                List<object> list = this.GetFileEvents();
-
-                if (!this.IsNullOrEmpty(list)) {
-
-                    needSave = this.SlipStorage(list);
-                }
+                needSave = this.SlipStorage();
             }
 
             if (size < RUMConfig.STORAGE_SIZE_MIN) {
@@ -1115,7 +1145,14 @@ namespace com.rum {
             }
         }
 
-        private bool SlipStorage(List<object> list) {
+        private bool SlipStorage() {
+
+            List<object> list = this.GetFileEvents();
+
+            if (!this.IsNullOrEmpty(list)) {
+
+                return false;
+            }
 
             byte[] bytes = new byte[0];
 
