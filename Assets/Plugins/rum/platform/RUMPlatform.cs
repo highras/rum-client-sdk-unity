@@ -86,7 +86,7 @@ namespace com.rum {
 
             if (!this.IsInvoking("OnInfo")) {
 
-                this.Invoke("OnInfo", 5.0f);
+                this.InvokeRepeating("OnInfo", 1.0f, 0.2f);
             }
 
             if (!this.IsInvoking("OnTimer")) {
@@ -134,6 +134,30 @@ namespace com.rum {
                     }
                 }
                 #endif
+
+                this._infoDict = new Dictionary<string, object>() {
+
+                    { "network", RUMPlatform.Network },
+                    { "systemLanguage", RUMPlatform.SystemLanguage },
+                    { "deviceModel", RUMPlatform.DeviceModel },
+                    { "operatingSystem", RUMPlatform.OperatingSystem },
+                    { "screenHeight", RUMPlatform.ScreenHeight },
+                    { "screenWidth", RUMPlatform.ScreenWidth },
+                    { "isMobile", RUMPlatform.IsMobilePlatform },
+                    { "systemMemorySize", RUMPlatform.SystemMemorySize },
+                    { "unityVersion", RUMPlatform.UnityVersion },
+                    { "installMode", RUMPlatform.InstallMode },
+                    //支持多种复制纹理功能的情况
+                    { "copyTextureSupport", SystemInfo.copyTextureSupport.ToString() },
+                    //返回程序运行所在的设备类型
+                    { "deviceType", SystemInfo.deviceType.ToString() },
+                    //显卡的类型
+                    { "graphicsDeviceType", SystemInfo.graphicsDeviceType.ToString() },
+                    //GPU支持的NPOT纹理
+                    { "npotSupport", SystemInfo.npotSupport.ToString() },
+                    //TimeZone
+                    { "timeZone", DateTime.Now.ToString("%z") }
+                };
 
                 RUMPlatform.isInit = true;
                 Debug.Log("[RUMPlatform] Init Complete!");
@@ -202,111 +226,200 @@ namespace com.rum {
 
         void OnInfo() {
 
-            if (this._infoDict == null) {
-
-                this._infoDict = new Dictionary<string, object>() {
-
-                    { "network", RUMPlatform.Network },
-                    { "systemLanguage", RUMPlatform.SystemLanguage },
-                    { "deviceModel", RUMPlatform.DeviceModel },
-                    { "operatingSystem", RUMPlatform.OperatingSystem },
-                    { "screenHeight", RUMPlatform.ScreenHeight },
-                    { "screenWidth", RUMPlatform.ScreenWidth },
-                    { "isMobile", RUMPlatform.IsMobilePlatform },
-                    { "systemMemorySize", RUMPlatform.SystemMemorySize },
-                    { "unityVersion", RUMPlatform.UnityVersion },
-                    { "installMode", RUMPlatform.InstallMode },
-
-                    //支持多种复制纹理功能的情况
-                    { "copyTextureSupport", SystemInfo.copyTextureSupport.ToString() },
-                    //用户定义的设备名称
-                    { "deviceName", SystemInfo.deviceName },
-                    //返回程序运行所在的设备类型
-                    { "deviceType", SystemInfo.deviceType.ToString() },
-                    //设备的唯一标识符。每一台设备都有唯一的标识符
-                    { "deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier },
-                    //显卡的唯一标识符ID
-                    { "graphicsDeviceID", SystemInfo.graphicsDeviceID },
-                    //显卡的名称
-                    { "graphicsDeviceName", SystemInfo.graphicsDeviceName },
-                    //显卡的类型
-                    { "graphicsDeviceType", SystemInfo.graphicsDeviceType.ToString() },
-                    //显卡的供应商
-                    { "graphicsDeviceVendor", SystemInfo.graphicsDeviceVendor },
-                    //显卡供应商的唯一识别码ID
-                    { "graphicsDeviceVendorID", SystemInfo.graphicsDeviceVendorID },
-                    //显卡的类型和版本
-                    { "graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion },
-                    //显存大小
-                    { "graphicsMemorySize", SystemInfo.graphicsMemorySize },
-                    //是否支持多线程渲染
-                    { "graphicsMultiThreaded", SystemInfo.graphicsMultiThreaded },
-                    //显卡着色器的级别
-                    { "graphicsShaderLevel", SystemInfo.graphicsShaderLevel },
-                    //支持的最大纹理大小
-                    { "maxTextureSize", SystemInfo.maxTextureSize },
-                    //GPU支持的NPOT纹理
-                    { "npotSupport", SystemInfo.npotSupport.ToString() },
-                    //当前处理器的数量
-                    { "processorCount", SystemInfo.processorCount },
-                    //处理器的频率
-                    { "processorFrequency", SystemInfo.processorFrequency },
-                    //处理器的名称
-                    { "processorType", SystemInfo.processorType },
-                    //支持渲染多少目标纹理
-                    { "supportedRenderTargetCount", SystemInfo.supportedRenderTargetCount },
-                    //是否支持2D数组纹理
-                    { "supports2DArrayTextures", SystemInfo.supports2DArrayTextures },
-                    //是否支持3D（体积）纹理
-                    { "supports3DTextures", SystemInfo.supports3DTextures },
-                    //是否支持获取加速度计
-                    { "supportsAccelerometer", SystemInfo.supportsAccelerometer },
-                    //是否支持获取用于回放的音频设备
-                    { "supportsAudio", SystemInfo.supportsAudio },
-                    //是否支持计算着色器
-                    { "supportsComputeShaders", SystemInfo.supportsComputeShaders },
-                    //是否支持获取陀螺仪
-                    { "supportsGyroscope", SystemInfo.supportsGyroscope },
-                    //是否支持图形特效
-                    { "supportsImageEffects", SystemInfo.supportsImageEffects },
-                    //是否支持实例化GPU的Draw Call
-                    { "supportsInstancing", SystemInfo.supportsInstancing },
-                    //是否支持定位功能
-                    { "supportsLocationService", SystemInfo.supportsLocationService },
-                    //是否支持运动向量
-                    { "supportsMotionVectors", SystemInfo.supportsMotionVectors },
-                    //是否支持阴影深度
-                    { "supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling },
-                    //是否支持渲染纹理 always returns true
-                    { "supportsRenderTextures", SystemInfo.supportsRenderTextures },
-                    //是否支持立方体纹理
-                    { "supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap },
-                    //是否支持内置阴影
-                    { "supportsShadows", SystemInfo.supportsShadows },
-                    //是否支持稀疏纹理
-                    { "supportsSparseTextures", SystemInfo.supportsSparseTextures },
-                    //是否支持模版缓存 always returns true
-                    { "supportsStencil", SystemInfo.supportsStencil },
-                    //是否支持用户触摸震动反馈
-                    { "supportsVibration", SystemInfo.supportsVibration },
-                    //不支持运行在当前设备的SystemInfo属性值
-                    { "unsupportedIdentifier", SystemInfo.unsupportedIdentifier },
-                    //AndroidID only for android 
-                    { "androidID", RUMPlatform.AndroidID },
-                    //DeviceToken only for ios
-                    { "deviceToken", RUMPlatform.DeviceToken },
-                    //vendorIdentifier only for ios
-                    { "vendorIdentifier", RUMPlatform.VendorIdentifier },
-                    //SecureDataPath
-                    { "secureDataPath", RUMPlatform.SecureDataPath },
-                    //TimeZone
-                    { "timeZone", DateTime.Now.ToString("%z") }
-                };
+            //用户定义的设备名称
+            if (!this._infoDict.ContainsKey("deviceName")) {
+                this._infoDict.Add("deviceName", SystemInfo.deviceName);
+                return;
+            }
+            //设备的唯一标识符。每一台设备都有唯一的标识符
+            if (!this._infoDict.ContainsKey("deviceUniqueIdentifier")) {
+                this._infoDict.Add("deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier);
+                return;
+            }
+            //显卡的唯一标识符ID
+            if (!this._infoDict.ContainsKey("graphicsDeviceID")) {
+                this._infoDict.Add("graphicsDeviceID", SystemInfo.graphicsDeviceID);
+                return;
+            }
+            //显卡的名称
+            if (!this._infoDict.ContainsKey("graphicsDeviceName")) {
+                this._infoDict.Add("graphicsDeviceName", SystemInfo.graphicsDeviceName);
+                return;
+            }
+            //显卡的供应商
+            if (!this._infoDict.ContainsKey("graphicsDeviceVendor")) {
+                this._infoDict.Add("graphicsDeviceVendor", SystemInfo.graphicsDeviceVendor);
+                return;
+            }
+            //显卡供应商的唯一识别码ID
+            if (!this._infoDict.ContainsKey("graphicsDeviceVendorID")) {
+                this._infoDict.Add("graphicsDeviceVendorID", SystemInfo.graphicsDeviceVendorID);
+                return;
+            }
+            //显卡的类型和版本
+            if (!this._infoDict.ContainsKey("graphicsDeviceVersion")) {
+                this._infoDict.Add("graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion);
+                return;
+            }
+            //显存大小
+            if (!this._infoDict.ContainsKey("graphicsMemorySize")) {
+                this._infoDict.Add("graphicsMemorySize", SystemInfo.graphicsMemorySize);
+                return;
+            }
+            //是否支持多线程渲染
+            if (!this._infoDict.ContainsKey("graphicsMultiThreaded")) {
+                this._infoDict.Add("graphicsMultiThreaded", SystemInfo.graphicsMultiThreaded);
+                return;
+            }
+            //显卡着色器的级别
+            if (!this._infoDict.ContainsKey("graphicsShaderLevel")) {
+                this._infoDict.Add("graphicsShaderLevel", SystemInfo.graphicsShaderLevel);
+                return;
+            }
+            //支持的最大纹理大小
+            if (!this._infoDict.ContainsKey("maxTextureSize")) {
+                this._infoDict.Add("maxTextureSize", SystemInfo.maxTextureSize);
+                return;
+            }
+            //当前处理器的数量
+            if (!this._infoDict.ContainsKey("processorCount")) {
+                this._infoDict.Add("processorCount", SystemInfo.processorCount);
+                return;
+            }
+            //处理器的频率
+            if (!this._infoDict.ContainsKey("processorFrequency")) {
+                this._infoDict.Add("processorFrequency", SystemInfo.processorFrequency);
+                return;
+            }
+            //处理器的名称
+            if (!this._infoDict.ContainsKey("processorType")) {
+                this._infoDict.Add("processorType", SystemInfo.processorType);
+                return;
+            }
+            //支持渲染多少目标纹理
+            if (!this._infoDict.ContainsKey("supportedRenderTargetCount")) {
+                this._infoDict.Add("supportedRenderTargetCount", SystemInfo.supportedRenderTargetCount);
+                return;
+            }
+            //是否支持2D数组纹理
+            if (!this._infoDict.ContainsKey("supports2DArrayTextures")) {
+                this._infoDict.Add("supports2DArrayTextures", SystemInfo.supports2DArrayTextures);
+                return;
+            }
+            //是否支持3D（体积）纹理
+            if (!this._infoDict.ContainsKey("supports3DTextures")) {
+                this._infoDict.Add("supports3DTextures", SystemInfo.supports3DTextures);
+                return;
+            }
+            //是否支持获取加速度计
+            if (!this._infoDict.ContainsKey("supportsAccelerometer")) {
+                this._infoDict.Add("supportsAccelerometer", SystemInfo.supportsAccelerometer);
+                return;
+            }
+            //是否支持获取用于回放的音频设备
+            if (!this._infoDict.ContainsKey("supportsAudio")) {
+                this._infoDict.Add("supportsAudio", SystemInfo.supportsAudio);
+                return;
+            }
+            //是否支持计算着色器
+            if (!this._infoDict.ContainsKey("supportsComputeShaders")) {
+                this._infoDict.Add("supportsComputeShaders", SystemInfo.supportsComputeShaders);
+                return;
+            }
+            //是否支持获取陀螺仪
+            if (!this._infoDict.ContainsKey("supportsGyroscope")) {
+                this._infoDict.Add("supportsGyroscope", SystemInfo.supportsGyroscope);
+                return;
+            }
+            //是否支持图形特效
+            if (!this._infoDict.ContainsKey("supportsImageEffects")) {
+                this._infoDict.Add("supportsImageEffects", SystemInfo.supportsImageEffects);
+                return;
+            }
+            //是否支持实例化GPU的Draw Call
+            if (!this._infoDict.ContainsKey("supportsInstancing")) {
+                this._infoDict.Add("supportsInstancing", SystemInfo.supportsInstancing);
+                return;
+            }
+            //是否支持定位功能
+            if (!this._infoDict.ContainsKey("supportsLocationService")) {
+                this._infoDict.Add("supportsLocationService", SystemInfo.supportsLocationService);
+                return;
+            }
+            //是否支持运动向量
+            if (!this._infoDict.ContainsKey("supportsMotionVectors")) {
+                this._infoDict.Add("supportsMotionVectors", SystemInfo.supportsMotionVectors);
+                return;
+            }
+            //是否支持阴影深度
+            if (!this._infoDict.ContainsKey("supportsRawShadowDepthSampling")) {
+                this._infoDict.Add("supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling);
+                return;
+            }
+            //是否支持渲染纹理 always returns true
+            if (!this._infoDict.ContainsKey("supportsRenderTextures")) {
+                this._infoDict.Add("supportsRenderTextures", SystemInfo.supportsRenderTextures);
+                return;
+            }
+            //是否支持立方体纹理
+            if (!this._infoDict.ContainsKey("supportsRenderToCubemap")) {
+                this._infoDict.Add("supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap);
+                return;
+            }
+            //是否支持内置阴影
+            if (!this._infoDict.ContainsKey("supportsShadows")) {
+                this._infoDict.Add("supportsShadows", SystemInfo.supportsShadows);
+                return;
+            }
+            //是否支持稀疏纹理
+            if (!this._infoDict.ContainsKey("supportsSparseTextures")) {
+                this._infoDict.Add("supportsSparseTextures", SystemInfo.supportsSparseTextures);
+                return;
+            }
+            //是否支持模版缓存 always returns true
+            if (!this._infoDict.ContainsKey("supportsStencil")) {
+                this._infoDict.Add("supportsStencil", SystemInfo.supportsStencil);
+                return;
+            }
+            //是否支持用户触摸震动反馈
+            if (!this._infoDict.ContainsKey("supportsStencil")) {
+                this._infoDict.Add("supportsVibration", SystemInfo.supportsVibration);
+                return;
+            }
+            //不支持运行在当前设备的SystemInfo属性值
+            if (!this._infoDict.ContainsKey("unsupportedIdentifier")) {
+                this._infoDict.Add("unsupportedIdentifier", SystemInfo.unsupportedIdentifier);
+                return;
+            }
+            //AndroidID only for android 
+            if (!this._infoDict.ContainsKey("androidID")) {
+                this._infoDict.Add("androidID", RUMPlatform.AndroidID);
+                return;
+            }
+            //DeviceToken only for ios
+            if (!this._infoDict.ContainsKey("deviceToken")) {
+                this._infoDict.Add("deviceToken", RUMPlatform.DeviceToken);
+                return;
+            }
+            //vendorIdentifier only for ios
+            if (!this._infoDict.ContainsKey("vendorIdentifier")) {
+                this._infoDict.Add("vendorIdentifier", RUMPlatform.VendorIdentifier);
+                return;
+            }
+            //SecureDataPath
+            if (!this._infoDict.ContainsKey("secureDataPath")) {
+                this._infoDict.Add("secureDataPath", RUMPlatform.SecureDataPath);
+                return;
             }
 
             if (this.SystemInfo_Action != null) {
 
                 this.SystemInfo_Action(this._infoDict);
+            }
+
+            if (this.IsInvoking("OnInfo")) {
+
+                this.CancelInvoke("OnInfo");
             }
         }
 
