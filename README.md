@@ -9,11 +9,11 @@
 * 兼容`DNS64/NAT64`网络环境
 
 #### 其他 ####
-* 在`Unity`主线程中调用`RUMPlatform.Instance.InitSelfListener()`初始化
-* 若`RUMPlatform`已初始化, `RUMClient`可在任意线程中构造和使用(线程安全)
-* 异步函数均由子线程呼叫, 不要在其中调用仅`Unity`主线程中可执行的函数, 不要阻塞事件和回调函数
-* 用户ID与RUMClient实例绑定, 如果切换用户ID请使用新的RUMClient实例重新建立连接
-* HTTP HOOK: 半自动非侵入方式, 不会抓取请求内容, 参考`./Scripts/Main.cs`
+* 在`Unity`主线程中初始化`RUMPlatform.Instance.InitSelfListener()`
+* 若`RUMPlatform`已初始化,`RUMClient`可在任意线程中构造和使用(线程安全)
+* 异步函数均由子线程呼叫,不要在其中使用仅UI线程的函数,不要阻塞异步函数
+* 用户ID与`RUMClient`实例绑定,如果切换用户ID请使用新的`RUMClient`实例重新建立连接
+* HTTP HOOK: 半自动非侵入方式,不会抓取请求内容
 
 #### 一个例子 ####
 ```c#
