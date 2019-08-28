@@ -56,6 +56,12 @@ client.CustomEvent("info", new Dictionary<string, object>());
 // client = null;
 ```
 
+#### 测试 ####
+```
+../Assets/Scripts/TestCase.cs
+../Assets/Scripts/SingleClientSend.cs
+```
+
 #### Events ####
 * `event`:
     * `ready`: 连接可用
