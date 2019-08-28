@@ -23,14 +23,12 @@ namespace com.rum {
 
                 lock (lock_obj) {
 
-                    long c = 0;
-
                     if (++Count > 999) {
 
-                        Count = 0;
+                        Count = 1;
                     }
 
-                    c = Count;
+                    long c = Count;
 
                     //.Net >= 4.0  sb.Clear();
                     sb.Length = 0;

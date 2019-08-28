@@ -331,7 +331,7 @@ namespace com.rum {
                 this._infoDict.Add("supportsGyroscope", SystemInfo.supportsGyroscope);
                 return;
             }
-            //是否支持图形特效
+            //是否支持图形特效 always returns true
             if (!this._infoDict.ContainsKey("supportsImageEffects")) {
                 this._infoDict.Add("supportsImageEffects", SystemInfo.supportsImageEffects);
                 return;
@@ -361,7 +361,7 @@ namespace com.rum {
                 this._infoDict.Add("supportsRenderTextures", SystemInfo.supportsRenderTextures);
                 return;
             }
-            //是否支持立方体纹理
+            //是否支持立方体纹理 always returns true
             if (!this._infoDict.ContainsKey("supportsRenderToCubemap")) {
                 this._infoDict.Add("supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap);
                 return;
