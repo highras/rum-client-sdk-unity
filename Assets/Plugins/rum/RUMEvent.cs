@@ -1107,7 +1107,7 @@ namespace com.rum {
 
             List<object> list = this.GetFileEvents();
 
-            if (!this.IsNullOrEmpty(list)) {
+            if (this.IsNullOrEmpty(list)) {
 
                 return false;
             }
