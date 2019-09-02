@@ -68,11 +68,6 @@ namespace com.rum {
             this._locationService = location;
         }
 
-        private float _latitude = 0;
-        private float _longitude = 0;
-        private LocationInfo _locationInfo;
-        private LocationService _locationService;
-
         IEnumerator Start() {
 
             while (true) {
@@ -200,6 +195,11 @@ namespace com.rum {
                 this.Event.FireEvent(new EventData("app_fg", new Dictionary<string, object>()));
             }
         }
+
+        private float _latitude = 0;
+        private float _longitude = 0;
+        private LocationInfo _locationInfo;
+        private LocationService _locationService;
 
         private IEnumerator GEO() {
 
