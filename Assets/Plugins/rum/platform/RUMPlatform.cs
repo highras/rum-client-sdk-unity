@@ -203,7 +203,7 @@ namespace com.rum {
 
         private IEnumerator GEO() {
 
-            yield return new WaitForSeconds(5.0f);
+            yield return new WaitForSeconds(10.0f);
 
             if (this._locationService == null) {
 
