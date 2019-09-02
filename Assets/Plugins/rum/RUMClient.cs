@@ -11,6 +11,15 @@ using UnityEngine;
 
 namespace com.rum {
 
+    public static class RUMRegistration {
+
+        static public void Register(LocationService location) {
+
+            FPManager.Instance.Init();
+            RUMPlatform.Instance.Init(location);
+        }
+    }
+
     public class RUMClient {
 
         private static class MidGenerator {
@@ -101,7 +110,7 @@ namespace com.rum {
 
             if (!RUMPlatform.HasInit()) {
 
-                RUMPlatform.Instance.InitSelfListener(); 
+                RUMPlatform.Instance.Init(null); 
             }
 
             lock (Pids_Locker) {
@@ -156,6 +165,8 @@ namespace com.rum {
 
                 ping_locker.Status = 0;
             }
+
+            this.RemovePlatformListener();
 
             lock (self_locker) {
 
@@ -556,64 +567,104 @@ namespace com.rum {
             }
         }
 
+        private EventDelegate _fpsDelegate;
+        private EventDelegate _infoDelegate;
+        private EventDelegate _appFgDelegate;
+        private EventDelegate _appBgDelegate;
+        private EventDelegate _exceptionDelegate;
+        private EventDelegate _geoDelegate;
+        private EventDelegate _netwrokDelegate;
+        private EventDelegate _memoryDelegate;
+
         private void AddPlatformListener() {
 
             RUMClient self = this;
 
-            if (RUMPlatform.HasInit()) {
+            this._exceptionDelegate = (evd) => {
 
-                RUMPlatform.Instance.WriteEvent_Action = (ev, dict) => {
+                self.WriteEvent(null, (IDictionary<string, object>)evd.GetPayload());
+            };
+            RUMPlatform.Instance.Event.AddListener("system_exception", this._exceptionDelegate);
 
-                    self.WriteEvent(ev, dict);
+            this._appFgDelegate = (evd) => {
+
+                self.WriteEvent("fg", (IDictionary<string, object>)evd.GetPayload());
+            };
+            RUMPlatform.Instance.Event.AddListener("app_fg", this._appFgDelegate);
+
+            this._appBgDelegate = (evd) => {
+
+                self.WriteEvent("bg", (IDictionary<string, object>)evd.GetPayload());
+            };
+            RUMPlatform.Instance.Event.AddListener("app_bg", this._appBgDelegate);
+
+            this._infoDelegate = (evd) => {
+
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "type", "unity_system_info" },
+                    { "system_info", evd.GetPayload() }
                 };
 
-                RUMPlatform.Instance.AppFg_Action = () => {
+                self.WriteEvent("info", dict);
+            };
+            RUMPlatform.Instance.Event.AddListener("system_info", this._infoDelegate);
 
-                    self.WriteEvent("fg", new Dictionary<string, object>());
+            this._netwrokDelegate = (evd) => {
+
+                self.WriteEvent("nwswitch", (IDictionary<string, object>)evd.GetPayload());
+            };
+            RUMPlatform.Instance.Event.AddListener("netwrok_switch", this._netwrokDelegate);
+
+            this._fpsDelegate = (evd) => {
+
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "type", "unity_fps_info" },
+                    { "fps_info", evd.GetPayload() }
                 };
 
-                RUMPlatform.Instance.AppBg_Action = () => {
+                self.WriteEvent("info", dict);
+            };
+            RUMPlatform.Instance.Event.AddListener("fps_update", this._fpsDelegate);
 
-                    self.WriteEvent("bg", new Dictionary<string, object>());
+            this._geoDelegate = (evd) => {
+
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "type", "unity_geo_info" },
+                    { "geo_info", evd.GetPayload() }
                 };
 
-                RUMPlatform.Instance.SystemInfo_Action = (info) => {
+                self.WriteEvent("info", dict);
+            };
+            RUMPlatform.Instance.Event.AddListener("geo_update", this._geoDelegate);
 
-                    IDictionary<string, object> dict = new Dictionary<string, object>() {
+            this._memoryDelegate = (evd) => {
 
-                        { "type", "unity_system_info" },
-                        { "system_info", info }
-                    };
+                self.WriteEvent("warn", (IDictionary<string, object>)evd.GetPayload());
+            };
+            RUMPlatform.Instance.Event.AddListener("memory_low", this._memoryDelegate);
+        }
 
-                    self.WriteEvent("info", dict);
-                };
+        private void RemovePlatformListener() {
 
-                RUMPlatform.Instance.NetworkChange_Action = (nw) => {
-
-                    IDictionary<string, object> dict = new Dictionary<string, object>() {
-
-                        { "nw", nw }
-                    };
-
-                    self.WriteEvent("nwswitch", dict);
-                };
-
-                RUMPlatform.Instance.LowMemory_Action = (mem) => {
-
-                    IDictionary<string, object> dict = new Dictionary<string, object>() {
-
-                        { "type", "low_memory" },
-                        { "system_memory", mem }
-                    };
-
-                    self.WriteEvent("warn", dict);
-                };
-            }
+            RUMPlatform.Instance.Event.RemoveListener("system_exception", this._exceptionDelegate);
+            RUMPlatform.Instance.Event.RemoveListener("app_fg", this._appFgDelegate);
+            RUMPlatform.Instance.Event.RemoveListener("app_bg", this._appBgDelegate);
+            RUMPlatform.Instance.Event.RemoveListener("system_info", this._infoDelegate);
+            RUMPlatform.Instance.Event.RemoveListener("netwrok_switch", this._netwrokDelegate);
+            RUMPlatform.Instance.Event.RemoveListener("fps_update", this._fpsDelegate);
+            RUMPlatform.Instance.Event.RemoveListener("geo_update", this._geoDelegate);
+            RUMPlatform.Instance.Event.RemoveListener("memory_low", this._memoryDelegate);
         }
 
         private void WriteEvent(string ev, IDictionary<string, object> dict) {
 
-            dict.Add("ev", ev);
+            if (!dict.ContainsKey("ev")) {
+
+                dict.Add("ev", ev);
+            } 
 
             if (!dict.ContainsKey("eid")) {
 
@@ -667,12 +718,12 @@ namespace com.rum {
                 }
             }
 
+            this._rumEvent.WriteEvent(dict);
+
             // if (this._debug) {
 
             //     Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
             // }
-
-            this._rumEvent.WriteEvent(dict);
         }
 
         private void OpenEvent() {

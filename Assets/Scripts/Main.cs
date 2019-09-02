@@ -24,7 +24,7 @@ public class Main : MonoBehaviour {
 
     void Start() {
 
-        RUMPlatform.Instance.InitSelfListener();
+        RUMRegistration.Register(Input.location);
 
         //TestCase
         // this._testCase = new TestCase();

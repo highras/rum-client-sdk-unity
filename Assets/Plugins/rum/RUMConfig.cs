@@ -4,7 +4,7 @@ namespace com.rum {
 
     public class RUMConfig {
 
-        public static string VERSION = "1.2.9";
+        public static string VERSION = "1.3.0";
         
         public static int PING_INTERVAL = 20 * 1000;                    //PING间隔(ms)
         public static int CONNCT_INTERVAL = 40 * 1000;                  //尝试重新连接的时间间隔(ms)
@@ -17,7 +17,7 @@ namespace com.rum {
         public static int STORAGE_SIZE_MIN = 256 * 1024;                //本地存储下限阀值(B)
         public static int LOCAL_STORAGE_DELAY = 1 * 1000;               //内存到本地存储快照的时间间隔(ms)
         public static int LOCAL_FILE_SIZE = 512 * 1024;                 //本地文件大小(B)
-        public static int LOCAL_FILE_COUNT = 200;                       //本地文件存储数量上限(0 ~ count)
-        public static int FILE_MAX_COUNT = 300;                         //本地文件检索范围(0 ~ max)
+        public static int LOCAL_FILE_COUNT = 200;                       //本地文件存储数量上限(1 ~ count)
+        public static int FILE_MAX_COUNT = 300;                         //本地文件检索范围(1 ~ max)
     }
 }

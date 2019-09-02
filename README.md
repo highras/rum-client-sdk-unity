@@ -9,8 +9,8 @@
 * 兼容`DNS64/NAT64`网络环境
 
 #### 其他 ####
-* 在`Unity`主线程中初始化`RUMPlatform.Instance.InitSelfListener()`
-* 若`RUMPlatform`已初始化,`RUMClient`可在任意线程中构造和使用(线程安全)
+* 在`Unity`主线程中初始化`RUMRegistration.Register(location)`
+* 若`RUMRegistration`已初始化,`RUMClient`可在任意线程中构造和使用(线程安全)
 * 异步函数均由子线程呼叫,不要在其中使用仅UI线程的函数,不要阻塞异步函数
 * 用户ID与`RUMClient`实例绑定,如果切换用户ID请使用新的`RUMClient`实例重新建立连接
 * HTTP HOOK: 半自动非侵入方式,不会抓取请求内容
@@ -25,7 +25,7 @@ using UnityEngine;
 using com.rum;
 
 // UnityMainThread
-RUMPlatform.Instance.InitSelfListener();
+RUMRegistration.Register(Input.location);
 
 // AnyThread
 RUMClient client = new RUMClient(
@@ -56,12 +56,6 @@ client.CustomEvent("info", new Dictionary<string, object>());
 // client = null;
 ```
 
-#### 测试 ####
-```
-../Assets/Scripts/TestCase.cs
-../Assets/Scripts/SingleClientSend.cs
-```
-
 #### Events ####
 * `event`:
     * `ready`: 连接可用
@@ -69,6 +63,9 @@ client.CustomEvent("info", new Dictionary<string, object>());
     * `close`: 连接关闭
 
 #### API ####
+* `RUMRegistration::Register(LocationService location)`: 在`Unity`主线程中注册RUM服务
+    * `location`: **(LocationService)** 定位服务, 不启用可传`null`
+
 * `Constructor(int pid, string secret, string uid, string appv, bool debug)`: 构造RUMClient
     * `pid`: **(int)** 应用ID, RUM项目控制台获取
     * `secret`: **(string)** 应用SecretKey, RUM项目控制台获取

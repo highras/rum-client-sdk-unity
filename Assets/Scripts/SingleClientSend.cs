@@ -20,7 +20,7 @@ namespace com.test {
             public int Status = 0;
         }
 
-        private int send_qps = 500;
+        private int send_qps = 0;
         private int trace_interval = 10;
         private int batch_count = 10;
         
@@ -40,8 +40,8 @@ namespace com.test {
         public void StartTest() {
 
             this._client = new RUMClient(
-                41000006,
-                "7e592712-01ea-4250-bf39-e51e00c004e9",
+                41000013,
+                "6212d7c7-adb7-46c0-bd82-2fed00ce90c9",
                 null,
                 null,
                 true
@@ -70,7 +70,7 @@ namespace com.test {
                 Debug.Log(evd.GetException());
             });
 
-            this._client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
+            this._client.Connect("rum-nx-front.ifunplus.cn:13609", false, false);
             this.StartThread();
         }
 
@@ -129,20 +129,28 @@ namespace com.test {
                             return;
                         } 
 
+                        batch_count = (send_qps < 10) ? send_qps : batch_count;
+
                         for (int i = 0; i < this.batch_count; i++) {
 
                             IDictionary<string, object> attrs = new Dictionary<string, object>();
                             attrs.Add("custom_debug", "test text");
 
-                            this._client.CustomEvent("info", attrs);
+                            this._client.CustomEvent("Custom_Test", attrs);
 
                             this.SendInc();
                         }
                     }
 
-                    Thread.Sleep((int) Math.Ceiling((1000f / this.send_qps) * this.batch_count));
+                    if (this.send_qps > 0) {
+
+                        Thread.Sleep((int) Math.Ceiling((1000f / this.send_qps) * this.batch_count));
+                    } else {
+
+                        Thread.Sleep(1000);
+                    }
                 }
-            }catch(Exception ex) {
+            } catch(Exception ex) {
 
                 Debug.Log(ex);
             }
@@ -174,6 +182,6 @@ namespace com.test {
                 this._sendCount = 0;
                 this._traceTimestamp = com.fpnn.FPManager.Instance.GetMilliTimestamp();
             }
-        }   
+        }
     }
 }

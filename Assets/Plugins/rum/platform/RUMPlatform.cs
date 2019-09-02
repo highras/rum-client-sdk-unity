@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Collections;
 using System.Collections.Generic;
 using GameDevWare.Serialization;
 using com.fpnn;
@@ -37,9 +38,6 @@ namespace com.rum {
         public static bool IsMobilePlatform;
         public static int SystemMemorySize;
         public static string UnityVersion;
-        public static string DeviceToken;
-        public static string VendorIdentifier;
-        public static string AndroidID;
         public static string SecureDataPath;
 
         public static string Manu;
@@ -55,43 +53,52 @@ namespace com.rum {
             }
         }
 
-        public Action AppFg_Action;
-        public Action AppBg_Action;
-        public Action<int> LowMemory_Action;
-        public Action<string> NetworkChange_Action;
-        public Action<IDictionary<string, object>> SystemInfo_Action;
-        public Action<string, IDictionary<string, object>> WriteEvent_Action;
-
-        private IDictionary<string, object> _infoDict;
+        public FPEvent Event = new FPEvent();
 
         private bool _isPause;
         private bool _isFocus;
-        private NetworkReachability _netWork;
+        private NetworkReachability _network;
+        private IDictionary<string, object> _infoDict;
 
         private static bool isInit;
         private static object lock_obj = new object();
 
-        public void InitSelfListener() {}
+        public void Init(LocationService location) {
+
+            this._locationService = location;
+        }
+
+        private float _latitude = 0;
+        private float _longitude = 0;
+        private LocationInfo _locationInfo;
+        private LocationService _locationService;
+
+        IEnumerator Start() {
+
+            while (true) {
+
+                yield return new WaitForSeconds(10.0f);
+                this.OnTimer();
+            }
+        }
 
         void Awake() {}
         void OnEnable() {
 
             this._isPause = false;
             this._isFocus = false;
-            this._netWork = Application.internetReachability;
+            this._network = Application.internetReachability;
 
             Application.lowMemory += OnLowMemory;
             Application.logMessageReceived += OnLogCallback;
             Application.logMessageReceivedThreaded += OnLogCallbackThreaded;
 
+            StartCoroutine(GEO());
+            StartCoroutine(FPS());
+
             if (!this.IsInvoking("OnInfo")) {
 
                 this.InvokeRepeating("OnInfo", 1.0f, 0.2f);
-            }
-
-            if (!this.IsInvoking("OnTimer")) {
-
-                this.InvokeRepeating("OnTimer", 10.0f, 10.0f);
             }
 
             lock (lock_obj) {
@@ -101,9 +108,7 @@ namespace com.rum {
                     return;
                 }
 
-                FPManager.Instance.Init();
-
-                RUMPlatform.Network = this._netWork.ToString();
+                RUMPlatform.Network = this._network.ToString();
                 RUMPlatform.SystemLanguage = Application.systemLanguage.ToString();
                 RUMPlatform.DeviceModel = SystemInfo.deviceModel;
                 RUMPlatform.OperatingSystem = SystemInfo.operatingSystem;
@@ -113,39 +118,29 @@ namespace com.rum {
                 RUMPlatform.SystemMemorySize = SystemInfo.systemMemorySize;
                 RUMPlatform.UnityVersion = Application.unityVersion;
                 RUMPlatform.InstallMode = Application.installMode.ToString();
-                RUMPlatform.SecureDataPath = Application.temporaryCachePath;
-
-                #if !UNITY_EDITOR && UNITY_IPHONE
-                byte[] token = UnityEngine.iOS.NotificationServices.deviceToken;
-                if (token != null) {
-                    RUMPlatform.DeviceToken = System.BitConverter.ToString(token).Replace("-", "");
-                }
-                RUMPlatform.VendorIdentifier = UnityEngine.iOS.Device.vendorIdentifier;
-                RUMPlatform.SecureDataPath = Application.persistentDataPath;
-                #elif !UNITY_EDITOR && UNITY_ANDROID
-                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-                using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity")) {
-                    using (var getFilesDir = currentActivity.Call<AndroidJavaObject>("getFilesDir")) {
-                        RUMPlatform.SecureDataPath = getFilesDir.Call<string>("getCanonicalPath");
-                    }
-                    using (var contentResolver = currentActivity.Call<AndroidJavaObject> ("getContentResolver"))
-                    using (var secure = new AndroidJavaClass ("android.provider.Settings$Secure")) {
-                        RUMPlatform.AndroidID = secure.CallStatic<string> ("getString", contentResolver, "android_id");
-                    }
-                }
-                #endif
+                RUMPlatform.SecureDataPath = this.GetSecureDataPath();
 
                 this._infoDict = new Dictionary<string, object>() {
 
+                    //网络类型信息
                     { "network", RUMPlatform.Network },
+                    //系统语言信息
                     { "systemLanguage", RUMPlatform.SystemLanguage },
+                    //设备型号信息
                     { "deviceModel", RUMPlatform.DeviceModel },
+                    //操作系统信息
                     { "operatingSystem", RUMPlatform.OperatingSystem },
+                    //屏幕分辨率高度
                     { "screenHeight", RUMPlatform.ScreenHeight },
+                    //屏幕分辨率宽度
                     { "screenWidth", RUMPlatform.ScreenWidth },
+                    //是否移动设备
                     { "isMobile", RUMPlatform.IsMobilePlatform },
+                    //系统内存(MB)
                     { "systemMemorySize", RUMPlatform.SystemMemorySize },
+                    //Unity版本信息
                     { "unityVersion", RUMPlatform.UnityVersion },
+                    //应用安装模式
                     { "installMode", RUMPlatform.InstallMode },
                     //支持多种复制纹理功能的情况
                     { "copyTextureSupport", SystemInfo.copyTextureSupport.ToString() },
@@ -170,25 +165,19 @@ namespace com.rum {
             Application.logMessageReceived -= OnLogCallback;
             Application.logMessageReceivedThreaded -= OnLogCallbackThreaded;
 
+            StopAllCoroutines();
+
             if (this.IsInvoking("OnInfo")) {
 
                 this.CancelInvoke("OnInfo");
-            }
-
-            if (this.IsInvoking("OnTimer")) {
-
-                this.CancelInvoke("OnTimer");
             }
         }
 
         void OnApplicationPause() {
  
             if (!this._isPause) {
-             
-                if (this.AppBg_Action != null) {
-
-                    this.AppBg_Action();
-                }
+                 
+                this.Event.FireEvent(new EventData("app_bg", new Dictionary<string, object>()));
             } else {
 
                 this._isFocus = true;
@@ -208,30 +197,196 @@ namespace com.rum {
             if (this._isPause) {
 
                 this._isFocus = true;
+                this.Event.FireEvent(new EventData("app_fg", new Dictionary<string, object>()));
+            }
+        }
 
-                if (this.AppFg_Action != null) {
+        private IEnumerator GEO() {
 
-                    this.AppFg_Action();
+            yield return new WaitForSeconds(5.0f);
+
+            if (this._locationService == null) {
+
+                yield break;
+            }
+
+            while (true) {
+
+                int maxWait = 20;
+
+                if (this._locationService.isEnabledByUser) {
+
+                    if (this._locationService.status == LocationServiceStatus.Stopped) {
+
+                        try {
+
+                            this._locationService.Start();
+                        } catch(Exception ex) {
+
+                            ErrorRecorderHolder.recordError(ex);
+                        }
+                    }
+
+                    while (this._locationService.status == LocationServiceStatus.Initializing) {
+
+                        yield return new WaitForSeconds(1.0f);
+
+                        if (maxWait > 0) {
+
+                            maxWait--;
+                        } else {
+
+                            try {
+
+                                this._locationService.Stop();
+                            } catch (Exception ex) {
+
+                                ErrorRecorderHolder.recordError(ex);
+                            }
+                        }
+                    }
+
+                    if (this._locationService.status == LocationServiceStatus.Running) {
+
+                        try {
+
+                            this._locationInfo = this._locationService.lastData;
+                            this._locationService.Stop();
+                        } catch (Exception ex) {
+
+                            ErrorRecorderHolder.recordError(ex);
+                        }
+                    }
+                }
+
+                yield return new WaitForSeconds(maxWait > 0 ? maxWait * 1.0f : 1.0f);
+            }
+        }
+
+        private float _lastTime;
+        private int _lastFrameCount;
+        private List<string> _fpsList = new List<string>(25);
+
+        private IEnumerator FPS() {
+
+            while (true) {
+
+                yield return new WaitForSeconds(1.0f);
+
+                try {
+
+                    float fps = 0;
+                    float now = Time.realtimeSinceStartup;
+                    int count = Time.frameCount;
+
+                    if (this._lastTime > 0) {
+
+                        float timeSpan = now - this._lastTime;
+                        int frameCount = count - this._lastFrameCount;
+
+                        // fps = Mathf.RoundToInt(frameCount / timeSpan);
+                        fps = frameCount / timeSpan;
+                    }
+
+                    this._lastFrameCount = count;
+                    this._lastTime = now;
+
+                    if (fps > 0.0f && this._fpsList.Count < 25) {
+
+                        this._fpsList.Add(fps.ToString());
+                    }
+                } catch (Exception ex) {
+
+                    ErrorRecorderHolder.recordError(ex);
                 }
             }
         }
 
-        void OnLowMemory() {
+        private void OnLowMemory() {
 
-            if (this.LowMemory_Action != null) {
+            IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-                this.LowMemory_Action(RUMPlatform.SystemMemorySize);
+                { "type", "low_memory" },
+                { "system_memory", RUMPlatform.SystemMemorySize }
+            };
+
+            this.Event.FireEvent(new EventData("memory_low", dict));
+        }
+
+        private void OnTimer() {
+
+            //netwrok_switch
+            NetworkReachability network = Application.internetReachability;
+
+            if (this._network != network) {
+
+                this._network = network;
+                RUMPlatform.Network = this._network.ToString();
+
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "nw", RUMPlatform.Network }
+                };
+
+                this.Event.FireEvent(new EventData("netwrok_switch", dict));
+            }
+
+            //fps_update
+            if (this._fpsList.Count > 0) {
+
+                List<string> fps_list = new List<string>(this._fpsList);
+                this._fpsList.Clear();
+
+                this.Event.FireEvent(new EventData("fps_update", fps_list));
+            }
+
+            //geo_update
+            double distance = 0;
+
+            try {
+
+                if (this._locationInfo.longitude != this._longitude || this._locationInfo.latitude != this._latitude) {
+
+                    distance = this.GetDistance(this._locationInfo.longitude, this._locationInfo.latitude, this._longitude, this._latitude);
+                }
+            } catch(Exception ex) {
+
+                ErrorRecorderHolder.recordError(ex);
+            }
+
+            if (distance >= 10) {
+
+                if (this._longitude == 0 && this._latitude == 0) {
+
+                    distance = 0;
+                }
+                
+                this._longitude = this._locationInfo.longitude;
+                this._latitude = this._locationInfo.latitude;
+
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "latitude", this._locationInfo.latitude.ToString() }, 
+                    { "longitude", this._locationInfo.longitude.ToString() },
+                    { "altitude", this._locationInfo.altitude.ToString() },
+                    { "horizontalAccuracy", this._locationInfo.horizontalAccuracy.ToString() },
+                    { "verticalAccuracy", this._locationInfo.verticalAccuracy.ToString() },
+                    { "distance", distance.ToString() },
+                    { "timestamp", this._locationInfo.timestamp.ToString() }
+                };
+
+                this.Event.FireEvent(new EventData("geo_update", dict));
             }
         }
 
-        void OnInfo() {
+        private void OnInfo() {
 
             //用户定义的设备名称
             if (!this._infoDict.ContainsKey("deviceName")) {
                 this._infoDict.Add("deviceName", SystemInfo.deviceName);
                 return;
             }
-            //设备的唯一标识符。每一台设备都有唯一的标识符
+            //设备的唯一标识符, 每一台设备都有唯一的标识符
             if (!this._infoDict.ContainsKey("deviceUniqueIdentifier")) {
                 this._infoDict.Add("deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier);
                 return;
@@ -261,7 +416,7 @@ namespace com.rum {
                 this._infoDict.Add("graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion);
                 return;
             }
-            //显存大小
+            //显存大小(MB)
             if (!this._infoDict.ContainsKey("graphicsMemorySize")) {
                 this._infoDict.Add("graphicsMemorySize", SystemInfo.graphicsMemorySize);
                 return;
@@ -382,7 +537,7 @@ namespace com.rum {
                 return;
             }
             //是否支持用户触摸震动反馈
-            if (!this._infoDict.ContainsKey("supportsStencil")) {
+            if (!this._infoDict.ContainsKey("supportsVibration")) {
                 this._infoDict.Add("supportsVibration", SystemInfo.supportsVibration);
                 return;
             }
@@ -391,31 +546,28 @@ namespace com.rum {
                 this._infoDict.Add("unsupportedIdentifier", SystemInfo.unsupportedIdentifier);
                 return;
             }
-            //AndroidID only for android 
-            if (!this._infoDict.ContainsKey("androidID")) {
-                this._infoDict.Add("androidID", RUMPlatform.AndroidID);
-                return;
-            }
-            //DeviceToken only for ios
-            if (!this._infoDict.ContainsKey("deviceToken")) {
-                this._infoDict.Add("deviceToken", RUMPlatform.DeviceToken);
-                return;
-            }
-            //vendorIdentifier only for ios
-            if (!this._infoDict.ContainsKey("vendorIdentifier")) {
-                this._infoDict.Add("vendorIdentifier", RUMPlatform.VendorIdentifier);
-                return;
-            }
             //SecureDataPath
             if (!this._infoDict.ContainsKey("secureDataPath")) {
                 this._infoDict.Add("secureDataPath", RUMPlatform.SecureDataPath);
                 return;
             }
-
-            if (this.SystemInfo_Action != null) {
-
-                this.SystemInfo_Action(this._infoDict);
+            //AndroidId only for android 
+            if (!this._infoDict.ContainsKey("androidId")) {
+                this._infoDict.Add("androidId", this.GetAndroidId());
+                return;
             }
+            //DeviceToken only for ios
+            if (!this._infoDict.ContainsKey("deviceToken")) {
+                this._infoDict.Add("deviceToken", this.GetIOSDeviceToken());
+                return;
+            }
+            //vendorIdentifier only for ios
+            if (!this._infoDict.ContainsKey("vendorIdentifier")) {
+                this._infoDict.Add("vendorIdentifier", this.GetIOSVendorIdentifier());
+                return;
+            }
+
+            this.Event.FireEvent(new EventData("system_info", this._infoDict));
 
             if (this.IsInvoking("OnInfo")) {
 
@@ -423,23 +575,89 @@ namespace com.rum {
             }
         }
 
-        void OnTimer() {
+        private string GetSecureDataPath() {
 
-            NetworkReachability network = Application.internetReachability;
+            string secureDataPath = Application.temporaryCachePath;
 
-            if (this._netWork != network) {
+            try {
 
-                this._netWork = network;
-                RUMPlatform.Network = this._netWork.ToString();
-
-                if (this.NetworkChange_Action != null) {
-
-                    this.NetworkChange_Action(RUMPlatform.Network);
+                #if !UNITY_EDITOR && UNITY_IPHONE
+                secureDataPath = Application.persistentDataPath;
+                #elif !UNITY_EDITOR && UNITY_ANDROID
+                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var getFilesDir = currentActivity.Call<AndroidJavaObject>("getFilesDir")) {
+                    secureDataPath = getFilesDir.Call<string>("getCanonicalPath");
                 }
+                #endif
+            } catch (Exception ex) {
+
+                ErrorRecorderHolder.recordError(ex);
             }
+
+            return secureDataPath;
         }
 
-        void OnLogCallback(string logString, string stackTrace, LogType type) {
+        private string GetAndroidId() {
+
+            string androidId = null;
+
+            try {
+
+                #if !UNITY_EDITOR && UNITY_ANDROID
+                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var contentResolver = currentActivity.Call<AndroidJavaObject> ("getContentResolver"))
+                using (var secure = new AndroidJavaClass ("android.provider.Settings$Secure")) {
+                    androidId = secure.CallStatic<string> ("getString", contentResolver, "android_id");
+                }
+                #endif
+            } catch (Exception ex) {
+
+                ErrorRecorderHolder.recordError(ex);
+            }
+
+            return androidId;
+        }
+
+        private string GetIOSDeviceToken() {
+
+            string deviceToken = null;
+
+            try {
+
+                #if !UNITY_EDITOR && UNITY_IPHONE
+                byte[] token = UnityEngine.iOS.NotificationServices.deviceToken;
+                if (token != null) {
+                    deviceToken = System.BitConverter.ToString(token).Replace("-", "");
+                }
+                #endif
+            } catch(Exception ex) {
+
+                ErrorRecorderHolder.recordError(ex);
+            }
+
+            return deviceToken;
+        }
+
+        private string GetIOSVendorIdentifier() {
+
+            string vendorIdentifier = null;
+
+            try {
+
+                #if !UNITY_EDITOR && UNITY_IPHONE
+                vendorIdentifier = UnityEngine.iOS.Device.vendorIdentifier;
+                #endif
+            } catch(Exception ex) {
+
+                ErrorRecorderHolder.recordError(ex);
+            }
+
+            return vendorIdentifier;
+        }
+
+        private void OnLogCallback(string logString, string stackTrace, LogType type) {
 
             if (type == LogType.Assert) {
 
@@ -452,7 +670,7 @@ namespace com.rum {
             }
         }
 
-        void OnLogCallbackThreaded(string logString, string stackTrace, LogType type) {
+        private void OnLogCallbackThreaded(string logString, string stackTrace, LogType type) {
 
             if (type == LogType.Exception) {
 
@@ -460,19 +678,44 @@ namespace com.rum {
             }
         }
 
-        void OnException(string ev, string type, string message, string stack) {
+        private void OnException(string ev, string type, string message, string stack) {
 
             IDictionary<string, object> dict = new Dictionary<string, object>() {
 
+                { "ev", ev },
                 { "type", type },
                 { "message", message },
                 { "stack", stack }
             };
 
-            if (this.WriteEvent_Action != null) {
+            this.Event.FireEvent(new EventData("system_exception", dict));
+       }
 
-                this.WriteEvent_Action(ev, dict);
-            }
+        //地球半径, 单位: 米
+        private const double EARTH_RADIUS = 6378137;
+
+        /**
+         *  计算两点位置的距离, 返回两点的距离, 单位: 米
+         *  该公式为GOOGLE提供, 误差小于0.2米
+         */
+        private double GetDistance(double lng1, double lat1, double lng2, double lat2) {
+
+            double radLat1 = this.Rad(lat1);
+            double radLng1 = this.Rad(lng1);
+            double radLat2 = this.Rad(lat2);
+            double radLng2 = this.Rad(lng2);
+            double a = radLat1 - radLat2;
+            double b = radLng1 - radLng2;
+
+            return 2 * Math.Asin(Math.Sqrt(Math.Pow(Math.Sin(a / 2), 2) + Math.Cos(radLat1) * Math.Cos(radLat2) * Math.Pow(Math.Sin(b / 2), 2))) * EARTH_RADIUS;
+        }
+
+        /**
+         *  经纬度转化成弧度
+         */
+        private double Rad(double d) {
+
+            return (double)d * Math.PI / 180d;
         }
     }
 }
