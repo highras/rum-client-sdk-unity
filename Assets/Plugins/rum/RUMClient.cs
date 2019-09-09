@@ -720,10 +720,10 @@ namespace com.rum {
 
             this._rumEvent.WriteEvent(dict);
 
-            // if (this._debug) {
+            if (this._debug) {
 
-            //     Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
-            // }
+                Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
+            }
         }
 
         private void OpenEvent() {

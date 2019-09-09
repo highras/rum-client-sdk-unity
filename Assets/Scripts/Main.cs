@@ -9,7 +9,6 @@ using UnityEngine.Networking;
 
 using GameDevWare.Serialization;
 using com.rum;
-using com.test;
 
 public class Main : MonoBehaviour {
 
