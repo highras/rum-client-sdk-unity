@@ -70,6 +70,24 @@ public class Integration_RUMFile {
     }
 
     [UnityTest]
+    public IEnumerator File_RumLog_aSave0_bSave0_Load() {
+
+        RUMFile file_a = new RUMFile(100, false);
+        RUMFile file_b = new RUMFile(100, false);
+        RUMFile.Result save_res_1 = file_a.SaveRumLog(0, new byte[100]);
+        RUMFile.Result save_res_2 = file_b.SaveRumLog(0, new byte[200]);
+        RUMFile.Result load_res = file_a.LoadRumLog();
+
+        yield return new WaitForSeconds(0.5f);
+        Assert.IsTrue(save_res_1.success);
+        Assert.IsTrue(save_res_2.success);
+        Assert.IsTrue(load_res.success);
+        Assert.AreEqual(200, ((byte[])load_res.content).Length);
+
+        file_a.ClearAllFile();
+    }
+
+    [UnityTest]
     public IEnumerator File_RumLog_Save0_Save1_Load() {
 
         RUMFile file = new RUMFile(100, false);
@@ -139,6 +157,27 @@ public class Integration_RUMFile {
         Assert.IsFalse(load_res_2.success);
 
         file.ClearAllFile();
+    }
+
+    [UnityTest]
+    public IEnumerator File_RumLog_Save0_aLoad_Save0_bLoad() {
+
+        RUMFile file_a = new RUMFile(100, false);
+        RUMFile file_b = new RUMFile(100, false);
+        RUMFile.Result save_res_1 = file_a.SaveRumLog(0, new byte[100]);
+        RUMFile.Result load_res_1 = file_a.LoadRumLog();
+        RUMFile.Result save_res_2 = file_a.SaveRumLog(0, new byte[200]);
+        RUMFile.Result load_res_2 = file_b.LoadRumLog();
+
+        yield return new WaitForSeconds(0.5f);
+        Assert.IsTrue(save_res_1.success);
+        Assert.IsTrue(load_res_1.success);
+        Assert.AreEqual(100, ((byte[])load_res_1.content).Length);
+        Assert.IsTrue(save_res_2.success);
+        Assert.IsTrue(load_res_2.success);
+        Assert.AreEqual(200, ((byte[])load_res_2.content).Length);
+
+        file_a.ClearAllFile();
     }
 
     [UnityTest]

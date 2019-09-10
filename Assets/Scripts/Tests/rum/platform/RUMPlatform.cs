@@ -11,7 +11,9 @@ using UnityEngine.Networking;
 
 namespace com.rum {
 
-    public class RUMPlatform:Singleton<RUMPlatform> {
+    public class RUMPlatform : Singleton<RUMPlatform> {
+
+        public const string PLATFORM_EVENT = "platform_event";
 
         /**
          *  NotReachable                     Network is not reachable. (NONE)
@@ -58,7 +60,6 @@ namespace com.rum {
         private bool _isPause;
         private bool _isFocus;
         private NetworkReachability _network;
-        private IDictionary<string, object> _infoDict;
 
         private static bool isInit;
         private static object lock_obj = new object();
@@ -88,14 +89,6 @@ namespace com.rum {
             Application.logMessageReceived += OnLogCallback;
             Application.logMessageReceivedThreaded += OnLogCallbackThreaded;
 
-            StartCoroutine(GEO());
-            StartCoroutine(FPS());
-
-            if (!this.IsInvoking("OnInfo")) {
-
-                this.InvokeRepeating("OnInfo", 1.0f, 0.2f);
-            }
-
             lock (lock_obj) {
 
                 if (RUMPlatform.isInit) {
@@ -115,43 +108,13 @@ namespace com.rum {
                 RUMPlatform.InstallMode = Application.installMode.ToString();
                 RUMPlatform.SecureDataPath = this.GetSecureDataPath();
 
-                this._infoDict = new Dictionary<string, object>() {
-
-                    //网络类型信息
-                    { "network", RUMPlatform.Network },
-                    //系统语言信息
-                    { "systemLanguage", RUMPlatform.SystemLanguage },
-                    //设备型号信息
-                    { "deviceModel", RUMPlatform.DeviceModel },
-                    //操作系统信息
-                    { "operatingSystem", RUMPlatform.OperatingSystem },
-                    //屏幕分辨率高度
-                    { "screenHeight", RUMPlatform.ScreenHeight },
-                    //屏幕分辨率宽度
-                    { "screenWidth", RUMPlatform.ScreenWidth },
-                    //是否移动设备
-                    { "isMobile", RUMPlatform.IsMobilePlatform },
-                    //系统内存(MB)
-                    { "systemMemorySize", RUMPlatform.SystemMemorySize },
-                    //Unity版本信息
-                    { "unityVersion", RUMPlatform.UnityVersion },
-                    //应用安装模式
-                    { "installMode", RUMPlatform.InstallMode },
-                    //支持多种复制纹理功能的情况
-                    { "copyTextureSupport", SystemInfo.copyTextureSupport.ToString() },
-                    //返回程序运行所在的设备类型
-                    { "deviceType", SystemInfo.deviceType.ToString() },
-                    //显卡的类型
-                    { "graphicsDeviceType", SystemInfo.graphicsDeviceType.ToString() },
-                    //GPU支持的NPOT纹理
-                    { "npotSupport", SystemInfo.npotSupport.ToString() },
-                    //TimeZone
-                    { "timeZone", DateTime.Now.ToString("%z") }
-                };
-
                 RUMPlatform.isInit = true;
                 Debug.Log("[RUMPlatform] Init Complete!");
             }
+
+            StartCoroutine(GEO());
+            StartCoroutine(FPS());
+            StartCoroutine(INFO());
         }
 
         void OnDisable() {
@@ -161,18 +124,17 @@ namespace com.rum {
             Application.logMessageReceivedThreaded -= OnLogCallbackThreaded;
 
             StopAllCoroutines();
-
-            if (this.IsInvoking("OnInfo")) {
-
-                this.CancelInvoke("OnInfo");
-            }
         }
 
         void OnApplicationPause() {
  
             if (!this._isPause) {
                  
-                this.Event.FireEvent(new EventData("app_bg", new Dictionary<string, object>()));
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "ev", "bg" }
+                };
+                this.Event.FireEvent(new EventData(PLATFORM_EVENT, new Dictionary<string, object>()));
             } else {
 
                 this._isFocus = true;
@@ -192,7 +154,11 @@ namespace com.rum {
             if (this._isPause) {
 
                 this._isFocus = true;
-                this.Event.FireEvent(new EventData("app_fg", new Dictionary<string, object>()));
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "ev", "fg" }
+                };
+                this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
         }
 
@@ -308,11 +274,12 @@ namespace com.rum {
 
             IDictionary<string, object> dict = new Dictionary<string, object>() {
 
+                { "ev", "warn" },
                 { "type", "low_memory" },
                 { "system_memory", RUMPlatform.SystemMemorySize }
             };
 
-            this.Event.FireEvent(new EventData("memory_low", dict));
+            this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
         }
 
         private void OnTimer() {
@@ -327,10 +294,11 @@ namespace com.rum {
 
                 IDictionary<string, object> dict = new Dictionary<string, object>() {
 
+                    { "ev", "nwswitch"},
                     { "nw", RUMPlatform.Network }
                 };
 
-                this.Event.FireEvent(new EventData("netwrok_switch", dict));
+                this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
 
             //fps_update
@@ -339,7 +307,14 @@ namespace com.rum {
                 List<string> fps_list = new List<string>(this._fpsList);
                 this._fpsList.Clear();
 
-                this.Event.FireEvent(new EventData("fps_update", fps_list));
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "ev", "info" },
+                    { "type", "unity_fps_info" },
+                    { "fps_info", fps_list }
+                };
+
+                this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
 
             //geo_update
@@ -366,7 +341,7 @@ namespace com.rum {
                 this._longitude = this._locationInfo.longitude;
                 this._latitude = this._locationInfo.latitude;
 
-                IDictionary<string, object> dict = new Dictionary<string, object>() {
+                IDictionary<string, object> geo_info = new Dictionary<string, object>() {
 
                     { "latitude", this._locationInfo.latitude.ToString() }, 
                     { "longitude", this._locationInfo.longitude.ToString() },
@@ -377,204 +352,310 @@ namespace com.rum {
                     { "timestamp", this._locationInfo.timestamp.ToString() }
                 };
 
-                this.Event.FireEvent(new EventData("geo_update", dict));
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "ev", "info"},
+                    { "type", "unity_geo_info" },
+                    { "geo_info", geo_info }
+                };
+
+                this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
         }
 
-        private void OnInfo() {
+        private IEnumerator INFO() {
 
+            IDictionary<string, object> info = new Dictionary<string, object>();
+
+            while (true) {
+
+                yield return new WaitForSeconds(0.1f);
+
+                try {
+
+                    if (this.OnInfo(info)) {
+
+                        yield break;
+                    }
+                } catch (Exception ex) {
+
+                    ErrorRecorderHolder.recordError(ex);
+                }
+            }
+        }
+
+        private bool OnInfo(IDictionary<string, object> info) {
+
+            //网络类型信息
+            if (!info.ContainsKey("network")) {
+                info.Add("network", RUMPlatform.Network);
+                return false;
+            }
+            //系统语言信息
+            if (!info.ContainsKey("systemLanguage")) {
+                info.Add("systemLanguage", RUMPlatform.SystemLanguage);
+                return false;
+            }
+            //设备型号信息
+            if (!info.ContainsKey("deviceModel")) {
+                info.Add("deviceModel", RUMPlatform.DeviceModel);
+                return false;
+            }
+            //操作系统信息
+            if (!info.ContainsKey("operatingSystem")) {
+                info.Add("operatingSystem", RUMPlatform.OperatingSystem);
+                return false;
+            }
+            //屏幕分辨率高度
+            if (!info.ContainsKey("screenHeight")) {
+                info.Add("screenHeight", RUMPlatform.ScreenHeight);
+                return false;
+            }
+            //屏幕分辨率宽度
+            if (!info.ContainsKey("screenWidth")) {
+                info.Add("screenWidth", RUMPlatform.ScreenWidth);
+                return false;
+            }
+            //是否移动设备
+            if (!info.ContainsKey("isMobile")) {
+                info.Add("isMobile", RUMPlatform.IsMobilePlatform);
+                return false;
+            }
+            //系统内存(MB)
+            if (!info.ContainsKey("systemMemorySize")) {
+                info.Add("systemMemorySize", RUMPlatform.SystemMemorySize);
+                return false;
+            }
+            //Unity版本信息
+            if (!info.ContainsKey("unityVersion")) {
+                info.Add("unityVersion", RUMPlatform.UnityVersion);
+                return false;
+            }
+            //应用安装模式
+            if (!info.ContainsKey("installMode")) {
+                info.Add("installMode", RUMPlatform.InstallMode);
+                return false;
+            }
+            //支持多种复制纹理功能的情况
+            if (!info.ContainsKey("copyTextureSupport")) {
+                info.Add("copyTextureSupport", SystemInfo.copyTextureSupport.ToString());
+                return false;
+            }
+            //返回程序运行所在的设备类型
+            if (!info.ContainsKey("deviceType")) {
+                info.Add("deviceType", SystemInfo.deviceType.ToString());
+                return false;
+            }
+            //显卡的类型
+            if (!info.ContainsKey("graphicsDeviceType")) {
+                info.Add("graphicsDeviceType", SystemInfo.graphicsDeviceType.ToString());
+                return false;
+            }
+            //GPU支持的NPOT纹理
+            if (!info.ContainsKey("npotSupport")) {
+                info.Add("npotSupport", SystemInfo.npotSupport.ToString());
+                return false;
+            }
+            //TimeZone
+            if (!info.ContainsKey("timeZone")) {
+                info.Add("timeZone", DateTime.Now.ToString("%z"));
+                return false;
+            }
             //用户定义的设备名称
-            if (!this._infoDict.ContainsKey("deviceName")) {
-                this._infoDict.Add("deviceName", SystemInfo.deviceName);
-                return;
+            if (!info.ContainsKey("deviceName")) {
+                info.Add("deviceName", SystemInfo.deviceName);
+                return false;
             }
             //设备的唯一标识符, 每一台设备都有唯一的标识符
-            if (!this._infoDict.ContainsKey("deviceUniqueIdentifier")) {
-                this._infoDict.Add("deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier);
-                return;
+            if (!info.ContainsKey("deviceUniqueIdentifier")) {
+                info.Add("deviceUniqueIdentifier", SystemInfo.deviceUniqueIdentifier);
+                return false;
             }
             //显卡的唯一标识符ID
-            if (!this._infoDict.ContainsKey("graphicsDeviceID")) {
-                this._infoDict.Add("graphicsDeviceID", SystemInfo.graphicsDeviceID);
-                return;
+            if (!info.ContainsKey("graphicsDeviceID")) {
+                info.Add("graphicsDeviceID", SystemInfo.graphicsDeviceID);
+                return false;
             }
             //显卡的名称
-            if (!this._infoDict.ContainsKey("graphicsDeviceName")) {
-                this._infoDict.Add("graphicsDeviceName", SystemInfo.graphicsDeviceName);
-                return;
+            if (!info.ContainsKey("graphicsDeviceType")) {
+                info.Add("graphicsDeviceType", SystemInfo.graphicsDeviceName);
+                return false;
             }
             //显卡的供应商
-            if (!this._infoDict.ContainsKey("graphicsDeviceVendor")) {
-                this._infoDict.Add("graphicsDeviceVendor", SystemInfo.graphicsDeviceVendor);
-                return;
+            if (!info.ContainsKey("graphicsDeviceVendor")) {
+                info.Add("graphicsDeviceVendor", SystemInfo.graphicsDeviceVendor);
+                return false;
             }
             //显卡供应商的唯一识别码ID
-            if (!this._infoDict.ContainsKey("graphicsDeviceVendorID")) {
-                this._infoDict.Add("graphicsDeviceVendorID", SystemInfo.graphicsDeviceVendorID);
-                return;
+            if (!info.ContainsKey("graphicsDeviceVendorID")) {
+                info.Add("graphicsDeviceVendorID", SystemInfo.graphicsDeviceVendorID);
+                return false;
             }
             //显卡的类型和版本
-            if (!this._infoDict.ContainsKey("graphicsDeviceVersion")) {
-                this._infoDict.Add("graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion);
-                return;
+            if (!info.ContainsKey("graphicsDeviceVersion")) {
+                info.Add("graphicsDeviceVersion", SystemInfo.graphicsDeviceVersion);
+                return false;
             }
             //显存大小(MB)
-            if (!this._infoDict.ContainsKey("graphicsMemorySize")) {
-                this._infoDict.Add("graphicsMemorySize", SystemInfo.graphicsMemorySize);
-                return;
+            if (!info.ContainsKey("graphicsMemorySize")) {
+                info.Add("graphicsMemorySize", SystemInfo.graphicsMemorySize);
+                return false;
             }
             //是否支持多线程渲染
-            if (!this._infoDict.ContainsKey("graphicsMultiThreaded")) {
-                this._infoDict.Add("graphicsMultiThreaded", SystemInfo.graphicsMultiThreaded);
-                return;
+            if (!info.ContainsKey("graphicsMultiThreaded")) {
+                info.Add("graphicsMultiThreaded", SystemInfo.graphicsMultiThreaded);
+                return false;
             }
             //显卡着色器的级别
-            if (!this._infoDict.ContainsKey("graphicsShaderLevel")) {
-                this._infoDict.Add("graphicsShaderLevel", SystemInfo.graphicsShaderLevel);
-                return;
+            if (!info.ContainsKey("graphicsShaderLevel")) {
+                info.Add("graphicsShaderLevel", SystemInfo.graphicsShaderLevel);
+                return false;
             }
             //支持的最大纹理大小
-            if (!this._infoDict.ContainsKey("maxTextureSize")) {
-                this._infoDict.Add("maxTextureSize", SystemInfo.maxTextureSize);
-                return;
+            if (!info.ContainsKey("maxTextureSize")) {
+                info.Add("maxTextureSize", SystemInfo.maxTextureSize);
+                return false;
             }
             //当前处理器的数量
-            if (!this._infoDict.ContainsKey("processorCount")) {
-                this._infoDict.Add("processorCount", SystemInfo.processorCount);
-                return;
+            if (!info.ContainsKey("processorCount")) {
+                info.Add("processorCount", SystemInfo.processorCount);
+                return false;
             }
             //处理器的频率
-            if (!this._infoDict.ContainsKey("processorFrequency")) {
-                this._infoDict.Add("processorFrequency", SystemInfo.processorFrequency);
-                return;
+            if (!info.ContainsKey("processorFrequency")) {
+                info.Add("processorFrequency", SystemInfo.processorFrequency);
+                return false;
             }
             //处理器的名称
-            if (!this._infoDict.ContainsKey("processorType")) {
-                this._infoDict.Add("processorType", SystemInfo.processorType);
-                return;
+            if (!info.ContainsKey("processorType")) {
+                info.Add("processorType", SystemInfo.processorType);
+                return false;
             }
             //支持渲染多少目标纹理
-            if (!this._infoDict.ContainsKey("supportedRenderTargetCount")) {
-                this._infoDict.Add("supportedRenderTargetCount", SystemInfo.supportedRenderTargetCount);
-                return;
+            if (!info.ContainsKey("supportedRenderTargetCount")) {
+                info.Add("supportedRenderTargetCount", SystemInfo.supportedRenderTargetCount);
+                return false;
             }
             //是否支持2D数组纹理
-            if (!this._infoDict.ContainsKey("supports2DArrayTextures")) {
-                this._infoDict.Add("supports2DArrayTextures", SystemInfo.supports2DArrayTextures);
-                return;
+            if (!info.ContainsKey("supports2DArrayTextures")) {
+                info.Add("supports2DArrayTextures", SystemInfo.supports2DArrayTextures);
+                return false;
             }
             //是否支持3D（体积）纹理
-            if (!this._infoDict.ContainsKey("supports3DTextures")) {
-                this._infoDict.Add("supports3DTextures", SystemInfo.supports3DTextures);
-                return;
+            if (!info.ContainsKey("supports3DTextures")) {
+                info.Add("supports3DTextures", SystemInfo.supports3DTextures);
+                return false;
             }
             //是否支持获取加速度计
-            if (!this._infoDict.ContainsKey("supportsAccelerometer")) {
-                this._infoDict.Add("supportsAccelerometer", SystemInfo.supportsAccelerometer);
-                return;
+            if (!info.ContainsKey("supportsAccelerometer")) {
+                info.Add("supportsAccelerometer", SystemInfo.supportsAccelerometer);
+                return false;
             }
             //是否支持获取用于回放的音频设备
-            if (!this._infoDict.ContainsKey("supportsAudio")) {
-                this._infoDict.Add("supportsAudio", SystemInfo.supportsAudio);
-                return;
+            if (!info.ContainsKey("supportsAudio")) {
+                info.Add("supportsAudio", SystemInfo.supportsAudio);
+                return false;
             }
             //是否支持计算着色器
-            if (!this._infoDict.ContainsKey("supportsComputeShaders")) {
-                this._infoDict.Add("supportsComputeShaders", SystemInfo.supportsComputeShaders);
-                return;
+            if (!info.ContainsKey("supportsComputeShaders")) {
+                info.Add("supportsComputeShaders", SystemInfo.supportsComputeShaders);
+                return false;
             }
             //是否支持获取陀螺仪
-            if (!this._infoDict.ContainsKey("supportsGyroscope")) {
-                this._infoDict.Add("supportsGyroscope", SystemInfo.supportsGyroscope);
-                return;
+            if (!info.ContainsKey("supportsGyroscope")) {
+                info.Add("supportsGyroscope", SystemInfo.supportsGyroscope);
+                return false;
             }
             //是否支持图形特效 always returns true
-            if (!this._infoDict.ContainsKey("supportsImageEffects")) {
-                this._infoDict.Add("supportsImageEffects", SystemInfo.supportsImageEffects);
-                return;
+            if (!info.ContainsKey("supportsImageEffects")) {
+                info.Add("supportsImageEffects", SystemInfo.supportsImageEffects);
+                return false;
             }
             //是否支持实例化GPU的Draw Call
-            if (!this._infoDict.ContainsKey("supportsInstancing")) {
-                this._infoDict.Add("supportsInstancing", SystemInfo.supportsInstancing);
-                return;
+            if (!info.ContainsKey("supportsInstancing")) {
+                info.Add("supportsInstancing", SystemInfo.supportsInstancing);
+                return false;
             }
             //是否支持定位功能
-            if (!this._infoDict.ContainsKey("supportsLocationService")) {
-                this._infoDict.Add("supportsLocationService", SystemInfo.supportsLocationService);
-                return;
+            if (!info.ContainsKey("supportsLocationService")) {
+                info.Add("supportsLocationService", SystemInfo.supportsLocationService);
+                return false;
             }
             //是否支持运动向量
-            if (!this._infoDict.ContainsKey("supportsMotionVectors")) {
-                this._infoDict.Add("supportsMotionVectors", SystemInfo.supportsMotionVectors);
-                return;
+            if (!info.ContainsKey("supportsMotionVectors")) {
+                info.Add("supportsMotionVectors", SystemInfo.supportsMotionVectors);
+                return false;
             }
             //是否支持阴影深度
-            if (!this._infoDict.ContainsKey("supportsRawShadowDepthSampling")) {
-                this._infoDict.Add("supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling);
-                return;
+            if (!info.ContainsKey("supportsRawShadowDepthSampling")) {
+                info.Add("supportsRawShadowDepthSampling", SystemInfo.supportsRawShadowDepthSampling);
+                return false;
             }
             //是否支持渲染纹理 always returns true
-            if (!this._infoDict.ContainsKey("supportsRenderTextures")) {
-                this._infoDict.Add("supportsRenderTextures", SystemInfo.supportsRenderTextures);
-                return;
+            if (!info.ContainsKey("supportsRenderTextures")) {
+                info.Add("supportsRenderTextures", SystemInfo.supportsRenderTextures);
+                return false;
             }
             //是否支持立方体纹理 always returns true
-            if (!this._infoDict.ContainsKey("supportsRenderToCubemap")) {
-                this._infoDict.Add("supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap);
-                return;
+            if (!info.ContainsKey("supportsRenderToCubemap")) {
+                info.Add("supportsRenderToCubemap", SystemInfo.supportsRenderToCubemap);
+                return false;
             }
             //是否支持内置阴影
-            if (!this._infoDict.ContainsKey("supportsShadows")) {
-                this._infoDict.Add("supportsShadows", SystemInfo.supportsShadows);
-                return;
+            if (!info.ContainsKey("supportsShadows")) {
+                info.Add("supportsShadows", SystemInfo.supportsShadows);
+                return false;
             }
             //是否支持稀疏纹理
-            if (!this._infoDict.ContainsKey("supportsSparseTextures")) {
-                this._infoDict.Add("supportsSparseTextures", SystemInfo.supportsSparseTextures);
-                return;
+            if (!info.ContainsKey("supportsSparseTextures")) {
+                info.Add("supportsSparseTextures", SystemInfo.supportsSparseTextures);
+                return false;
             }
             //是否支持模版缓存 always returns true
-            if (!this._infoDict.ContainsKey("supportsStencil")) {
-                this._infoDict.Add("supportsStencil", SystemInfo.supportsStencil);
-                return;
+            if (!info.ContainsKey("supportsStencil")) {
+                info.Add("supportsStencil", SystemInfo.supportsStencil);
+                return false;
             }
             //是否支持用户触摸震动反馈
-            if (!this._infoDict.ContainsKey("supportsVibration")) {
-                this._infoDict.Add("supportsVibration", SystemInfo.supportsVibration);
-                return;
+            if (!info.ContainsKey("supportsVibration")) {
+                info.Add("supportsVibration", SystemInfo.supportsVibration);
+                return false;
             }
             //不支持运行在当前设备的SystemInfo属性值
-            if (!this._infoDict.ContainsKey("unsupportedIdentifier")) {
-                this._infoDict.Add("unsupportedIdentifier", SystemInfo.unsupportedIdentifier);
-                return;
+            if (!info.ContainsKey("unsupportedIdentifier")) {
+                info.Add("unsupportedIdentifier", SystemInfo.unsupportedIdentifier);
+                return false;
             }
             //SecureDataPath
-            if (!this._infoDict.ContainsKey("secureDataPath")) {
-                this._infoDict.Add("secureDataPath", RUMPlatform.SecureDataPath);
-                return;
+            if (!info.ContainsKey("secureDataPath")) {
+                info.Add("secureDataPath", RUMPlatform.SecureDataPath);
+                return false;
             }
             //AndroidId only for android 
-            if (!this._infoDict.ContainsKey("androidId")) {
-                this._infoDict.Add("androidId", this.GetAndroidId());
-                return;
+            if (!info.ContainsKey("androidId")) {
+                info.Add("androidId", this.GetAndroidId());
+                return false;
             }
             //DeviceToken only for ios
-            if (!this._infoDict.ContainsKey("deviceToken")) {
-                this._infoDict.Add("deviceToken", this.GetIOSDeviceToken());
-                return;
+            if (!info.ContainsKey("deviceToken")) {
+                info.Add("deviceToken", this.GetIOSDeviceToken());
+                return false;
             }
             //vendorIdentifier only for ios
-            if (!this._infoDict.ContainsKey("vendorIdentifier")) {
-                this._infoDict.Add("vendorIdentifier", this.GetIOSVendorIdentifier());
-                return;
+            if (!info.ContainsKey("vendorIdentifier")) {
+                info.Add("vendorIdentifier", this.GetIOSVendorIdentifier());
+                return false;
             }
 
-            this.Event.FireEvent(new EventData("system_info", this._infoDict));
+            IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-            if (this.IsInvoking("OnInfo")) {
+                { "ev", "info" },
+                { "type", "unity_system_info" },
+                { "system_info", info }
+            };
 
-                this.CancelInvoke("OnInfo");
-            }
+            this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+            return true;
         }
 
         private string GetSecureDataPath() {
@@ -690,7 +771,7 @@ namespace com.rum {
                 { "stack", stack }
             };
 
-            this.Event.FireEvent(new EventData("system_exception", dict));
+            this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
        }
 
         //地球半径, 单位: 米

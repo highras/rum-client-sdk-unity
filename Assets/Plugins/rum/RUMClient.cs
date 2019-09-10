@@ -567,96 +567,22 @@ namespace com.rum {
             }
         }
 
-        private EventDelegate _fpsDelegate;
-        private EventDelegate _infoDelegate;
-        private EventDelegate _appFgDelegate;
-        private EventDelegate _appBgDelegate;
-        private EventDelegate _exceptionDelegate;
-        private EventDelegate _geoDelegate;
-        private EventDelegate _netwrokDelegate;
-        private EventDelegate _memoryDelegate;
+        private EventDelegate _platformDelegate;
 
         private void AddPlatformListener() {
 
             RUMClient self = this;
 
-            this._exceptionDelegate = (evd) => {
+            this._platformDelegate = (evd) => {
 
                 self.WriteEvent(null, (IDictionary<string, object>)evd.GetPayload());
             };
-            RUMPlatform.Instance.Event.AddListener("system_exception", this._exceptionDelegate);
-
-            this._appFgDelegate = (evd) => {
-
-                self.WriteEvent("fg", (IDictionary<string, object>)evd.GetPayload());
-            };
-            RUMPlatform.Instance.Event.AddListener("app_fg", this._appFgDelegate);
-
-            this._appBgDelegate = (evd) => {
-
-                self.WriteEvent("bg", (IDictionary<string, object>)evd.GetPayload());
-            };
-            RUMPlatform.Instance.Event.AddListener("app_bg", this._appBgDelegate);
-
-            this._infoDelegate = (evd) => {
-
-                IDictionary<string, object> dict = new Dictionary<string, object>() {
-
-                    { "type", "unity_system_info" },
-                    { "system_info", evd.GetPayload() }
-                };
-
-                self.WriteEvent("info", dict);
-            };
-            RUMPlatform.Instance.Event.AddListener("system_info", this._infoDelegate);
-
-            this._netwrokDelegate = (evd) => {
-
-                self.WriteEvent("nwswitch", (IDictionary<string, object>)evd.GetPayload());
-            };
-            RUMPlatform.Instance.Event.AddListener("netwrok_switch", this._netwrokDelegate);
-
-            this._fpsDelegate = (evd) => {
-
-                IDictionary<string, object> dict = new Dictionary<string, object>() {
-
-                    { "type", "unity_fps_info" },
-                    { "fps_info", evd.GetPayload() }
-                };
-
-                self.WriteEvent("info", dict);
-            };
-            RUMPlatform.Instance.Event.AddListener("fps_update", this._fpsDelegate);
-
-            this._geoDelegate = (evd) => {
-
-                IDictionary<string, object> dict = new Dictionary<string, object>() {
-
-                    { "type", "unity_geo_info" },
-                    { "geo_info", evd.GetPayload() }
-                };
-
-                self.WriteEvent("info", dict);
-            };
-            RUMPlatform.Instance.Event.AddListener("geo_update", this._geoDelegate);
-
-            this._memoryDelegate = (evd) => {
-
-                self.WriteEvent("warn", (IDictionary<string, object>)evd.GetPayload());
-            };
-            RUMPlatform.Instance.Event.AddListener("memory_low", this._memoryDelegate);
+            RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, this._platformDelegate);
         }
 
         private void RemovePlatformListener() {
 
-            RUMPlatform.Instance.Event.RemoveListener("system_exception", this._exceptionDelegate);
-            RUMPlatform.Instance.Event.RemoveListener("app_fg", this._appFgDelegate);
-            RUMPlatform.Instance.Event.RemoveListener("app_bg", this._appBgDelegate);
-            RUMPlatform.Instance.Event.RemoveListener("system_info", this._infoDelegate);
-            RUMPlatform.Instance.Event.RemoveListener("netwrok_switch", this._netwrokDelegate);
-            RUMPlatform.Instance.Event.RemoveListener("fps_update", this._fpsDelegate);
-            RUMPlatform.Instance.Event.RemoveListener("geo_update", this._geoDelegate);
-            RUMPlatform.Instance.Event.RemoveListener("memory_low", this._memoryDelegate);
+            RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, this._platformDelegate);
         }
 
         private void WriteEvent(string ev, IDictionary<string, object> dict) {
@@ -720,10 +646,10 @@ namespace com.rum {
 
             this._rumEvent.WriteEvent(dict);
 
-            if (this._debug) {
+            // if (this._debug) {
 
-                Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
-            }
+            //     Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
+            // }
         }
 
         private void OpenEvent() {

@@ -25,6 +25,7 @@ namespace com.rum {
         private class ConfigLocker {
 
             public int Status = 0;
+            public int Count = 0;
         }
 
         private const string EVENT_CACHE = "event_cache";
@@ -162,6 +163,7 @@ namespace com.rum {
                 }
 
                 this._config.Clear();
+                config_locker.Count = 0;
 
                 foreach (string key in value.Keys) {
 
@@ -172,6 +174,7 @@ namespace com.rum {
                         if (this._eventMap.ContainsKey(key)) {
 
                             this._config.Add((string)obj, this._eventMap[key]);
+                            config_locker.Count++;
                         }
                     }
                 }
@@ -475,6 +478,7 @@ namespace com.rum {
             lock (config_locker) {
 
                 config_locker.Status = 0;
+                config_locker.Count = 0;
                 this._config = null;
             }
 
@@ -598,15 +602,32 @@ namespace com.rum {
                 return items;
             }
 
+            int avgCount = this.GetAverageCount(countLimit);
+
             lock (storage_locker) {
 
                 foreach (string map_key in this._eventMap.Values) {
 
-                    this.ShiftEvents(map_key, countLimit, ref items);
+                    this.ShiftEvents(map_key, avgCount, ref items);
 
                     if (items.Count >= countLimit) {
 
                         break;
+                    }
+                }
+
+                int diff = countLimit - items.Count;
+
+                if (diff > 0) {
+
+                    foreach (string map_key in this._eventMap.Values) {
+
+                        this.ShiftEvents(map_key, diff, ref items);
+
+                        if (items.Count >= countLimit) {
+
+                            break;
+                        }
                     }
                 }
 
@@ -635,7 +656,27 @@ namespace com.rum {
                 return 0;
             }
 
-            return (int) Math.Ceiling(size / (storageSize / storegeCount * 1f));
+            return (int) Math.Ceiling(size / (storageSize / storegeCount * 1.0f));
+        }
+
+        private int GetAverageCount(int count) {
+
+            int key_count = 0;
+
+            lock (config_locker) {
+
+                if (config_locker.Status == 1) {
+
+                    key_count = config_locker.Count;
+                }
+            }
+
+            if (key_count > 0) {
+
+                return (int) Math.Ceiling(count / (key_count * 1.0f));
+            }
+
+            return count;
         }
 
         private void ShiftEvents(string key, int countLimit, ref List<object> items) {

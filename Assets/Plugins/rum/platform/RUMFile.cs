@@ -110,12 +110,12 @@ namespace com.rum {
             return res;
         }
 
-        public RUMFile.Result ClearRumLog() {
+        public RUMFile.Result ClearAllFile() {
 
-            return this.DeleteDirectory(this._secureDataPath); 
+            return this.DeleteDirectory(this._secureDataPath);
         }
 
-        public RUMFile.Result WriteFile(string path, string content, Encoding encoding) {
+        private RUMFile.Result WriteFile(string path, string content, Encoding encoding) {
 
             lock (File_Locker) {
 
@@ -142,7 +142,7 @@ namespace com.rum {
             }
         }
 
-        public RUMFile.Result WriteFile(string path, byte[] content) {
+        private RUMFile.Result WriteFile(string path, byte[] content) {
 
             lock (File_Locker) {
 
@@ -169,7 +169,7 @@ namespace com.rum {
             }
         }
 
-        public RUMFile.Result ReadFile(string path, bool delete, Encoding encoding) {
+        private RUMFile.Result ReadFile(string path, bool delete, Encoding encoding) {
 
             lock (File_Locker) {
 
@@ -214,7 +214,7 @@ namespace com.rum {
             }
         }
 
-        public RUMFile.Result ReadFile(string path, bool delete) {
+        private RUMFile.Result ReadFile(string path, bool delete) {
 
             lock (File_Locker) {
 
@@ -260,7 +260,7 @@ namespace com.rum {
             }
         }
 
-        public RUMFile.Result DeleteFile(string path) {
+        private RUMFile.Result DeleteFile(string path) {
 
             lock (File_Locker) {
 
@@ -289,7 +289,7 @@ namespace com.rum {
             }
         }
 
-        public RUMFile.Result DeleteDirectory(string path) {
+        private RUMFile.Result DeleteDirectory(string path) {
 
             lock (File_Locker) {
 
