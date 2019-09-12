@@ -1340,4 +1340,105 @@ public class Integration_RUMEvent {
         Assert.AreEqual(10, apenCount);
         Assert.AreEqual(5, testCount);
     }
+
+    [UnityTest]
+    public IEnumerator Event_Init_SetSizeLimit1KB_UpdateConfig_WriteEvents100_WriteEvent3_GetSentEvents() {
+
+        IDictionary<string, object> ev_config = new Dictionary<string, object>() {
+
+            { "1", new List<object>() { "apen", "append", "bg", "crash", "fg", "nwswitch", "open" } },
+            { "2", new List<object>() { "error", "http", "warn", "test" } },
+            { "3", new List<object>() { "info" } }
+        };
+
+        IDictionary<string, object> open_dict = new Dictionary<string, object>() {
+
+            { "ev", "open" },
+            { "eid", 1568109465002 }
+        };
+
+        IDictionary<string, object> info_dict = new Dictionary<string, object>() {
+
+            { "ev", "info" },
+            { "eid", 1568109465002 }
+        };
+
+        IDictionary<string, object> test_dict = new Dictionary<string, object>() {
+
+            { "ev", "test" },
+            { "eid", 1568109465001 },
+            { "custom_debug", "test text" }
+        };
+
+        IDictionary<string, object> apen_dict = new Dictionary<string, object>() {
+
+            { "ev", "apen" },
+            { "eid", 1568109465001 },
+            { "custom_debug", "test text" }
+        };
+
+        ICollection<object> items = new List<object>();
+
+        for (int i = 0; i < 50; i++) {
+            items.Add(test_dict);
+        }
+        for (int i = 0; i < 50; i++) {
+            items.Add(apen_dict);
+        }
+
+        RUMEvent evt = null;
+        List<object> list = null;
+
+        Action sendQuest = () => {};
+        Action openEvent = () => {
+            // evt.IsFirst();
+        };
+
+        evt = new RUMEvent(128, false, sendQuest, openEvent);
+        evt.Init();
+        evt.SetSizeLimit(1 * 1024);
+        evt.UpdateConfig(ev_config);
+
+        evt.WriteEvents(items);
+        yield return new WaitForSeconds(2.0f);
+        evt.WriteEvent(open_dict);
+        evt.WriteEvent(open_dict);
+        evt.WriteEvent(info_dict);
+        yield return new WaitForSeconds(2.0f);
+        list = evt.GetSentEvents();
+
+        evt.ClearEvents();
+        yield return new WaitForSeconds(1.0f);
+        evt.Destroy();
+        // Debug.Log("count: " + list.Count +  ", json: " + Json.SerializeToString(list));
+
+        int openCount = 0;
+        int apenCount = 0;
+        int infoCount = 0;
+        int testCount = 0;
+        string ev_name = null;
+        IDictionary<string, object> ev_dict = null;
+        for (int i = 0; i < list.Count; i++) {
+            ev_dict = (IDictionary<string, object>)list[i];
+            ev_name = Convert.ToString(ev_dict["ev"]);
+            if (ev_name == "open") {
+                openCount++;
+            }
+            if (ev_name == "apen") {
+                apenCount++;
+            }
+            if (ev_name == "info") {
+                infoCount++;
+            }
+            if (ev_name == "test") {
+                testCount++;
+            }
+        }
+
+        // Debug.Log("count: " + list.Count + ", openCount: " + openCount + ", infoCount: " + infoCount + ", apenCount: " + apenCount + ", testCount: " + testCount);
+        Assert.AreEqual(2, openCount);
+        Assert.AreEqual(0, infoCount);
+        Assert.AreEqual(17, apenCount);
+        Assert.AreEqual(0, testCount);
+    }
 }
