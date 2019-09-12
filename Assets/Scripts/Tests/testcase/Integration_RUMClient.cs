@@ -64,7 +64,7 @@ public class Integration_RUMClient {
         // Debug.Log("rum_id: " + rum_id);
 
         client.Connect(this._endpoint, true, false);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(2.0f);
         string new_id = client.GetRumId();
         // Debug.Log("new_id: " + new_id);
 
@@ -84,12 +84,240 @@ public class Integration_RUMClient {
         client.SetUid("xxx-xxxxxx-xxxxxxxxxxxx");
         client.Connect(this._endpoint, false, false);
         long ds = FPManager.Instance.GetMilliTimestamp();
-        
+
         yield return new WaitForSeconds(1.0f);
 
         client.Destroy();
         yield return new WaitForSeconds(1.0f);
 
         Debug.Log("diff: " + (ds - ts));
+    }
+
+    [UnityTest]
+    public IEnumerator Client_Connect_Delay_Destroy() {
+
+        int closeCount = 0;
+        int readyCount = 0;
+        int configCount = 0;
+        int errorCount = 0;
+
+        RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
+        client.GetEvent().AddListener("close", (evd) => {
+            closeCount++;
+        });
+        client.GetEvent().AddListener("ready", (evd) => {
+            readyCount++;
+        });
+        client.GetEvent().AddListener("config", (evd) => {
+            configCount++;
+        });
+        client.GetEvent().AddListener("error", (evd) => {
+            errorCount++;
+        });
+        client.Connect(this._endpoint, false, false);
+
+        Assert.AreEqual(0, closeCount);
+        Assert.AreEqual(0, readyCount);
+        Assert.AreEqual(0, configCount);
+        Assert.AreEqual(0, errorCount);
+
+        yield return new WaitForSeconds(2.0f);
+
+        Assert.AreEqual(0, closeCount);
+        Assert.AreEqual(1, readyCount);
+        Assert.AreEqual(1, configCount);
+        Assert.AreEqual(0, errorCount);
+
+        client.Destroy();
+        yield return new WaitForSeconds(1.0f);
+        
+        Assert.AreEqual(1, closeCount);
+        Assert.AreEqual(1, readyCount);
+        Assert.AreEqual(1, configCount);
+        Assert.AreEqual(0, errorCount);
+    }
+
+    [UnityTest]
+    public IEnumerator Client_Connect_Connect_Destroy() {
+
+        int closeCount = 0;
+        int readyCount = 0;
+        int configCount = 0;
+        int errorCount = 0;
+
+        RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
+        client.GetEvent().AddListener("close", (evd) => {
+            closeCount++;
+        });
+        client.GetEvent().AddListener("ready", (evd) => {
+            readyCount++;
+        });
+        client.GetEvent().AddListener("config", (evd) => {
+            configCount++;
+        });
+        client.GetEvent().AddListener("error", (evd) => {
+            errorCount++;
+        });
+
+        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint, false, false);
+        yield return new WaitForSeconds(2.0f);
+
+        Assert.AreEqual(0, closeCount);
+        Assert.AreEqual(1, readyCount);
+        Assert.AreEqual(1, configCount);
+        Assert.AreEqual(1, errorCount);
+
+        client.Destroy();
+        yield return new WaitForSeconds(1.0f);
+
+        Assert.AreEqual(1, closeCount);
+        Assert.AreEqual(1, readyCount);
+        Assert.AreEqual(1, configCount);
+        Assert.AreEqual(1, errorCount);
+    }
+
+    [UnityTest]
+    public IEnumerator Client_Connect_Destroy() {
+
+        int closeCount = 0;
+        int readyCount = 0;
+        int configCount = 0;
+        int errorCount = 0;
+
+        RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
+        client.GetEvent().AddListener("close", (evd) => {
+            closeCount++;
+        });
+        client.GetEvent().AddListener("ready", (evd) => {
+            readyCount++;
+        });
+        client.GetEvent().AddListener("config", (evd) => {
+            configCount++;
+        });
+        client.GetEvent().AddListener("error", (evd) => {
+            errorCount++;
+        });
+
+        client.Connect(this._endpoint, false, false);
+        client.Destroy();
+        yield return new WaitForSeconds(2.0f);
+
+        Assert.AreEqual(1, closeCount);
+        Assert.AreEqual(0, readyCount);
+        Assert.AreEqual(0, configCount);
+        Assert.AreEqual(0, errorCount);
+    }
+
+    [UnityTest]
+    public IEnumerator Client_Connect_Destroy_Connect() {
+
+        int closeCount = 0;
+        int readyCount = 0;
+        int configCount = 0;
+        int errorCount = 0;
+
+        RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
+        client.GetEvent().AddListener("close", (evd) => {
+            closeCount++;
+        });
+        client.GetEvent().AddListener("ready", (evd) => {
+            readyCount++;
+        });
+        client.GetEvent().AddListener("config", (evd) => {
+            configCount++;
+        });
+        client.GetEvent().AddListener("error", (evd) => {
+            errorCount++;
+        });
+
+        client.Connect(this._endpoint, false, false);
+        client.Destroy();
+        client.Connect(this._endpoint, false, false);
+        yield return new WaitForSeconds(2.0f);
+
+        Assert.AreEqual(1, closeCount);
+        Assert.AreEqual(0, readyCount);
+        Assert.AreEqual(0, configCount);
+        Assert.AreEqual(0, errorCount);
+    }
+
+    [UnityTest]
+    public IEnumerator Client_Connect_Delay_Destroy_Delay_Connect() {
+
+        int closeCount = 0;
+        int readyCount = 0;
+        int configCount = 0;
+        int errorCount = 0;
+
+        RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
+        client.GetEvent().AddListener("close", (evd) => {
+            closeCount++;
+        });
+        client.GetEvent().AddListener("ready", (evd) => {
+            readyCount++;
+        });
+        client.GetEvent().AddListener("config", (evd) => {
+            configCount++;
+        });
+        client.GetEvent().AddListener("error", (evd) => {
+            errorCount++;
+        });
+
+        client.Connect(this._endpoint, false, false);
+
+        yield return new WaitForSeconds(2.0f);
+        Assert.AreEqual(0, closeCount);
+        Assert.AreEqual(1, readyCount);
+        Assert.AreEqual(1, configCount);
+        Assert.AreEqual(0, errorCount);
+
+        client.Destroy();
+        yield return new WaitForSeconds(1.0f);
+
+        Assert.AreEqual(1, closeCount);
+        Assert.AreEqual(1, readyCount);
+        Assert.AreEqual(1, configCount);
+        Assert.AreEqual(0, errorCount);
+
+        client.Connect(this._endpoint, false, false);
+        yield return new WaitForSeconds(2.0f);
+
+        Assert.AreEqual(1, closeCount);
+        Assert.AreEqual(1, readyCount);
+        Assert.AreEqual(1, configCount);
+        Assert.AreEqual(0, errorCount);
+    }
+
+    [UnityTest]
+    public IEnumerator Client_Destroy_Connect() {
+
+        int closeCount = 0;
+        int readyCount = 0;
+        int configCount = 0;
+        int errorCount = 0;
+
+        RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
+        client.GetEvent().AddListener("close", (evd) => {
+            closeCount++;
+        });
+        client.GetEvent().AddListener("ready", (evd) => {
+            readyCount++;
+        });
+        client.GetEvent().AddListener("config", (evd) => {
+            configCount++;
+        });
+        client.GetEvent().AddListener("error", (evd) => {
+            errorCount++;
+        });
+
+        client.Destroy();
+        client.Connect(this._endpoint, false, false);
+        yield return new WaitForSeconds(2.0f);
+
+        Assert.AreEqual(1, closeCount);
+        Assert.AreEqual(0, readyCount);
+        Assert.AreEqual(0, configCount);
+        Assert.AreEqual(0, errorCount);
     }
 }

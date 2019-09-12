@@ -568,45 +568,55 @@ namespace com.rum {
         
         public void ClearRumId() {
 
-            lock (storage_locker) {
+            RUMEvent self = this;
 
-                if (this.IsNullOrEmpty(this._storage)) {
+            FPManager.Instance.DelayTask(500, (state) => {
 
-                    return;
+                lock (storage_locker) {
+
+                    if (self.IsNullOrEmpty(self._storage)) {
+
+                        return;
+                    }
+
+                    ((IDictionary<string, object>)self._storage[self._rumIdKey]).Clear();
                 }
 
-                ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
-            }
+                lock (self_locker) {
 
-            lock (self_locker) {
+                    self._rumId = null;
+                }
 
-                this._rumId = null;
-            }
+                self.BuildRumId();
 
-            this.BuildRumId();
+                if (self._debug) {
 
-            if (this._debug) {
-
-                Debug.Log("[RUM] storage clear! rid_key: " + this._rumIdKey);
-            }
+                    Debug.Log("[RUM] storage clear! rid_key: " + self._rumIdKey);
+                }
+            }, null);
         }
 
         public void ClearEvents() {
 
-            lock (storage_locker) {
+            RUMEvent self = this;
 
-                if (this.IsNullOrEmpty(this._storage)) {
+            FPManager.Instance.DelayTask(500, (state) => {
 
-                    return;
+                lock (storage_locker) {
+
+                    if (self.IsNullOrEmpty(self._storage)) {
+
+                        return;
+                    }
+
+                    ((IDictionary<string, object>)self._storage[self._rumEventKey]).Clear();
                 }
 
-                ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
-            }
+                if (self._debug) {
 
-            if (this._debug) {
-
-                Debug.Log("[RUM] storage clear! storage_key: " + this._rumEventKey);
-            }
+                    Debug.Log("[RUM] storage clear! storage_key: " + self._rumEventKey);
+                }
+            }, null);
         }
 
         public void RemoveFromCache(ICollection<object> items) {

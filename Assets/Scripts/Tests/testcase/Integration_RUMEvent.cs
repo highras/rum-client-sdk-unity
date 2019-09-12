@@ -1506,4 +1506,30 @@ public class Integration_RUMEvent {
         Assert.IsNotNull(new_id);
         Assert.AreNotEqual(rum_id, new_id);
     }
+
+    [UnityTest]
+    public IEnumerator Event_Init_ClearRumId_IsFirst() {
+
+        RUMEvent evt = null;
+
+        Action sendQuest = () => {};
+        Action openEvent = () => {
+            evt.IsFirst();
+        };
+
+        evt = new RUMEvent(131, false, sendQuest, openEvent);
+        evt.Init();
+        evt.ClearRumId();
+
+        yield return new WaitForSeconds(1.0f);
+        string rum_id = evt.GetRumId();
+        bool first = evt.IsFirst();
+
+        evt.ClearEvents();
+        yield return new WaitForSeconds(1.0f);
+        evt.Destroy();
+
+        Assert.IsNotNull(rum_id);
+        Assert.IsTrue(first);
+    }
 }
