@@ -146,6 +146,7 @@
      <Compile Include="Assets\Scripts\Tests\rum\RUMClient.cs" />
      <Compile Include="Assets\Scripts\Tests\rum\RUMConfig.cs" />
      <Compile Include="Assets\Scripts\Tests\rum\RUMEvent.cs" />
+     <Compile Include="Assets\Scripts\Tests\testcase\Integration_RUMClient.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Integration_RUMEvent.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Integration_RUMFile.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Integration_RUMPlatform.cs" />

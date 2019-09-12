@@ -578,6 +578,13 @@ namespace com.rum {
                 ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
             }
 
+            lock (self_locker) {
+
+                this._rumId = null;
+            }
+
+            this.BuildRumId();
+
             if (this._debug) {
 
                 Debug.Log("[RUM] storage clear! rid_key: " + this._rumIdKey);
