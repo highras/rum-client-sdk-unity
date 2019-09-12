@@ -28,11 +28,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res.success);
         Assert.IsTrue(load_res.success);
         Assert.AreEqual(100, ((byte[])load_res.content).Length);
 
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -44,12 +45,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res.success);
         Assert.IsTrue(load_res_1.success);
         Assert.IsFalse(load_res_2.success);
         Assert.AreEqual(100, ((byte[])load_res_1.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -61,12 +62,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res.success);
         Assert.AreEqual(200, ((byte[])load_res.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -79,12 +80,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file_a.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file_a.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res.success);
         Assert.AreEqual(200, ((byte[])load_res.content).Length);
-
-        file_a.ClearAllFile();
     }
 
     [UnityTest]
@@ -96,12 +97,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res.success);
         Assert.AreEqual(100, ((byte[])load_res.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -114,14 +115,14 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res_1.success);
         Assert.IsTrue(load_res_2.success);
         Assert.AreEqual(100, ((byte[])load_res_1.content).Length);
         Assert.AreEqual(200, ((byte[])load_res_2.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -133,11 +134,11 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsFalse(load_res_1.success);
         Assert.IsTrue(save_res.success);
         Assert.IsFalse(load_res_2.success);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -150,13 +151,13 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(load_res_1.success);
         Assert.AreEqual(100, ((byte[])load_res_1.content).Length);
         Assert.IsTrue(save_res_2.success);
         Assert.IsFalse(load_res_2.success);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -170,14 +171,14 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file_b.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file_a.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(load_res_1.success);
         Assert.AreEqual(100, ((byte[])load_res_1.content).Length);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res_2.success);
         Assert.AreEqual(200, ((byte[])load_res_2.content).Length);
-
-        file_a.ClearAllFile();
     }
 
     [UnityTest]
@@ -190,14 +191,14 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(load_res_1.success);
         Assert.AreEqual(100, ((byte[])load_res_1.content).Length);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res_2.success);
         Assert.AreEqual(200, ((byte[])load_res_2.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -208,11 +209,11 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res.success);
         Assert.IsTrue(load_res.success);
         Assert.AreEqual(100, ((byte[])load_res.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -223,10 +224,10 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file.LoadRumLog();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res.success);
         Assert.IsFalse(load_res.success);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -237,11 +238,11 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file.LoadStorage();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res.success);
         Assert.IsTrue(load_res.success);
         Assert.AreEqual(100, ((byte[])load_res.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -253,12 +254,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadStorage();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res.success);
         Assert.IsTrue(load_res_1.success);
         Assert.IsTrue(load_res_2.success);
         Assert.AreEqual(((byte[])load_res_1.content).Length, ((byte[])load_res_2.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -270,12 +271,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res = file.LoadStorage();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res.success);
         Assert.AreEqual(200, ((byte[])load_res.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -288,13 +289,13 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadStorage();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res_1.success);
         Assert.IsTrue(load_res_2.success);
         Assert.AreEqual(((byte[])load_res_1.content).Length, ((byte[])load_res_2.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -306,12 +307,12 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadStorage();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsFalse(load_res_1.success);
         Assert.IsTrue(save_res.success);
         Assert.IsTrue(load_res_2.success);
         Assert.AreEqual(100, ((byte[])load_res_2.content).Length);
-
-        file.ClearAllFile();
     }
 
     [UnityTest]
@@ -324,13 +325,13 @@ public class Integration_RUMFile {
         RUMFile.Result load_res_2 = file.LoadStorage();
 
         yield return new WaitForSeconds(0.5f);
+        file.ClearAllFile();
+
         Assert.IsTrue(save_res_1.success);
         Assert.IsTrue(load_res_1.success);
         Assert.AreEqual(100, ((byte[])load_res_1.content).Length);
         Assert.IsTrue(save_res_2.success);
         Assert.IsTrue(load_res_2.success);
         Assert.AreEqual(200, ((byte[])load_res_2.content).Length);
-
-        file.ClearAllFile();
     }
 }

@@ -101,7 +101,7 @@ namespace com.rum {
 
                 if (this._storage == null) {
 
-                    this._storage = this.LoadStorage(); 
+                    this._storage = this.LoadStorage();
 
                     if (!this._storage.ContainsKey(this._rumIdKey)) {
 
@@ -128,6 +128,8 @@ namespace com.rum {
 
                     item.Add("index", index);
                 }
+
+                this.InitCatchEvents();
             }
 
             lock (self_locker) {
@@ -138,6 +140,23 @@ namespace com.rum {
             if (this._openEvent != null) {
 
                 this._openEvent();
+            }
+        }
+
+        private void InitCatchEvents() {
+
+            ICollection<object> items = null;
+            IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
+
+            if (event_cache != null) {
+
+                items = event_cache.Values;
+                event_cache = new Dictionary<string, object>();
+            }
+
+            if (!this.IsNullOrEmpty(items)) {
+
+                this.WriteEvents(items);
             }
         }
 
@@ -155,6 +174,11 @@ namespace com.rum {
 
         public void UpdateConfig(IDictionary<string, object> value) {
 
+            if (this.IsNullOrEmpty(value)) {
+                
+                return;
+            }
+
             lock (config_locker) {
 
                 if (this._config == null) {
@@ -167,40 +191,47 @@ namespace com.rum {
 
                 foreach (string key in value.Keys) {
 
-                    List<object> list = (List<object>) value[key];
+                    List<object> list = null;
+
+                    try {
+
+                        list = (List<object>)value[key];
+                    } catch(Exception ex) {
+
+                        ErrorRecorderHolder.recordError(ex);
+                    }
+
+                    if (this.IsNullOrEmpty(list)) {
+
+                        return;
+                    }
 
                     foreach (object obj in list) {
 
                         if (this._eventMap.ContainsKey(key)) {
 
                             this._config.Add((string)obj, this._eventMap[key]);
-                            config_locker.Count++;
+
+                            if (EVENT_MAP_1 == this._eventMap[key]) {
+
+                                config_locker.Count++;
+                            }
                         }
                     }
                 }
 
                 config_locker.Status = 1;
             }
-
-            ICollection<object> items = null;
-
-            lock (storage_locker) {
-
-                IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
-
-                items = event_cache.Values;
-                event_cache = new Dictionary<string, object>();
-            }
-
-            if (!this.IsNullOrEmpty(items)) {
-
-                this.WriteEvents(items);
-            }
         }
 
         private List<object> _eventCache = new List<object>();
 
         public void WriteEvent(IDictionary<string, object> dict) {
+
+            if (this.IsNullOrEmpty(dict)) {
+
+                return;
+            }
 
             lock (self_locker) {
 
@@ -337,6 +368,11 @@ namespace com.rum {
 
         public void WriteEvents(ICollection<object> items) {
 
+            if (this.IsNullOrEmpty(items)) {
+
+                return;
+            }
+
             foreach (IDictionary<string, object> item in items) {
 
                 lock (self_locker) {
@@ -358,35 +394,46 @@ namespace com.rum {
 
         private void AddEvent(IDictionary<string, object> dict) {
 
-            string key = Convert.ToString(dict["ev"]);
+            string key = null;
+
+            if (dict.ContainsKey("ev")) {
+
+                key = Convert.ToString(dict["ev"]);
+            }
+
             string storageKey = this.SelectKey(key);
 
-            if (!string.IsNullOrEmpty(storageKey)) {
-
-                lock (storage_locker) {
-
-                    IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
-
-                    if (!event_storage.ContainsKey(key)) {
-
-                        event_storage[key] = new List<object>();
-                    }
-
-                    List<object> event_list = (List<object>)event_storage[key];
-
-                    if (event_list.Count < RUMConfig.EVENT_QUEUE_LIMIT) {
-
-                        event_list.Add(dict);
-                    }
-
-                    if (event_list.Count == (RUMConfig.EVENT_QUEUE_LIMIT - 2)) {
-
-                        ErrorRecorderHolder.recordError(new Exception(String.Format("Event Queue Limit! ev: {0}", key)));
-                    }
-                }
-            } else {
+            if (string.IsNullOrEmpty(storageKey)) {
 
                 ErrorRecorderHolder.recordError(new Exception(String.Format("Event Disable! ev: {0}", key)));
+                return;
+            }
+
+            lock (storage_locker) {
+
+                IDictionary<string, object> event_storage = this.GetEventMap(storageKey);
+
+                if (event_storage == null) {
+
+                    return;
+                }
+
+                if (!event_storage.ContainsKey(key)) {
+
+                    event_storage[key] = new List<object>();
+                }
+
+                List<object> event_list = (List<object>)event_storage[key];
+
+                if (event_list.Count < RUMConfig.EVENT_QUEUE_LIMIT) {
+
+                    event_list.Add(dict);
+                }
+
+                if (event_list.Count == (RUMConfig.EVENT_QUEUE_LIMIT - 2)) {
+
+                    ErrorRecorderHolder.recordError(new Exception(String.Format("Event Queue Limit! ev: {0}", key)));
+                }
             }
         }
 
@@ -410,7 +457,7 @@ namespace com.rum {
 
             lock (second_locker) {
 
-                if (value == 0) {
+                if (value <= 0) {
 
                     this._delayCount = 0;
                     this._timestamp = 0;
@@ -523,6 +570,11 @@ namespace com.rum {
 
             lock (storage_locker) {
 
+                if (this.IsNullOrEmpty(this._storage)) {
+
+                    return;
+                }
+
                 ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
             }
 
@@ -536,6 +588,11 @@ namespace com.rum {
 
             lock (storage_locker) {
 
+                if (this.IsNullOrEmpty(this._storage)) {
+
+                    return;
+                }
+
                 ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
             }
 
@@ -547,23 +604,46 @@ namespace com.rum {
 
         public void RemoveFromCache(ICollection<object> items) {
 
+            if (this.IsNullOrEmpty(items)) {
+
+                return;
+            }
+
             lock (storage_locker) {
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
+                if (event_cache == null) {
+
+                    return;
+                }
+
                 foreach (IDictionary<string, object> item in items) {
 
-                    string key = Convert.ToString(item["eid"]); 
+                    string key = null;
 
-                    if (event_cache.ContainsKey(key)) {
+                    if (item.ContainsKey("eid")) {
 
-                        event_cache.Remove(key);
+                        key = Convert.ToString(item["eid"]);
+                    }
+
+                    if (!string.IsNullOrEmpty(key)) {
+                        
+                        if (event_cache.ContainsKey(key)) {
+
+                            event_cache.Remove(key);
+                        }
                     }
                 }
             }
         }
 
         private IDictionary<string, object> GetEventMap(string key) {
+
+            if (this.IsNullOrEmpty(this._storage)) {
+
+                return null;
+            }
 
             IDictionary<string, object> items = (IDictionary<string, object>)this._storage[this._rumEventKey];
 
@@ -602,27 +682,22 @@ namespace com.rum {
                 return items;
             }
 
-            int avgCount = this.GetAverageCount(countLimit);
+            int avgCount = this.GetTopCount(countLimit);
 
             lock (storage_locker) {
 
-                foreach (string map_key in this._eventMap.Values) {
+                this.ShiftEvents(EVENT_MAP_1, avgCount, countLimit, ref items);
 
-                    this.ShiftEvents(map_key, avgCount, ref items);
+                if (items.Count >= countLimit) {
 
-                    if (items.Count >= countLimit) {
-
-                        break;
-                    }
+                    return items;
                 }
 
-                int diff = countLimit - items.Count;
-
-                if (diff > 0) {
+                if (countLimit > items.Count) {
 
                     foreach (string map_key in this._eventMap.Values) {
 
-                        this.ShiftEvents(map_key, diff, ref items);
+                        this.ShiftEvents(map_key, countLimit, countLimit, ref items);
 
                         if (items.Count >= countLimit) {
 
@@ -659,27 +734,46 @@ namespace com.rum {
             return (int) Math.Ceiling(size / (storageSize / storegeCount * 1.0f));
         }
 
-        private int GetAverageCount(int count) {
+        private int GetTopCount(int count) {
 
-            int key_count = 0;
+            int avgCount = count;
+            int top_key_count = 0;
 
             lock (config_locker) {
 
                 if (config_locker.Status == 1) {
 
-                    key_count = config_locker.Count;
+                    top_key_count = config_locker.Count;
                 }
             }
 
-            if (key_count > 0) {
+            if (top_key_count <= 0) {
 
-                return (int) Math.Ceiling(count / (key_count * 1.0f));
+                lock (storage_locker) {
+
+                    IDictionary<string, object> event_map = this.GetEventMap(EVENT_MAP_1);
+
+                    if (event_map != null) {
+
+                        top_key_count = event_map.Count;
+                    }
+                }
             }
 
-            return count;
+            if (top_key_count > 0) {
+
+                avgCount = (int) Math.Floor(count / (top_key_count * 1.0f));
+            }
+
+            if (avgCount > 0) {
+
+                return avgCount;
+            }
+
+            return 1;
         }
 
-        private void ShiftEvents(string key, int countLimit, ref List<object> items) {
+        private void ShiftEvents(string key, int avgCount, int countLimit, ref List<object> items) {
 
             IDictionary<string, object> event_map = this.GetEventMap(key);
 
@@ -692,9 +786,10 @@ namespace com.rum {
 
             foreach (string evk in event_keys) {
 
+                int count = avgCount;
                 List<object> event_list = (List<object>)event_map[evk];
 
-                while (event_list.Count > 0 && items.Count < countLimit) {
+                while (event_list.Count > 0) {
 
                     IDictionary<string, object> item = (IDictionary<string, object>)event_list[0];
 
@@ -702,16 +797,21 @@ namespace com.rum {
                     
                     items.Add(item);
                     event_list.RemoveAt(0);
+
+                    if (--count <= 0) {
+
+                        break;
+                    }
+
+                    if (items.Count >= countLimit) {
+
+                        break;
+                    }
                 }
 
                 if (event_list.Count == 0) {
 
                     event_map.Remove(evk);
-                }
-
-                if (items.Count >= countLimit) {
-
-                    break;
                 }
             }
         }
@@ -738,16 +838,29 @@ namespace com.rum {
 
             IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
+            if (event_cache == null) {
+
+                return;
+            }
+
             foreach (IDictionary<string, object> item in items) {
 
-                string cache_key = Convert.ToString(item["eid"]); 
+                string cache_key = null;
 
-                if (event_cache.ContainsKey(cache_key)) {
+                if (item.ContainsKey("eid")) {
 
-                    event_cache[cache_key] = item;
-                } else {
+                    cache_key = Convert.ToString(item["eid"]); 
+                }
 
-                    event_cache.Add(cache_key, item);
+                if (!string.IsNullOrEmpty(cache_key)) {
+
+                    if (event_cache.ContainsKey(cache_key)) {
+
+                        event_cache[cache_key] = item;
+                    } else {
+
+                        event_cache.Add(cache_key, item);
+                    }
                 }
             }
         }
@@ -869,7 +982,11 @@ namespace com.rum {
                 count += this.GetStorageCount(EVENT_MAP_3);
 
                 IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
-                count += event_cache.Values.Count;
+
+                if (event_cache != null) {
+
+                    count += event_cache.Values.Count;
+                }
             }
 
             lock (self_locker) {
@@ -901,9 +1018,14 @@ namespace com.rum {
         private string BuildRumId() {
 
             bool first = false;
-            string rum_id = this.UUID(0, 16, 'c');
+            string rum_id = this.UUID(0, 16, 'C');
 
             lock (storage_locker) {
+
+                if (this.IsNullOrEmpty(this._storage)) {
+
+                    return null;
+                }
 
                 IDictionary<string, object> item = (IDictionary<string, object>)this._storage[this._rumIdKey];
 
@@ -1258,6 +1380,11 @@ namespace com.rum {
         }
 
         private string SelectKey(string innerKey) {
+
+            if (string.IsNullOrEmpty(innerKey)) {
+
+                return null;
+            }
 
             lock (config_locker) {
 

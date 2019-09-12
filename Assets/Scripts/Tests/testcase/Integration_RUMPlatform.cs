@@ -21,52 +21,46 @@ public class Integration_RUMPlatform {
     public void TearDown() {}
 
     [UnityTest]
-    public IEnumerator Platform_FPSInfo() {
+    public IEnumerator Platform_Info() {
 
-        int count = 0;
-        EventDelegate callback = (evd) => {
+        int fps_count = 0;
+        EventDelegate fps_callback = (evd) => {
 
             IDictionary<string, object> dict = (IDictionary<string, object>) evd.GetPayload();
 
             if (dict.ContainsKey("fps_info")) {
 
-                count++;
+                fps_count++;
 
-                if (count == 1) {
+                if (fps_count == 1) {
 
                     Debug.Log("fps_info: " + Json.SerializeToString(dict));
                 }
             }
         };
-        RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, callback);
+        RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, fps_callback);
 
-        yield return new WaitForSeconds(20.0f);
-        RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, callback);
-        Assert.AreNotEqual(0, count);
-    }
-
-    [UnityTest]
-    public IEnumerator Platform_SystemInfo() {
-
-        int count = 0;
-        EventDelegate callback = (evd) => {
+        int info_count = 0;
+        EventDelegate info_callback = (evd) => {
 
             IDictionary<string, object> dict = (IDictionary<string, object>) evd.GetPayload();
 
             if (dict.ContainsKey("system_info")) {
 
-                count++;
+                info_count++;
 
-                if (count == 1) {
+                if (info_count == 1) {
 
                     Debug.Log("system_info: " + Json.SerializeToString(dict));
                 }
             }
         };
-        RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, callback);
+        RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, info_callback);
 
-        yield return new WaitForSeconds(30.0f);
-        RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, callback);
-        Assert.AreNotEqual(0, count);
+        yield return new WaitForSeconds(15.0f);
+        RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, fps_callback);
+        RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, info_callback);
+        
+        Assert.AreNotEqual(0, fps_count);
     }
 }
