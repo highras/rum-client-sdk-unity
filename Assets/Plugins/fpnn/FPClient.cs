@@ -26,15 +26,21 @@ namespace com.fpnn {
 
         public FPClient(string endpoint, int connectionTimeout) {
 
-            if (!string.IsNullOrEmpty(endpoint)) {
+            if (string.IsNullOrEmpty(endpoint)) {
 
-                string[] ipport = endpoint.Split(':');
-
-                if (ipport.Length >= 2) {
-
-                    this.Init(ipport[0], Convert.ToInt32(ipport[1]), connectionTimeout);
-                }
+                this.Init(null, 0, connectionTimeout);
+                return;
             }
+
+            string[] ipport = endpoint.Split(':');
+
+            if (ipport.Length >= 2) {
+
+                this.Init(ipport[0], Convert.ToInt32(ipport[1]), connectionTimeout);
+                return;
+            } 
+
+            this.Init(null, 0, connectionTimeout);
         }
 
         public FPClient(string host, int port, int connectionTimeout) {

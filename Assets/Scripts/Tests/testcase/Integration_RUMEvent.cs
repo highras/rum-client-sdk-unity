@@ -1441,4 +1441,42 @@ public class Integration_RUMEvent {
         Assert.AreEqual(17, apenCount);
         Assert.AreEqual(0, testCount);
     }
+
+    [UnityTest]
+    public IEnumerator Event_Init_WriteEvent_EmptyKey() {
+
+        IDictionary<string, object> ev_dict = new Dictionary<string, object>() {
+
+            { "ev", "test" },
+            { "eid", 1568109465001 },
+            { "custom_debug", "test text" },
+            { "empty", "" },
+            { "null", null }
+        };
+
+        RUMEvent evt = null;
+        List<object> list = null;
+
+        Action sendQuest = () => {};
+        Action openEvent = () => {
+            evt.IsFirst();
+        };
+
+        evt = new RUMEvent(129, false, sendQuest, openEvent);
+        evt.Init();
+        evt.WriteEvent(ev_dict);
+
+        yield return new WaitForSeconds(2.0f);
+        list = evt.GetSentEvents();
+
+        evt.ClearEvents();
+        yield return new WaitForSeconds(1.0f);
+        evt.Destroy();
+
+        Assert.AreEqual(1, list.Count);
+        IDictionary<string, object> item = (IDictionary<string, object>)list[0];
+
+        Assert.IsFalse(item.ContainsKey("empty"));
+        Assert.IsFalse(item.ContainsKey("null"));
+    }
 }
