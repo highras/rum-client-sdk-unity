@@ -752,7 +752,7 @@ public class Integration_RUMEvent {
             evt.IsFirst();
         };
 
-        evt = new RUMEvent(119, false, sendQuest, openEvent);
+        evt = new RUMEvent(132, false, sendQuest, openEvent);
         evt.Init();
         evt.SetSizeLimit(15 * 1024);
         evt.WriteEvents(items);
@@ -1496,6 +1496,7 @@ public class Integration_RUMEvent {
         yield return new WaitForSeconds(0.5f);
         rum_id = evt.GetRumId();
         evt.ClearRumId();
+        yield return new WaitForSeconds(2.0f);
         string new_id = evt.GetRumId();
 
         evt.ClearEvents();
