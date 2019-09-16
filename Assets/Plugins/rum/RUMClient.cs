@@ -644,7 +644,14 @@ namespace com.rum {
                 }
             }
 
-            this._rumEvent.WriteEvent(dict);
+            RUMClient self = this;
+
+            FPManager.Instance.ExecTask((state) => {
+
+                self._rumEvent.WriteEvent(dict);
+            }, null);
+
+            // this._rumEvent.WriteEvent(dict);
 
             // if (this._debug) {
 

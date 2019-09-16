@@ -25,7 +25,7 @@ public class Integration_RUMClient {
     public void TearDown() {}
 
     [UnityTest]
-    public IEnumerator Client_Connect_GetRumId() {
+    public IEnumerator Client_GetRumId() {
 
         string rum_id = null;
         RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
@@ -40,7 +40,7 @@ public class Integration_RUMClient {
     }
 
     [UnityTest]
-    public IEnumerator Client_Connect_GetSession() {
+    public IEnumerator Client_GetSession() {
 
         long session_id = 0;
         RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
@@ -55,17 +55,17 @@ public class Integration_RUMClient {
     }
 
     [UnityTest]
-    public IEnumerator Client_Connect_ClearRumId() {
+    public IEnumerator Client_ClearRumId() {
 
         RUMClient client_1 = new RUMClient(this._pid, this._secret, null, null, false);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(1.0f);
         string rum_id_1 = client_1.GetRumId();
         // Debug.Log("rum_id_1: " + rum_id_1);
         client_1.Destroy();
         yield return new WaitForSeconds(1.0f);
 
         RUMClient client_2 = new RUMClient(this._pid, this._secret, null, null, false, true, false);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(1.0f);
         string rum_id_2 = client_2.GetRumId();
         // Debug.Log("rum_id_2: " + rum_id_2); 
         client_2.Destroy();
