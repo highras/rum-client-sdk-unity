@@ -106,6 +106,16 @@ namespace com.rum {
 
         public RUMClient(int pid, string secret, string uid, string appv, bool debug) {
 
+            this.Init(pid, secret, uid, appv, debug, false, false);
+        }
+
+        public RUMClient(int pid, string secret, string uid, string appv, bool debug, bool clearRumId, bool clearEvents) {
+
+            this.Init(pid, secret, uid, appv, debug, clearRumId, clearEvents);
+        }
+
+        private void Init(int pid, string secret, string uid, string appv, bool debug, bool clearRumId, bool clearEvents) {
+
             Debug.Log("[RUM] rum_sdk@" + RUMConfig.VERSION + ", fpnn_sdk@" + FPConfig.VERSION);
 
             if (!RUMPlatform.HasInit()) {
@@ -147,7 +157,7 @@ namespace com.rum {
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(this._debug, WriteEvent));
 
             this.AddPlatformListener();
-            this._rumEvent.Init();
+            this._rumEvent.Init(clearRumId, clearEvents);
         }
 
         private object self_locker = new object();
@@ -202,7 +212,7 @@ namespace com.rum {
             }
         }
 
-        public void Connect(string endpoint, bool clearRumId, bool clearEvents) {
+        public void Connect(string endpoint) {
 
             lock (self_locker) {
 
@@ -212,16 +222,6 @@ namespace com.rum {
 
                     this.GetEvent().FireEvent(new EventData("error", new Exception("client has been init!")));
                     return;
-                }
-
-                if (clearRumId) {
-
-                    this._rumEvent.ClearRumId();
-                }
-
-                if (clearEvents) {
-
-                    this._rumEvent.ClearEvents();
                 }
 
                 RUMClient self = this;
@@ -753,7 +753,7 @@ namespace com.rum {
                 Debug.Log("[RUM] try connect...");
             }
 
-            this.Connect(this._endpoint, false, false);
+            this.Connect(this._endpoint);
         }
 
         private PingLocker ping_locker = new PingLocker();

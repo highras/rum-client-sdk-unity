@@ -36,7 +36,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(100, false, null, openEvent);
-        evt.Init();
+        evt.Init(false, true);
 
         yield return new WaitForSeconds(2.0f);
         evt.Destroy();
@@ -61,7 +61,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(101, false, sendQuest, null);
-        evt.Init();
+        evt.Init(false, true);
 
         yield return new WaitForSeconds(2.0f);
         evt.Destroy();
@@ -96,17 +96,14 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(102, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.WriteEvent(ev_dict);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
         int count = evt.GetSentEvents().Count;
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(1, sendQuestCount);
         Assert.AreEqual(1, openEventCount);
         Assert.AreEqual(1, list.Count);
@@ -133,16 +130,13 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(103, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.WriteEvent(ev_dict);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(1, sendQuestCount);
         Assert.AreEqual(1, openEventCount);
         Assert.AreEqual(0, list.Count);
@@ -170,16 +164,13 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(104, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.WriteEvents(items);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(1, list.Count);
     }
 
@@ -198,16 +189,13 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(105, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.WriteEvents(items);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(0, list.Count);
     }
 
@@ -230,7 +218,7 @@ public class Integration_RUMEvent {
         };
 
         evt_1 = new RUMEvent(106, false, sendQuest_1, openEvent_1);
-        evt_1.Init();
+        evt_1.Init(false, true);
         evt_1.WriteEvent(ev_dict);
 
         yield return new WaitForSeconds(2.0f);
@@ -239,7 +227,6 @@ public class Integration_RUMEvent {
 
         evt_1.RemoveFromCache(list_1);
         yield return new WaitForSeconds(1.0f);
-
         evt_1.Destroy();
 
         RUMEvent evt_2 = null;
@@ -251,15 +238,12 @@ public class Integration_RUMEvent {
         };
 
         evt_2 = new RUMEvent(106, false, sendQuest_2, openEvent_2);
-        evt_2.Init();
+        evt_2.Init(false, false);
 
         yield return new WaitForSeconds(2.0f);
         list_2 = evt_2.GetSentEvents();
 
-        evt_2.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt_2.Destroy();
-
         Assert.AreEqual(0, list_2.Count);
     }
 
@@ -282,7 +266,7 @@ public class Integration_RUMEvent {
         };
 
         evt_1 = new RUMEvent(107, false, sendQuest_1, openEvent_1);
-        evt_1.Init();
+        evt_1.Init(false, true);
         evt_1.WriteEvent(ev_dict);
 
         yield return new WaitForSeconds(2.0f);
@@ -301,15 +285,12 @@ public class Integration_RUMEvent {
         };
 
         evt_2 = new RUMEvent(107, false, sendQuest_2, openEvent_2);
-        evt_2.Init();
+        evt_2.Init(false, false);
 
         yield return new WaitForSeconds(2.0f);
         list_2 = evt_2.GetSentEvents();
 
-        evt_2.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt_2.Destroy();
-
         Assert.AreEqual(1, list_2.Count);
     }
 
@@ -339,7 +320,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(108, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.UpdateConfig(ev_config);
 
         Assert.IsTrue(evt.HasConfig());
@@ -348,10 +329,7 @@ public class Integration_RUMEvent {
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(0, list.Count);
     }
 
@@ -381,7 +359,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(109, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.UpdateConfig(ev_config);
 
         Assert.IsTrue(evt.HasConfig());
@@ -390,10 +368,7 @@ public class Integration_RUMEvent {
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(1, list.Count);
     }
 
@@ -410,6 +385,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(110, false, sendQuest, openEvent);
+        evt.Init(false, true);
 
         EventDelegate eventDelegate = (evd) => {
             evt.OnSecond(evd.GetTimestamp());
@@ -420,9 +396,6 @@ public class Integration_RUMEvent {
 
         yield return new WaitForSeconds(1.0f);
         ts = evt.GetTimestamp();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
 
         if (eventDelegate != null) {
@@ -446,6 +419,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(111, false, sendQuest, openEvent);
+        evt.Init(false, true);
 
         EventDelegate eventDelegate = (evd) => {
 
@@ -458,9 +432,6 @@ public class Integration_RUMEvent {
 
         yield return new WaitForSeconds(1.0f);
         ts = evt.GetTimestamp();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
 
         if (eventDelegate != null) {
@@ -484,6 +455,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(112, false, sendQuest, openEvent);
+        evt.Init(false, true);
 
         EventDelegate eventDelegate = (evd) => {
 
@@ -496,9 +468,6 @@ public class Integration_RUMEvent {
 
         yield return new WaitForSeconds(3.0f);
         ts = evt.GetTimestamp();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
 
         if (eventDelegate != null) {
@@ -519,15 +488,12 @@ public class Integration_RUMEvent {
         Action openEvent = () => {};
 
         evt = new RUMEvent(113, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
 
         yield return new WaitForSeconds(2.0f);
         size = evt.GetStorageSize();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         // Debug.Log("StorageSize: " + size);
         Assert.AreEqual(103, size);
     }
@@ -551,17 +517,14 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(114, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSession(1568180419002);
         evt.WriteEvent(ev_dict);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         // Debug.Log("count: " + list.Count +  ", json: " + Json.SerializeToString(list));
         Assert.AreEqual(1, list.Count);
         IDictionary<string, object> item = (IDictionary<string, object>)list[0];
@@ -595,17 +558,14 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(115, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(1);
         evt.WriteEvents(items);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(1, list.Count);
     }
 
@@ -634,17 +594,14 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(116, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(1024);
         evt.WriteEvents(items);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(19, list.Count);
     }
 
@@ -673,17 +630,14 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(117, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(15 * 1024);
         evt.WriteEvents(items);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(100, list.Count);
     }
 
@@ -712,17 +666,14 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(118, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(15 * 1024);
         evt.WriteEvents(items);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
 
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
-
         Assert.AreEqual(280, list.Count);
     }
 
@@ -753,15 +704,13 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(132, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(15 * 1024);
         evt.WriteEvents(items);
 
         yield return new WaitForSeconds(5.0f);
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
-        evt.Destroy();
 
+        evt.Destroy();
         Assert.AreEqual(1000, count);
     }
 
@@ -786,7 +735,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(119, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(15 * 1024);
 
         for (int i = 0; i < 1000; i++) {
@@ -794,10 +743,8 @@ public class Integration_RUMEvent {
         }
 
         yield return new WaitForSeconds(8.0f);
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
-        evt.Destroy();
 
+        evt.Destroy();
         Assert.AreEqual(1000, count);
     }
 
@@ -821,7 +768,7 @@ public class Integration_RUMEvent {
         Action openEvent_1 = () => {};
 
         evt_1 = new RUMEvent(120, false, sendQuest_1, openEvent_1);
-        evt_1.Init();
+        evt_1.Init(false, true);
         evt_1.SetSizeLimit(15 * 1024);
 
         for (int i = 0; i < 2; i++) {
@@ -840,14 +787,12 @@ public class Integration_RUMEvent {
         Action openEvent_2 = () => {};
 
         evt_2 = new RUMEvent(120, false, sendQuest_2, openEvent_2);
-        evt_2.Init();
+        evt_2.Init(false, false);
 
         yield return new WaitForSeconds(2.0f);
         int size_2 = evt_2.GetStorageSize();
-        evt_2.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
-        evt_2.Destroy();
 
+        evt_2.Destroy();
         // Debug.Log(size_1 + "  " + size_2);
         Assert.AreEqual(size_1, size_2);
         Assert.AreEqual(915783, size_2);
@@ -873,7 +818,7 @@ public class Integration_RUMEvent {
         Action openEvent_1 = () => {};
 
         evt_1 = new RUMEvent(121, false, sendQuest_1, openEvent_1);
-        evt_1.Init();
+        evt_1.Init(false, true);
         evt_1.SetSizeLimit(15 * 1024);
 
         for (int i = 0; i < 3; i++) {
@@ -892,14 +837,12 @@ public class Integration_RUMEvent {
         Action openEvent_2 = () => {};
 
         evt_2 = new RUMEvent(121, false, sendQuest_2, openEvent_2);
-        evt_2.Init();
+        evt_2.Init(false, false);
 
         yield return new WaitForSeconds(2.0f);
         int size_2 = evt_2.GetStorageSize();
-        evt_2.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
-        evt_2.Destroy();
 
+        evt_2.Destroy();
         // Debug.Log(size_1 + "  " + size_2);
         Assert.AreEqual(size_1, size_2);
         Assert.AreEqual(457936, size_2);
@@ -925,7 +868,7 @@ public class Integration_RUMEvent {
         Action openEvent_1 = () => {};
 
         evt_1 = new RUMEvent(122, false, sendQuest_1, openEvent_1);
-        evt_1.Init();
+        evt_1.Init(false, true);
         evt_1.SetSizeLimit(15 * 1024);
 
         for (int i = 0; i < 3; i++) {
@@ -944,25 +887,31 @@ public class Integration_RUMEvent {
         Action openEvent_2 = () => {};
 
         evt_2 = new RUMEvent(122, false, sendQuest_2, openEvent_2);
-        evt_2.Init();
+        evt_2.Init(false, false);
 
         yield return new WaitForSeconds(2.0f);
         int size_2 = evt_2.GetStorageSize();
-        evt_2.ClearEvents();
-        yield return new WaitForSeconds(3.0f);
-        int size_3 = evt_2.GetStorageSize();
-
-        evt_2.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt_2.Destroy();
 
+        RUMEvent evt_3 = null;
+
+        Action sendQuest_3 = () => {};
+        Action openEvent_3 = () => {};
+
+        evt_3 = new RUMEvent(122, false, sendQuest_3, openEvent_3);
+        evt_3.Init(false, true);
+
+        yield return new WaitForSeconds(2.0f);
+        int size_3 = evt_3.GetStorageSize();
+        evt_3.Destroy();
         // Debug.Log(size_1 + "  " + size_2 + "  " + size_3);
+
         Assert.AreEqual(size_1, size_2);
         Assert.AreEqual(915783, size_3);
     }
 
     [UnityTest]
-    public IEnumerator Event_Init_ClearEvents_ClearEvents_WriteEvent3_WriteEvent2() {
+    public IEnumerator Event_Init_ClearEvents_WriteEvent3_WriteEvent2() {
 
         IDictionary<string, object> ev_dict = new Dictionary<string, object>() {
 
@@ -981,13 +930,8 @@ public class Integration_RUMEvent {
         Action openEvent_1 = () => {};
 
         evt = new RUMEvent(123, false, sendQuest_1, openEvent_1);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(15 * 1024);
-
-        yield return new WaitForSeconds(2.0f);
-        evt.ClearEvents();
-        yield return new WaitForSeconds(2.0f);
-        evt.ClearEvents();
 
         yield return new WaitForSeconds(2.0f);
         for (int i = 0; i < 3; i++) {
@@ -1037,16 +981,13 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(124, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(1 * 1024);
         evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(open_dict);
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
         // Debug.Log("count: " + list.Count +  ", json: " + Json.SerializeToString(list));
 
@@ -1112,7 +1053,7 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(125, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(1 * 1024);
         evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
@@ -1121,9 +1062,6 @@ public class Integration_RUMEvent {
         evt.WriteEvent(info_dict);
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
         // Debug.Log("count: " + list.Count +  ", json: " + Json.SerializeToString(list));
 
@@ -1204,18 +1142,17 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(126, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(1 * 1024);
         evt.WriteEvents(items);
+
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(open_dict);
         evt.WriteEvent(open_dict);
         evt.WriteEvent(info_dict);
+
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
         // Debug.Log("count: " + list.Count +  ", json: " + Json.SerializeToString(list));
 
@@ -1296,18 +1233,17 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(127, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(1 * 1024);
         evt.WriteEvents(items);
+
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(open_dict);
         evt.WriteEvent(open_dict);
         evt.WriteEvent(info_dict);
+
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
         // Debug.Log("count: " + list.Count +  ", json: " + Json.SerializeToString(list));
 
@@ -1395,20 +1331,18 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(128, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.SetSizeLimit(1 * 1024);
         evt.UpdateConfig(ev_config);
-
         evt.WriteEvents(items);
+
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(open_dict);
         evt.WriteEvent(open_dict);
         evt.WriteEvent(info_dict);
+
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
         // Debug.Log("count: " + list.Count +  ", json: " + Json.SerializeToString(list));
 
@@ -1463,14 +1397,11 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(129, false, sendQuest, openEvent);
-        evt.Init();
+        evt.Init(false, true);
         evt.WriteEvent(ev_dict);
 
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
 
         Assert.AreEqual(1, list.Count);
@@ -1481,27 +1412,35 @@ public class Integration_RUMEvent {
     }
 
     [UnityTest]
-    public IEnumerator Event_Init_ClearRumId() {
+    public IEnumerator Event_ClearRumId_Init() {
 
         string rum_id = null;
-        RUMEvent evt = null;
+        RUMEvent evt_1 = null;
 
-        Action sendQuest = () => {};
-        Action openEvent = () => {
-            evt.IsFirst();
+        Action sendQuest_1 = () => {};
+        Action openEvent_1 = () => {
+            evt_1.IsFirst();
         };
 
-        evt = new RUMEvent(130, false, sendQuest, openEvent);
-        evt.Init();
+        evt_1 = new RUMEvent(130, false, sendQuest_1, openEvent_1);
+        evt_1.Init(false, true);
         yield return new WaitForSeconds(0.5f);
-        rum_id = evt.GetRumId();
-        evt.ClearRumId();
-        yield return new WaitForSeconds(2.0f);
-        string new_id = evt.GetRumId();
+        rum_id = evt_1.GetRumId();
+        evt_1.Destroy();
 
-        evt.ClearEvents();
+        RUMEvent evt_2 = null;
+
+        Action sendQuest_2 = () => {};
+        Action openEvent_2 = () => {
+            evt_2.IsFirst();
+        };
+
+        evt_2 = new RUMEvent(130, false, sendQuest_2, openEvent_2);
+        evt_2.Init(true, true);
+
         yield return new WaitForSeconds(1.0f);
-        evt.Destroy();
+        string new_id = evt_2.GetRumId();
+        evt_2.Destroy();
 
         Assert.IsNotNull(rum_id);
         Assert.IsNotNull(new_id);
@@ -1509,7 +1448,7 @@ public class Integration_RUMEvent {
     }
 
     [UnityTest]
-    public IEnumerator Event_Init_ClearRumId_IsFirst() {
+    public IEnumerator Event_ClearRumId_Init_IsFirst() {
 
         RUMEvent evt = null;
 
@@ -1519,18 +1458,14 @@ public class Integration_RUMEvent {
         };
 
         evt = new RUMEvent(131, false, sendQuest, openEvent);
-        evt.Init();
-        evt.ClearRumId();
+        evt.Init(true, true);
 
         yield return new WaitForSeconds(1.0f);
         string rum_id = evt.GetRumId();
         bool first = evt.IsFirst();
-
-        evt.ClearEvents();
-        yield return new WaitForSeconds(1.0f);
         evt.Destroy();
 
         Assert.IsNotNull(rum_id);
-        Assert.IsTrue(first);
+        Assert.IsFalse(first);
     }
 }

@@ -9,6 +9,13 @@ namespace com.fpnn {
 
     public class FPManager {
 
+        private class TimerTask {
+
+            public object state;
+            public long timestamp;
+            public Action<object> callback;
+        }
+
         private class ServiceLocker {
 
             public int Status = 0;
@@ -49,6 +56,7 @@ namespace com.fpnn {
 
         public void Init() {
 
+            this.StartTaskTimer();
             this.StartTimerThread();
             this.StartServiceThread();
         }
@@ -146,6 +154,7 @@ namespace com.fpnn {
                 this._secondCalls.Clear();
             }
         }
+
 
         private Thread _serviceThread = null;
         private ManualResetEvent _serviceEvent = new ManualResetEvent(false);
@@ -289,24 +298,16 @@ namespace com.fpnn {
 
             if (milliSecond <= 0) {
 
-                FPManager.Instance.ExecTask(taskAction, state);
+                this.ExecTask(taskAction, state);
                 return;
             }
 
-            long timestamp = FPManager.Instance.GetMilliTimestamp() + milliSecond;
+            TimerTask task = new TimerTask();
+            task.state = state;
+            task.callback = taskAction;
+            task.timestamp = this.GetMilliTimestamp() + milliSecond;
 
-            this.AddService(() => {
-
-                int diff = Convert.ToInt32(timestamp - FPManager.Instance.GetMilliTimestamp());
-
-                if (diff <= 0) {
-
-                    FPManager.Instance.ExecTask(taskAction, state);
-                } else {
-
-                    FPManager.Instance.DelayTask(diff, taskAction, state);
-                }
-            });
+            this.AddTimerTask(task);
         }
 
         private void AddService(ServiceDelegate service) {
@@ -334,6 +335,126 @@ namespace com.fpnn {
                 ErrorRecorderHolder.recordError(ex);
             }
         }
+
+
+        private Timer _taskTimer = null;
+        private TimerLocker task_locker = new TimerLocker();
+        private List<TimerTask> _timerTaskQueue = new List<TimerTask>();
+
+        private void AddTimerTask(TimerTask task) {
+
+            if (task == null) {
+
+                return;
+            }
+
+            this.StartTaskTimer();
+
+            lock (task_locker) {
+
+                if (this._timerTaskQueue.Count < 3000) {
+
+                    int index = this._timerTaskQueue.Count;
+
+                    for (int i = 0; i < this._timerTaskQueue.Count; i++) {
+
+                        if (task.timestamp < this._timerTaskQueue[i].timestamp) {
+
+                            index = i;
+                            break;
+                        }
+                    }
+
+                    this._timerTaskQueue.Insert(index, task);
+
+                    if (this._timerTaskQueue.Count == 2998) {
+
+                        ErrorRecorderHolder.recordError(new Exception("TimerTask Calls Limit!"));
+                    }
+
+                    if (index == 0) {
+
+                        this.TimerOneTask();
+                    }
+                } 
+            }
+        }
+
+        private void TimerOneTask() {
+
+            if (this._timerTaskQueue.Count > 0) {
+
+                TimerTask task = this._timerTaskQueue[0];
+
+                int ts = Math.Max(0, Convert.ToInt32(task.timestamp - this.GetMilliTimestamp()));
+                this._taskTimer.Change(ts, Timeout.Infinite);
+            }
+        }
+
+        private void StartTaskTimer() {
+
+            lock (task_locker) {
+
+                if (task_locker.Status != 0) {
+
+                    return;
+                }
+
+                task_locker.Status = 1;
+
+                if (this._taskTimer == null) {
+
+                    try {
+
+                        this._taskTimer = new Timer(new TimerCallback(OnTask), null, Timeout.Infinite, Timeout.Infinite);
+                    } catch (Exception ex) {
+
+                        ErrorRecorderHolder.recordError(ex);
+                    }
+                }
+            }
+        }
+
+        private void OnTask(object state) {
+
+            lock (task_locker) {
+
+                if (this._timerTaskQueue.Count > 0) {
+
+                    TimerTask task = this._timerTaskQueue[0];
+
+                    if (task != null) {
+
+                        this.ExecTask(task.callback, task.state);
+                    }
+
+                    this._timerTaskQueue.RemoveAt(0);
+                }
+
+                this.TimerOneTask();
+            }
+        }
+
+        public void StopTaskTimer() {
+
+            lock (task_locker) {
+
+                task_locker.Status = 0;
+
+                if (this._taskTimer != null) {
+
+                    try {
+
+                        this._taskTimer.Dispose();
+                        this._taskTimer = null;
+                    } catch (Exception ex) {
+
+                        ErrorRecorderHolder.recordError(ex);
+                    }
+                }
+            }
+        }
+
 
         public Int64 GetMilliTimestamp() {
 

@@ -9,7 +9,7 @@
 * 兼容`DNS64/NAT64`网络环境
 
 #### 其他 ####
-* 在`Unity`主线程中初始化`RUMRegistration.Register(location)`
+* 在`Unity`主线程中初始化`RUMRegistration.Register(Input.location)`
 * 若`RUMRegistration`已初始化,`RUMClient`可在任意线程中构造和使用(线程安全)
 * 异步函数均由子线程呼叫,不要在其中使用仅UI线程的函数,不要阻塞异步函数
 * 用户ID与`RUMClient`实例绑定,如果切换用户ID请使用新的`RUMClient`实例重新建立连接
@@ -46,8 +46,7 @@ client.GetEvent().AddListener("ready", (evd) => {
     Debug.Log("ready!");
 });
 
-client.Connect("52.83.220.166:13609", false, false);
-    
+client.Connect("52.83.220.166:13609");
 client.SetUid("xxxxxx-xxxxx-xxxx");
 client.CustomEvent("info", new Dictionary<string, object>());
 
@@ -73,12 +72,19 @@ client.CustomEvent("info", new Dictionary<string, object>());
     * `appv`: **(string)** 应用版本号
     * `debug`: **(bool)** 是否开启调试日志
 
-* `Destroy()`: 断开链接并销毁 
-
-* `Connect(string endpoint, bool clearRumId, bool clearEvents)`: 连接服务器
-    * `endpoint`: **(string)** RUMAgent接入地址, 由RUM项目控制台获取
+* `Constructor(int pid, string secret, string uid, string appv, bool debug, bool clearRumId, bool clearEvents)`: 构造RUMClient
+    * `pid`: **(int)** 应用ID, RUM项目控制台获取
+    * `secret`: **(string)** 应用SecretKey, RUM项目控制台获取
+    * `uid`: **(string)** 应用开放用户ID 
+    * `appv`: **(string)** 应用版本号
+    * `debug`: **(bool)** 是否开启调试日志
     * `clearRumId`: **(bool)** 是否清理本地RumId缓存
     * `clearEvents`: **(bool)** 是否清理本地事件缓存
+
+* `Destroy()`: 断开链接并销毁 
+
+* `Connect(string endpoint)`: 连接服务器
+    * `endpoint`: **(string)** RUMAgent接入地址, 由RUM项目控制台获取
 
 * `GetSession()`: **(long)** 会话 ID, 设备唯一, 可用于服务端事件关联
 

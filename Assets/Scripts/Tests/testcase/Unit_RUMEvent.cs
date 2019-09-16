@@ -65,14 +65,32 @@ public class Unit_RUMEvent {
 
 
     /**
-     *  Init()
+     *  Init(bool clearRumId, bool clearEvents)
      */
     [Test]
-    public void Event_Init() {
+    public void Event_Init_ClearRumId() {
 
         int count = 0;
         RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-        evt.Init();
+        evt.Init(true, false);
+        Assert.AreEqual(0, count);
+    }
+
+    [Test]
+    public void Event_Init_ClearEvents() {
+
+        int count = 0;
+        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
+        evt.Init(false, true);
+        Assert.AreEqual(0, count);
+    }
+
+    [Test]
+    public void Event_Init_ClearRumId_ClearEvents() {
+
+        int count = 0;
+        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
+        evt.Init(true, true);
         Assert.AreEqual(0, count);
     }
 
@@ -281,32 +299,6 @@ public class Unit_RUMEvent {
 
         RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
         Assert.IsFalse(evt.HasConfig());
-    }
-
-
-    /**
-     *  ClearRumId()
-     */
-    [Test]
-    public void Event_ClearRumId() {
-
-        int count = 0;
-        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-        evt.ClearRumId();
-        Assert.AreEqual(0, count);
-    }
-
-
-    /**
-     *  ClearEvents()
-     */
-    [Test]
-    public void Event_ClearEvents() {
-
-        int count = 0;
-        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-        evt.ClearEvents();
-        Assert.AreEqual(0, count);
     }
 
 

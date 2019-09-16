@@ -69,7 +69,7 @@ public class TestCase : Main.ITestCase {
             });
 
             // client.Connect("52.83.220.166:13609", false, false);
-            this._client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
+            this._client.Connect("rum-us-frontgate.funplus.com:13609");
             this._client.SetUid("uid:11111111111");
         }
     }

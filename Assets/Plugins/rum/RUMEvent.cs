@@ -88,7 +88,17 @@ namespace com.rum {
             this._rumFile = new RUMFile(pid, debug);
         }
 
-        public void Init() {
+        public void Init(bool clearRumId, bool clearEvents) {
+
+            if (clearRumId) {
+
+                this.ClearRumId();
+            }
+
+            if (clearEvents) {
+
+                this.ClearEvents();
+            }
 
             this.StartWriteThread();
         }
@@ -132,9 +142,23 @@ namespace com.rum {
                 this.InitCatchEvents();
             }
 
+            bool clearRumId;
+            bool clearEvents;
             lock (self_locker) {
 
                 this._writeIndex = index;
+                clearRumId = this._clearRumId_Action != null;
+                clearEvents = this._clearEvents_Action != null;
+            }
+
+            if (clearEvents) {
+
+                this._clearEvents_Action();
+            }
+
+            if (clearRumId) {
+
+                this._clearRumId_Action();
             }
 
             if (this._openEvent != null) {
@@ -511,6 +535,16 @@ namespace com.rum {
                 }
 
                 this._destroyed = true;
+
+                if (this._clearRumId_Action != null) {
+
+                    this._clearRumId_Action = null;
+                }
+
+                if (this._clearEvents_Action != null) {
+
+                    this._clearEvents_Action = null;
+                }
             }
 
             this.StopWriteThread();
@@ -566,46 +600,76 @@ namespace com.rum {
             }
         }
         
-        public void ClearRumId() {
+        private Action _clearRumId_Action;
 
-            lock (storage_locker) {
+        private void ClearRumId() {
 
-                if (this.IsNullOrEmpty(this._storage)) {
-
-                    return;
-                }
-
-                ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
-            }
+            RUMEvent self = this;
 
             lock (self_locker) {
 
-                this._rumId = null;
-            }
-
-            this.BuildRumId();
-
-            if (this._debug) {
-
-                Debug.Log("[RUM] storage clear! rid_key: " + this._rumIdKey);
-            }
-        }
-
-        public void ClearEvents() {
-
-            lock (storage_locker) {
-
-                if (this.IsNullOrEmpty(this._storage)) {
+                if (this._clearRumId_Action != null) {
 
                     return;
                 }
 
-                ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
+                this._clearRumId_Action = () => {
+
+                    lock (storage_locker) {
+
+                        if (self.IsNullOrEmpty(self._storage)) {
+
+                            return;
+                        }
+
+                        ((IDictionary<string, object>)self._storage[self._rumIdKey]).Clear();
+                    }
+
+                    lock (self_locker) {
+
+                        self._rumId = null;
+                    }
+
+                    self.BuildRumId();
+
+                    if (self._debug) {
+
+                        Debug.Log("[RUM] storage clear! rid_key: " + self._rumIdKey);
+                    }
+                };
             }
+        }
 
-            if (this._debug) {
+        private Action _clearEvents_Action;
 
-                Debug.Log("[RUM] storage clear! storage_key: " + this._rumEventKey);
+        private void ClearEvents() {
+
+            RUMEvent self = this;
+
+            lock (self_locker) {
+
+                if (this._clearEvents_Action != null) {
+
+                    return;
+                }
+
+                this._clearEvents_Action = () => {
+
+                    lock (storage_locker) {
+
+                        if (self.IsNullOrEmpty(self._storage)) {
+
+                            return;
+                        }
+
+                        ((IDictionary<string, object>)self._storage[self._rumEventKey]).Clear();
+                    }
+
+                    if (self._debug) {
+
+                        Debug.Log("[RUM] storage clear! storage_key: " + self._rumEventKey);
+                    }
+                };
             }
         }
 

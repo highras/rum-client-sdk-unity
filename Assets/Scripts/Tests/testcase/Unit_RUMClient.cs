@@ -146,7 +146,7 @@ public class Unit_RUMClient {
 
         int count = 0;
         RUMClient client = new RUMClient(41000013, "6212d7c7-adb7-46c0-bd82-2fed00ce90c9", null, null, false);
-        client.Connect(null, false, false);
+        client.Connect(null);
         Assert.AreEqual(0, count);
 
         client.Destroy();
@@ -157,40 +157,7 @@ public class Unit_RUMClient {
 
         int count = 0;
         RUMClient client = new RUMClient(41000013, "6212d7c7-adb7-46c0-bd82-2fed00ce90c9", null, null, false);
-        client.Connect("", false, false);
-        Assert.AreEqual(0, count);
-
-        client.Destroy();
-    }
-
-    [Test]
-    public void Client_Connect_ClearRumId() {
-
-        int count = 0;
-        RUMClient client = new RUMClient(41000013, "6212d7c7-adb7-46c0-bd82-2fed00ce90c9", null, null, false);
-        client.Connect("rum-nx-front.ifunplus.cn:13609", true, false);
-        Assert.AreEqual(0, count);
-
-        client.Destroy();
-    }
-
-    [Test]
-    public void Client_Connect_ClearEvents() {
-
-        int count = 0;
-        RUMClient client = new RUMClient(41000013, "6212d7c7-adb7-46c0-bd82-2fed00ce90c9", null, null, false);
-        client.Connect("rum-nx-front.ifunplus.cn:13609", false, true);
-        Assert.AreEqual(0, count);
-
-        client.Destroy();
-    }
-
-    [Test]
-    public void Client_Connect_ClearRumId_ClearEvents() {
-
-        int count = 0;
-        RUMClient client = new RUMClient(41000013, "6212d7c7-adb7-46c0-bd82-2fed00ce90c9", null, null, false);
-        client.Connect("rum-nx-front.ifunplus.cn:13609", true, true);
+        client.Connect("");
         Assert.AreEqual(0, count);
 
         client.Destroy();

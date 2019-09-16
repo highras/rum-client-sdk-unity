@@ -57,22 +57,22 @@ public class Integration_RUMClient {
     [UnityTest]
     public IEnumerator Client_Connect_ClearRumId() {
 
-        string rum_id = null;
-        RUMClient client = new RUMClient(this._pid, this._secret, null, null, false);
+        RUMClient client_1 = new RUMClient(this._pid, this._secret, null, null, false);
         yield return new WaitForSeconds(0.5f);
-        rum_id = client.GetRumId();
-        // Debug.Log("rum_id: " + rum_id);
-
-        client.Connect(this._endpoint, true, false);
-        yield return new WaitForSeconds(2.0f);
-        string new_id = client.GetRumId();
-        // Debug.Log("new_id: " + new_id);
-
-        client.Destroy();
+        string rum_id_1 = client_1.GetRumId();
+        // Debug.Log("rum_id_1: " + rum_id_1);
+        client_1.Destroy();
         yield return new WaitForSeconds(1.0f);
 
-        Assert.IsNotNull(new_id);
-        Assert.AreNotEqual(rum_id, new_id);
+        RUMClient client_2 = new RUMClient(this._pid, this._secret, null, null, false, true, false);
+        yield return new WaitForSeconds(0.5f);
+        string rum_id_2 = client_2.GetRumId();
+        // Debug.Log("rum_id_2: " + rum_id_2); 
+        client_2.Destroy();
+        yield return new WaitForSeconds(1.0f);
+
+        Assert.IsNotNull(rum_id_2);
+        Assert.AreNotEqual(rum_id_1, rum_id_2);
     }
 
     [UnityTest]
@@ -82,7 +82,7 @@ public class Integration_RUMClient {
 
         long ts = FPManager.Instance.GetMilliTimestamp();
         client.SetUid("xxx-xxxxxx-xxxxxxxxxxxx");
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
         long ds = FPManager.Instance.GetMilliTimestamp();
 
         yield return new WaitForSeconds(1.0f);
@@ -114,19 +114,8 @@ public class Integration_RUMClient {
         client.GetEvent().AddListener("error", (evd) => {
             errorCount++;
         });
-        client.Connect(this._endpoint, false, false);
-
-        Assert.AreEqual(0, closeCount);
-        Assert.AreEqual(0, readyCount);
-        Assert.AreEqual(0, configCount);
-        Assert.AreEqual(0, errorCount);
-
+        client.Connect(this._endpoint);
         yield return new WaitForSeconds(2.0f);
-
-        Assert.AreEqual(0, closeCount);
-        Assert.AreEqual(1, readyCount);
-        Assert.AreEqual(1, configCount);
-        Assert.AreEqual(0, errorCount);
 
         client.Destroy();
         yield return new WaitForSeconds(1.0f);
@@ -159,14 +148,9 @@ public class Integration_RUMClient {
             errorCount++;
         });
 
-        client.Connect(this._endpoint, false, false);
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
+        client.Connect(this._endpoint);
         yield return new WaitForSeconds(2.0f);
-
-        Assert.AreEqual(0, closeCount);
-        Assert.AreEqual(1, readyCount);
-        Assert.AreEqual(1, configCount);
-        Assert.AreEqual(1, errorCount);
 
         client.Destroy();
         yield return new WaitForSeconds(1.0f);
@@ -199,7 +183,7 @@ public class Integration_RUMClient {
             errorCount++;
         });
 
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
         client.Destroy();
         yield return new WaitForSeconds(2.0f);
 
@@ -231,9 +215,9 @@ public class Integration_RUMClient {
             errorCount++;
         });
 
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
         client.Destroy();
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
         yield return new WaitForSeconds(2.0f);
 
         Assert.AreEqual(1, closeCount);
@@ -264,13 +248,9 @@ public class Integration_RUMClient {
             errorCount++;
         });
 
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
 
         yield return new WaitForSeconds(2.0f);
-        Assert.AreEqual(0, closeCount);
-        Assert.AreEqual(1, readyCount);
-        Assert.AreEqual(1, configCount);
-        Assert.AreEqual(0, errorCount);
 
         client.Destroy();
         yield return new WaitForSeconds(1.0f);
@@ -280,7 +260,7 @@ public class Integration_RUMClient {
         Assert.AreEqual(1, configCount);
         Assert.AreEqual(0, errorCount);
 
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
         yield return new WaitForSeconds(2.0f);
 
         Assert.AreEqual(1, closeCount);
@@ -312,7 +292,7 @@ public class Integration_RUMClient {
         });
 
         client.Destroy();
-        client.Connect(this._endpoint, false, false);
+        client.Connect(this._endpoint);
         yield return new WaitForSeconds(2.0f);
 
         Assert.AreEqual(1, closeCount);

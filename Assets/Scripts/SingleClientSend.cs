@@ -71,8 +71,8 @@ public class SingleClientSend : Main.ITestCase {
         });
 
         this._client.SetUid("uid:11111111111");
-        // this._client.Connect("rum-us-frontgate.funplus.com:13609", false, false);
-        this._client.Connect("rum-nx-front.ifunplus.cn:13609", false, false);
+        // this._client.Connect("rum-us-frontgate.funplus.com:13609");
+        this._client.Connect("rum-nx-front.ifunplus.cn:13609");
         this.StartThread();
     }
 
