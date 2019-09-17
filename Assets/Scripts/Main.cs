@@ -24,6 +24,7 @@ public class Main : MonoBehaviour {
     void Start() {
 
         RUMRegistration.Register(Input.location);
+        // RUMRegistration.Register(null);
 
         //TestCase
         // this._testCase = new TestCase();

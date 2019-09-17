@@ -150,7 +150,7 @@ public class Integration_RUMClient {
 
         client.Connect(this._endpoint);
         client.Connect(this._endpoint);
-        yield return new WaitForSeconds(2.0f);
+        yield return new WaitForSeconds(5.0f);
 
         client.Destroy();
         yield return new WaitForSeconds(1.0f);
