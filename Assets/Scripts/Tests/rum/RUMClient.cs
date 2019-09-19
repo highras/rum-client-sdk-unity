@@ -575,8 +575,14 @@ namespace com.rum {
 
             this._platformDelegate = (evd) => {
 
+                if (self._debug) {
+
+                    Debug.Log("[RUM] platform events: " + Json.SerializeToString(evd.GetPayload()));
+                }
+
                 self.WriteEvent(null, (IDictionary<string, object>)evd.GetPayload());
             };
+            
             RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, this._platformDelegate);
         }
 
@@ -1056,7 +1062,11 @@ namespace com.rum {
                 }
             } catch (Exception ex) {
 
-                ErrorRecorderHolder.recordError(ex);
+                if (callback != null) {
+
+                    callback(new CallbackData(ex));
+                }
+                return;
             }
 
             FPData data = new FPData();

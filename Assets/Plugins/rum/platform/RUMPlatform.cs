@@ -59,6 +59,7 @@ namespace com.rum {
 
         private bool _isPause;
         private bool _isFocus;
+        private bool _isBackground;
         private NetworkReachability _network;
 
         private static bool isInit;
@@ -71,10 +72,12 @@ namespace com.rum {
 
         IEnumerator Start() {
 
+            yield return new WaitForSeconds(10.0f);
+
             while (true) {
 
-                yield return new WaitForSeconds(10.0f);
                 this.OnTimer();
+                yield return new WaitForSeconds(10.0f);
             }
         }
 
@@ -130,11 +133,16 @@ namespace com.rum {
  
             if (!this._isPause) {
                  
-                IDictionary<string, object> dict = new Dictionary<string, object>() {
+                if (!this._isBackground) {
 
-                    { "ev", "bg" }
-                };
-                this.Event.FireEvent(new EventData(PLATFORM_EVENT, new Dictionary<string, object>()));
+                    IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                        { "ev", "bg" }
+                    };
+
+                    this._isBackground = true;
+                    this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+                }
             } else {
 
                 this._isFocus = true;
@@ -154,11 +162,17 @@ namespace com.rum {
             if (this._isPause) {
 
                 this._isFocus = true;
-                IDictionary<string, object> dict = new Dictionary<string, object>() {
 
-                    { "ev", "fg" }
-                };
-                this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+                if (this._isBackground) { 
+
+                    IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                        { "ev", "fg" }
+                    };
+
+                    this._isBackground = false;
+                    this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+                }
             }
         }
 
@@ -178,48 +192,13 @@ namespace com.rum {
 
             while (true) {
 
-                int maxWait = 20;
-
                 if (this._locationService.isEnabledByUser) {
-
-                    if (this._locationService.status == LocationServiceStatus.Stopped) {
-
-                        try {
-
-                            this._locationService.Start();
-                        } catch(Exception ex) {
-
-                            ErrorRecorderHolder.recordError(ex);
-                        }
-
-                        yield return new WaitForSeconds(1.0f);
-                    }
-
-                    while (this._locationService.status == LocationServiceStatus.Initializing) {
-
-                        if (maxWait > 0) {
-
-                            maxWait--;
-                        } else {
-
-                            try {
-
-                                this._locationService.Stop();
-                            } catch (Exception ex) {
-
-                                ErrorRecorderHolder.recordError(ex);
-                            }
-                        }
-
-                        yield return new WaitForSeconds(1.0f);
-                    }
 
                     if (this._locationService.status == LocationServiceStatus.Running) {
 
                         try {
 
                             this._locationInfo = this._locationService.lastData;
-                            this._locationService.Stop();
                         } catch (Exception ex) {
 
                             ErrorRecorderHolder.recordError(ex);
@@ -227,13 +206,13 @@ namespace com.rum {
                     }
                 }
 
-                yield return new WaitForSeconds(maxWait > 0 ? maxWait * 1.0f : 1.0f);
+                yield return new WaitForSeconds(10.0f);
             }
         }
 
         private float _lastTime;
         private int _lastFrameCount;
-        private List<string> _fpsList = new List<string>(25);
+        private List<string> _fpsList = new List<string>(100);
 
         private IEnumerator FPS() {
 
@@ -259,7 +238,7 @@ namespace com.rum {
                     this._lastFrameCount = count;
                     this._lastTime = now;
 
-                    if (fps > 0.0f && this._fpsList.Count < 25) {
+                    if (fps > 0.0f && this._fpsList.Count < this._fpsList.Capacity) {
 
                         this._fpsList.Add(fps.ToString());
                     }
@@ -270,17 +249,39 @@ namespace com.rum {
             }
         }
 
+        private long _lowMemoryTimestamp;
+        private object self_locker = new object();
+
         private void OnLowMemory() {
 
-            IDictionary<string, object> dict = new Dictionary<string, object>() {
+            bool needFire;
 
-                { "ev", "warn" },
-                { "type", "low_memory" },
-                { "system_memory", RUMPlatform.SystemMemorySize }
-            };
+            lock (self_locker) {
 
-            this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+                long timestamp = FPManager.Instance.GetMilliTimestamp();
+
+                needFire = timestamp - this._lowMemoryTimestamp >= 30 * 1000;
+
+                if (needFire) {
+
+                    this._lowMemoryTimestamp = timestamp;
+                }
+            } 
+
+            if (needFire) {
+
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+
+                    { "ev", "warn" },
+                    { "type", "low_memory" },
+                    { "system_memory", RUMPlatform.SystemMemorySize }
+                };
+
+                this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+            }
         }
+
+        private int _fireCount;
 
         private void OnTimer() {
 
@@ -301,8 +302,10 @@ namespace com.rum {
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
 
+            bool needFire = (++this._fireCount % 6 == 0);
+
             //fps_update
-            if (this._fpsList.Count > 0) {
+            if ((needFire && this._fpsList.Count > 0) || this._fpsList.Count == this._fpsList.Capacity){
 
                 List<string> fps_list = new List<string>(this._fpsList);
                 this._fpsList.Clear();
@@ -331,7 +334,7 @@ namespace com.rum {
                 ErrorRecorderHolder.recordError(ex);
             }
 
-            if (distance >= 10) {
+            if ((needFire && distance >= 10) || distance >= 100) {
 
                 if (this._longitude == 0 && this._latitude == 0) {
 
@@ -360,6 +363,11 @@ namespace com.rum {
                 };
 
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+            }
+
+            if (needFire) {
+
+                this._fireCount = 0;
             }
         }
 

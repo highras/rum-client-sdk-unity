@@ -23,7 +23,12 @@ public class Main : MonoBehaviour {
 
     void Start() {
 
-        RUMRegistration.Register(Input.location);
+        // open gps
+        if (Input.location.isEnabledByUser) {
+            Input.location.Start();
+        }
+
+        RUMRegistration.Register(new LocationService());
         // RUMRegistration.Register(null);
 
         //TestCase

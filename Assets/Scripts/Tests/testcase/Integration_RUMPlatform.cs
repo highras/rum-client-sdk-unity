@@ -57,10 +57,11 @@ public class Integration_RUMPlatform {
         };
         RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, info_callback);
 
-        yield return new WaitForSeconds(15.0f);
+        yield return new WaitForSeconds(80.0f);
         RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, fps_callback);
         RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, info_callback);
         
         Assert.AreNotEqual(0, fps_count);
+        // Assert.AreNotEqual(0, info_count);
     }
 }

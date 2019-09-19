@@ -150,6 +150,7 @@
      <Compile Include="Assets\Scripts\Tests\testcase\Integration_RUMEvent.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Integration_RUMFile.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Integration_RUMPlatform.cs" />
+     <Compile Include="Assets\Scripts\Tests\testcase\Test_Script.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Unit_RUMClient.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Unit_RUMEvent.cs" />
      <Compile Include="Assets\Scripts\Tests\testcase\Unit_RUMFile.cs" />

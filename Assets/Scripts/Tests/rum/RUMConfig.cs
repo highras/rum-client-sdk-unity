@@ -4,7 +4,7 @@ namespace com.rum {
 
     public class RUMConfig {
 
-        public static string VERSION = "1.3.0";
+        public static string VERSION = "1.3.1";
         
         public static int PING_INTERVAL = 20 * 1000;                    //PING间隔(ms)
         public static int CONNCT_INTERVAL = 40 * 1000;                  //尝试重新连接的时间间隔(ms)

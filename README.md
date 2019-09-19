@@ -9,11 +9,12 @@
 * 兼容`DNS64/NAT64`网络环境
 
 #### 其他 ####
-* 在`Unity`主线程中初始化`RUMRegistration.Register(Input.location)`
+* 在`Unity`主线程中初始化`RUMRegistration.Register(new LocationService())`
 * 若`RUMRegistration`已初始化,`RUMClient`可在任意线程中构造和使用(线程安全)
 * 异步函数均由子线程呼叫,不要在其中使用仅UI线程的函数,不要阻塞异步函数
-* `IDictionary<string, object>`该结构中的值类型`object`仅支持`bool` `int` `long` `string`
+* 数据类型仅支持标准[Json](https://www.json.org/),非整型需要转换为字符串类型
 * 用户ID与`RUMClient`实例绑定,如果切换用户ID请使用新的`RUMClient`实例重新建立连接
+* 位置信息需要`Input.location`处于启动态[LocationService.Start](https://docs.unity3d.com/ScriptReference/LocationService.Start.html)
 * HTTP HOOK: 半自动非侵入方式,不会抓取请求内容
 
 #### 一个例子 ####
@@ -26,7 +27,7 @@ using UnityEngine;
 using com.rum;
 
 // UnityMainThread
-RUMRegistration.Register(Input.location);
+RUMRegistration.Register(new LocationService());
 
 // AnyThread
 RUMClient client = new RUMClient(

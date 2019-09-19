@@ -920,7 +920,7 @@ namespace com.rum {
 
                 if (item.ContainsKey("eid")) {
 
-                    cache_key = Convert.ToString(item["eid"]); 
+                    cache_key = Convert.ToString(item["eid"]);
                 }
 
                 if (!string.IsNullOrEmpty(cache_key)) {
@@ -957,6 +957,7 @@ namespace com.rum {
                 } catch(Exception ex) {
 
                     ErrorRecorderHolder.recordError(ex);
+                    storage = null;
                 }
             } 
 
@@ -1019,6 +1020,7 @@ namespace com.rum {
             } catch (Exception ex) {
 
                 ErrorRecorderHolder.recordError(ex);
+                return new byte[0];
             }
 
             if (storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX) {
@@ -1033,8 +1035,9 @@ namespace com.rum {
                     ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
                 }
 
-                this.UpdateStorageSize(160);
                 ErrorRecorderHolder.recordError(new Exception("Storage Size Limit!"));
+
+                this.UpdateStorageSize(160);
                 return new byte[0];
             }
 
@@ -1360,6 +1363,8 @@ namespace com.rum {
             } catch (Exception ex) {
 
                 ErrorRecorderHolder.recordError(ex);
+                this.WriteEvents(list);
+                return false;
             }
 
             int index = 0;
