@@ -274,7 +274,7 @@ namespace com.rum {
 
                     { "ev", "warn" },
                     { "type", "low_memory" },
-                    { "system_memory", RUMPlatform.SystemMemorySize }
+                    { "system_memory", SystemInfo.systemMemorySize }
                 };
 
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
@@ -431,7 +431,7 @@ namespace com.rum {
             }
             //系统内存(MB)
             if (!info.ContainsKey("systemMemorySize")) {
-                info.Add("systemMemorySize", RUMPlatform.SystemMemorySize);
+                info.Add("systemMemorySize", SystemInfo.systemMemorySize);
                 return false;
             }
             //Unity版本信息
