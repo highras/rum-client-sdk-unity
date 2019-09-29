@@ -22,7 +22,6 @@ public class Main : MonoBehaviour {
     private ITestCase _testCase;
 
     void Start() {
-
         // open gps
         if (Input.location.isEnabledByUser) {
             Input.location.Start();
@@ -30,46 +29,38 @@ public class Main : MonoBehaviour {
 
         RUMRegistration.Register(new LocationService());
         // RUMRegistration.Register(null);
-
         //TestCase
         // this._testCase = new TestCase();
-
         //SingleClientSend
-        this._testCase = new SingleClientSend();
+        // this._testCase = new SingleClientSend();
+        //SingleClientConcurrency
+        this._testCase = new SingleClientConcurrency();
 
         if (this._testCase != null) {
-
             this._testCase.StartTest();
         }
 
         // if (!this.IsInvoking("SendHttpRequest")) {
-
         //     InvokeRepeating("SendHttpRequest", 5.0f, 1.0f);
         // }
     }
 
     void SendHttpRequest() {
-
         // HttpWebRequest
         AsyncGetWithWebRequest("https://www.baidu.com");
-
         // UnityWebRequest
         StartCoroutine(UnityWebRequestGet("https://www.google.com"));
     }
 
     void Update() {
-
     }
 
     void OnApplicationQuit() {
-
         if (this.IsInvoking("SendHttpRequest")) {
-
             CancelInvoke("SendHttpRequest");
         }
 
         if (this._testCase != null) {
-
             this._testCase.StopTest();
         }
     }
@@ -77,20 +68,16 @@ public class Main : MonoBehaviour {
     private DateTime _stime;
 
     void AsyncGetWithWebRequest(string url) {
-
         _stime = DateTime.Now;
-
         var request = (HttpWebRequest) WebRequest.Create(new Uri(url));
         request.BeginGetResponse(new AsyncCallback(ReadCallback), request);
     }
 
     void ReadCallback(IAsyncResult asynchronousResult) {
-
         HttpWebRequest request = (HttpWebRequest) asynchronousResult.AsyncState;
         HttpWebResponse response = (HttpWebResponse) request.EndGetResponse(asynchronousResult);
 
         using (var streamReader = new StreamReader(response.GetResponseStream())) {
-
             var resultString = streamReader.ReadToEnd();
             // Debug.Log(resultString);
         }
@@ -98,42 +85,35 @@ public class Main : MonoBehaviour {
         int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
 
         if (response.StatusCode != HttpStatusCode.OK) {
-
             Debug.Log(response.StatusCode);
         }
 
         RUMClient client = _testCase.GetClient();
+
         if (client != null) {
-            
             client.HookHttp(request, response, latency);
         }
     }
 
     IEnumerator UnityWebRequestGet(string url) {
-
         _stime = DateTime.Now;
 
-        using(UnityWebRequest req = UnityWebRequest.Get(url)) {
-
+        using (UnityWebRequest req = UnityWebRequest.Get(url)) {
             yield return req.SendWebRequest();
 
-            if(req.isNetworkError || req.isHttpError) {
-
+            if (req.isNetworkError || req.isHttpError) {
                 Debug.Log(req.error);
             } else {
-
                 // Show results as text
                 // Debug.Log(req.downloadHandler.text);
-     
                 // Or retrieve results as binary data
                 byte[] results = req.downloadHandler.data;
             }
-     
+
             int latency = Convert.ToInt32((DateTime.Now - _stime).TotalMilliseconds);
-
             RUMClient client = _testCase.GetClient();
-            if (client != null) {
 
+            if (client != null) {
                 client.HookHttp(req, latency);
             }
         }

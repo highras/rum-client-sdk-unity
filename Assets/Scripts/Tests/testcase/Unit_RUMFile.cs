@@ -10,12 +10,11 @@ using com.fpnn;
 using com.rum;
 
 public class Unit_RUMFile {
-    
+
     private RUMFile _file;
-    
+
     [SetUp]
     public void SetUp() {
-
         RUMRegistration.Register(null);
     }
 
@@ -28,7 +27,6 @@ public class Unit_RUMFile {
      */
     [Test]
     public void File_ZeroPid() {
-
         int count = 0;
         RUMFile file = new RUMFile(0, false);
         Assert.AreEqual(0, count);
@@ -36,7 +34,6 @@ public class Unit_RUMFile {
 
     [Test]
     public void File_NegativePid() {
-
         int count = 0;
         RUMFile file = new RUMFile(-1, false);
         Assert.AreEqual(0, count);
@@ -44,7 +41,6 @@ public class Unit_RUMFile {
 
     [Test]
     public void File_Debug() {
-
         int count = 0;
         RUMFile file = new RUMFile(100, true);
         Assert.AreEqual(0, count);
@@ -56,45 +52,37 @@ public class Unit_RUMFile {
      */
     [Test]
     public void File_SaveRumLog_ZeroIndex() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.SaveRumLog(0, new byte[100]);
         Assert.IsTrue(res.success);
         Assert.AreEqual(100, ((byte[])res.content).Length);
-
         file.ClearAllFile();
     }
 
     [Test]
     public void File_SaveRumLog_NegativeIndex() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.SaveRumLog(-1, new byte[100]);
         Assert.IsTrue(res.success);
         Assert.AreEqual(100, ((byte[])res.content).Length);
-
         file.ClearAllFile();
     }
 
     [Test]
     public void File_SaveRumLog_NullContent() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.SaveRumLog(1, null);
         Assert.IsFalse(res.success);
         Assert.IsNotNull(res.content);
-
         file.ClearAllFile();
     }
 
     [Test]
     public void File_SaveRumLog_EmptyContent() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.SaveRumLog(1, new byte[0]);
         Assert.IsTrue(res.success);
         Assert.AreEqual(0, ((byte[])res.content).Length);
-
         file.ClearAllFile();
     }
 
@@ -104,12 +92,10 @@ public class Unit_RUMFile {
      */
     [Test]
     public void File_LoadRumLog() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.LoadRumLog();
         Assert.IsFalse(res.success);
         Assert.IsNotNull(res.content);
-
         file.ClearAllFile();
     }
 
@@ -119,23 +105,19 @@ public class Unit_RUMFile {
      */
     [Test]
     public void File_SaveStorage_NullContent() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.SaveStorage(null);
         Assert.IsFalse(res.success);
         Assert.IsNotNull(res.content);
-
         file.ClearAllFile();
     }
 
     [Test]
     public void File_SaveStorage_EmptyContent() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.SaveStorage(new byte[0]);
         Assert.IsTrue(res.success);
         Assert.AreEqual(0, ((byte[])res.content).Length);
-
         file.ClearAllFile();
     }
 
@@ -145,12 +127,10 @@ public class Unit_RUMFile {
      */
     [Test]
     public void File_LoadStorage() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.LoadStorage();
         Assert.IsFalse(res.success);
         Assert.IsNotNull(res.content);
-
         file.ClearAllFile();
     }
 
@@ -160,7 +140,6 @@ public class Unit_RUMFile {
      */
     [Test]
     public void File_ClearAllFile() {
-
         RUMFile file = new RUMFile(100, false);
         RUMFile.Result res = file.ClearAllFile();
         Assert.IsTrue(res.success);

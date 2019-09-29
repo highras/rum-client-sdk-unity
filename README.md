@@ -104,7 +104,7 @@ client.CustomEvent("info", attrs);
 
 * `GetRumId()`: **(string)** RUM ID, 唯一, 可用于服务端事件关联
 
-* `SetUid(string value)`: 设置用户ID
+* `SetUid(string value)`: 设置用户ID, 与`RUMClient`实例绑定
     * `value`: **(string)** 用户ID
 
 * `CustomEvent(string ev, IDictionary<string, object> attrs)`: 上报自定义事件 
