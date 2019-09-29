@@ -195,20 +195,15 @@ namespace com.fpnn {
 
         private void StopServiceThread() {
             lock (service_locker) {
-                if (service_locker.Status != 0) {
+                if (service_locker.Status == 1) {
                     try {
                         this._serviceEvent.Set();
                     } catch (Exception ex) {
                         ErrorRecorderHolder.recordError(ex);
                     }
 
-                    FPManager.Instance.DelayTask(200, (state) => {
-                        lock (service_locker) {
-                            if (service_locker.Status != 0) {
-                                service_locker.Status = 0;
-                            }
-                        }
-                    }, null);
+                    service_locker.Status = 0;
+                    this._serviceCache.Clear();
                 }
             }
         }

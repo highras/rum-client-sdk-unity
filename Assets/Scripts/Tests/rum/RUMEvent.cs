@@ -382,7 +382,9 @@ namespace com.rum {
 
         private void StopWriteThread() {
             lock (write_locker) {
-                if (write_locker.Status != 0) {
+                if (write_locker.Status == 1) {
+                    write_locker.Status = 2;
+
                     try {
                         this._writeEvent.Set();
                     } catch (Exception ex) {
@@ -390,14 +392,11 @@ namespace com.rum {
                     }
 
                     RUMEvent self = this;
-                    FPManager.Instance.DelayTask(200, (state) => {
+                    FPManager.Instance.DelayTask(100, (state) => {
                         lock (write_locker) {
-                            if (write_locker.Status != 0) {
-                                write_locker.Status = 0;
-                            }
+                            write_locker.Status = 0;
+                            self._eventCache.Clear();
                         }
-
-                        self.StopCheckThread();
                     }, null);
                 }
             }
@@ -550,6 +549,7 @@ namespace com.rum {
             }
 
             this.StopWriteThread();
+            this.StopCheckThread();
 
             lock (second_locker) {
                 this._delayCount = 0;
@@ -1173,7 +1173,9 @@ namespace com.rum {
 
         private void StopCheckThread() {
             lock (check_locker) {
-                if (check_locker.Status != 0) {
+                if (check_locker.Status == 1) {
+                    check_locker.Status = 2;
+
                     try {
                         this._checkEvent.Set();
                     } catch (Exception ex) {
@@ -1181,11 +1183,9 @@ namespace com.rum {
                     }
 
                     RUMEvent self = this;
-                    FPManager.Instance.DelayTask(200, (state) => {
+                    FPManager.Instance.DelayTask(100, (state) => {
                         lock (check_locker) {
-                            if (check_locker.Status != 0) {
-                                check_locker.Status = 0;
-                            }
+                            check_locker.Status = 0;
                         }
 
                         if (self._debug) {
