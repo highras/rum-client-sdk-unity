@@ -487,7 +487,7 @@ namespace com.rum {
             FPManager.Instance.ExecTask((state) => {
                 IDictionary<string, object> dict = new Dictionary<string, object>() {
                     { "init_dump", self._rumEvent.GetInitDump()},
-                    { "pros_dump", self._rumEvent.DumpEventCount()}
+                    { "proc_dump", self._rumEvent.DumpEventCount()}
                 };
                 dict.Add("type", "unity_dump_info");
 
