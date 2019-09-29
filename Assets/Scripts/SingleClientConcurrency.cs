@@ -19,7 +19,7 @@ public class SingleClientConcurrency : Main.ITestCase {
         public int Status = 0;
     }
 
-    private const int THREAD_COUNT = 50;
+    private const int THREAD_COUNT = 20;
 
     private bool trace_log = false;
 

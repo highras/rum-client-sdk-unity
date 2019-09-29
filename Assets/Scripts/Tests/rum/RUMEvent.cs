@@ -393,9 +393,22 @@ namespace com.rum {
 
                     RUMEvent self = this;
                     FPManager.Instance.DelayTask(100, (state) => {
+                        List<object> list;
+
                         lock (write_locker) {
                             write_locker.Status = 0;
-                            self._eventCache.Clear();
+                            list = self._eventCache;
+                            self._eventCache = new List<object>();
+                        }
+
+                        if (!self.IsNullOrEmpty(list)) {
+                            self.WriteEvents(list);
+
+                            lock (self_locker) {
+                                self._cacheWriteCount += list.Count;
+                            }
+
+                            self.SaveStorage();
                         }
                     }, null);
                 }
@@ -405,10 +418,10 @@ namespace com.rum {
         private void WriteStorage(ICollection<object> list) {
             if (!this.IsNullOrEmpty(list)) {
                 this.WriteEvents(list);
-            }
 
-            lock (self_locker) {
-                this._cacheWriteCount += list.Count;
+                lock (self_locker) {
+                    this._cacheWriteCount += list.Count;
+                }
             }
 
             if (this._sendQuest != null) {
