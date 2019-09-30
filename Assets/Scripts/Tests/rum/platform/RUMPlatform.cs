@@ -183,7 +183,6 @@ namespace com.rum {
 
         private double _lastFpsTime;
         private int _lastFrameCount;
-        private List<object> _fpsList = new List<object>(100);
 
         private IEnumerator FPS() {
             while (true) {
@@ -203,18 +202,7 @@ namespace com.rum {
 
                     this._lastFrameCount = count;
                     this._lastFpsTime = now;
-
-                    if (this.IsWarningFPS(fps)) {
-                        IDictionary<string, object> dict = new Dictionary<string, object>() {
-                            { "rts", Convert.ToString(now) },
-                            { "avg", Convert.ToString(this._fpsAverage) },
-                            { "fps", Convert.ToString(fps) }
-                        };
-
-                        if (this._fpsList.Count < this._fpsList.Capacity) {
-                            this._fpsList.Add(dict);
-                        }
-                    }
+                    this.ReportFPS(fps, now);
                 } catch (Exception ex) {
                     ErrorRecorderHolder.recordError(ex);
                 }
@@ -224,14 +212,15 @@ namespace com.rum {
         private int _fpsCount = 0;
         private double _fpsTotal = 0.0f;
         private double _fpsAverage = 0.0f;
+        private List<object> _fpsList = new List<object>(100);
 
-        private bool IsWarningFPS(double fps) {
+        private void ReportFPS(double fps, double now) {
             if (Double.IsNaN(this._fpsAverage)) {
-                return false;
+                return;
             }
 
             if (Double.IsNaN(fps)) {
-                return false;
+                return;
             }
 
             if (++this._fpsCount == 1) {
@@ -241,17 +230,27 @@ namespace com.rum {
                     this._fpsTotal = (this._fpsAverage + fps) / 2;
                 }
 
-                return false;
+                return;
             }
 
             this._fpsTotal += fps;
             this._fpsAverage = this._fpsTotal / this._fpsCount;
 
-            if (this._fpsCount >= 40) {
-                this._fpsCount = 0;
+            if (this._fpsCount < 30) {
+                return;
             }
 
-            return (this._fpsCount == 0) || Math.Abs(this._fpsAverage - fps) >= 3.0f;
+            if ((this._fpsCount % 60 == 0) || Math.Abs(this._fpsAverage - fps) >= 3.0f) {
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+                    { "rts", Convert.ToString(now) },
+                    { "avg", Convert.ToString(this._fpsAverage) },
+                    { "fps", Convert.ToString(fps) }
+                };
+
+                if (this._fpsList.Count < this._fpsList.Capacity) {
+                    this._fpsList.Add(dict);
+                }
+            }
         }
 
         private long _lowMemoryTimestamp;
@@ -695,11 +694,13 @@ namespace com.rum {
                 secureDataPath = Application.persistentDataPath;
                 #elif !UNITY_EDITOR && UNITY_ANDROID
 
-                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-                    using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer")) {
+                    using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity")) {
                         using (var getFilesDir = currentActivity.Call<AndroidJavaObject>("getFilesDir")) {
                             secureDataPath = getFilesDir.Call<string>("getCanonicalPath");
                         }
+                    }
+                }
 
                 #endif
             } catch (Exception ex) {
@@ -715,12 +716,15 @@ namespace com.rum {
             try {
                 #if !UNITY_EDITOR && UNITY_ANDROID
 
-                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
-                    using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
-                        using (var contentResolver = currentActivity.Call<AndroidJavaObject> ("getContentResolver"))
+                using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer")) {
+                    using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity")) {
+                        using (var contentResolver = currentActivity.Call<AndroidJavaObject> ("getContentResolver")) {
                             using (var secure = new AndroidJavaClass ("android.provider.Settings$Secure")) {
                                 androidId = secure.CallStatic<string> ("getString", contentResolver, "android_id");
                             }
+                        }
+                    }
+                }
 
                 #endif
             } catch (Exception ex) {
