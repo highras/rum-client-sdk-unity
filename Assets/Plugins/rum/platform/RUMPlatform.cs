@@ -181,36 +181,77 @@ namespace com.rum {
             }
         }
 
-        private float _lastTime;
+        private double _lastFpsTime;
         private int _lastFrameCount;
-        private List<string> _fpsList = new List<string>(100);
+        private List<object> _fpsList = new List<object>(100);
 
         private IEnumerator FPS() {
             while (true) {
                 yield return new WaitForSeconds(1.0f);
 
                 try {
-                    float fps = 0;
-                    float now = Time.realtimeSinceStartup;
+                    double fps = 0.0f;
+                    double now = Time.realtimeSinceStartup;
                     int count = Time.frameCount;
 
-                    if (this._lastTime > 0) {
-                        float timeSpan = now - this._lastTime;
+                    if (this._lastFpsTime > 0) {
+                        double timeSpan = now - this._lastFpsTime;
                         int frameCount = count - this._lastFrameCount;
                         // fps = Mathf.RoundToInt(frameCount / timeSpan);
                         fps = frameCount / timeSpan;
                     }
 
                     this._lastFrameCount = count;
-                    this._lastTime = now;
+                    this._lastFpsTime = now;
 
-                    if (fps > 0.0f && this._fpsList.Count < this._fpsList.Capacity) {
-                        this._fpsList.Add(fps.ToString());
+                    if (this.IsWarningFPS(fps)) {
+                        IDictionary<string, object> dict = new Dictionary<string, object>() {
+                            { "rts", Convert.ToString(now) },
+                            { "avg", Convert.ToString(this._fpsAverage) },
+                            { "fps", Convert.ToString(fps) }
+                        };
+
+                        if (this._fpsList.Count < this._fpsList.Capacity) {
+                            this._fpsList.Add(dict);
+                        }
                     }
                 } catch (Exception ex) {
                     ErrorRecorderHolder.recordError(ex);
                 }
             }
+        }
+
+        private int _fpsCount = 0;
+        private double _fpsTotal = 0.0f;
+        private double _fpsAverage = 0.0f;
+
+        private bool IsWarningFPS(double fps) {
+            if (Double.IsNaN(this._fpsAverage)) {
+                return false;
+            }
+
+            if (Double.IsNaN(fps)) {
+                return false;
+            }
+
+            if (++this._fpsCount == 1) {
+                if (this._fpsTotal < 1.0f) {
+                    this._fpsTotal = fps;
+                } else {
+                    this._fpsTotal = (this._fpsAverage + fps) / 2;
+                }
+
+                return false;
+            }
+
+            this._fpsTotal += fps;
+            this._fpsAverage = this._fpsTotal / this._fpsCount;
+
+            if (this._fpsCount >= 40) {
+                this._fpsCount = 0;
+            }
+
+            return (this._fpsCount == 0) || Math.Abs(this._fpsAverage - fps) >= 3.0f;
         }
 
         private long _lowMemoryTimestamp;
@@ -258,13 +299,13 @@ namespace com.rum {
 
             //fps_update
             if ((needFire && this._fpsList.Count > 0) || this._fpsList.Count == this._fpsList.Capacity) {
-                List<string> fps_list = new List<string>(this._fpsList);
-                this._fpsList.Clear();
+                List<object> fps_list = new List<object>(this._fpsList);
                 IDictionary<string, object> dict = new Dictionary<string, object>() {
                     { "ev", "info" },
                     { "type", "unity_fps_info" },
                     { "fps_info", fps_list }
                 };
+                this._fpsList.Clear();
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
 
@@ -650,9 +691,9 @@ namespace com.rum {
             string secureDataPath = Application.temporaryCachePath;
 
             try {
-#if !UNITY_EDITOR && UNITY_IPHONE
+                #if !UNITY_EDITOR && UNITY_IPHONE
                 secureDataPath = Application.persistentDataPath;
-#elif !UNITY_EDITOR && UNITY_ANDROID
+                #elif !UNITY_EDITOR && UNITY_ANDROID
 
                 using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
                     using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
@@ -660,7 +701,7 @@ namespace com.rum {
                             secureDataPath = getFilesDir.Call<string>("getCanonicalPath");
                         }
 
-#endif
+                #endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
@@ -672,7 +713,7 @@ namespace com.rum {
             string androidId = null;
 
             try {
-#if !UNITY_EDITOR && UNITY_ANDROID
+                #if !UNITY_EDITOR && UNITY_ANDROID
 
                 using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
                     using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity"))
@@ -681,7 +722,7 @@ namespace com.rum {
                                 androidId = secure.CallStatic<string> ("getString", contentResolver, "android_id");
                             }
 
-#endif
+                #endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
@@ -693,14 +734,14 @@ namespace com.rum {
             string deviceToken = null;
 
             try {
-#if !UNITY_EDITOR && UNITY_IPHONE
+                #if !UNITY_EDITOR && UNITY_IPHONE
                 byte[] token = UnityEngine.iOS.NotificationServices.deviceToken;
 
                 if (token != null) {
                     deviceToken = System.BitConverter.ToString(token).Replace("-", "");
                 }
 
-#endif
+                #endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
@@ -712,9 +753,9 @@ namespace com.rum {
             string vendorIdentifier = null;
 
             try {
-#if !UNITY_EDITOR && UNITY_IPHONE
+                #if !UNITY_EDITOR && UNITY_IPHONE
                 vendorIdentifier = UnityEngine.iOS.Device.vendorIdentifier;
-#endif
+                #endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
