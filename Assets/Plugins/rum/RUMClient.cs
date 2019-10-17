@@ -34,7 +34,6 @@ namespace com.rum {
                     }
 
                     long c = Count;
-                    //.Net >= 4.0  sb.Clear();
                     sb.Length = 0;
                     sb.Append(FPManager.Instance.GetMilliTimestamp());
 
@@ -91,10 +90,7 @@ namespace com.rum {
         private int _pingLatency = 0;
         private int _configVersion = 0;
 
-        private EventDelegate _eventDelegate;
-
-        private long _initSession = MidGenerator.Gen();
-        private long _initOpenEid = MidGenerator.Gen();
+        private long _initSession = 0;
 
         public RUMClient(int pid, string secret, string uid, string appv, bool debug) {
             this.Init(pid, secret, uid, appv, debug, false, false);
@@ -129,15 +125,16 @@ namespace com.rum {
             this._uid = uid;
             this._appv = appv;
             this._debug = debug;
-            this._rumEvent = new RUMEvent(this._pid, this._debug, this.OnSendQuest, this.OpenEvent);
-            RUMClient self = this;
-            this._eventDelegate = (evd) => {
-                self.OnSecond(evd.GetTimestamp());
-            };
-            FPManager.Instance.AddSecond(this._eventDelegate);
+            this._initSession = RUMEvent.GenEventId();
+            this._rumEvent = new RUMEvent(this._pid, this._debug, OnSendQuest, OpenEvent);
+            FPManager.Instance.AddSecond(OnSecondDelegate);
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(this._debug, WriteEvent));
             this.AddPlatformListener();
-            this._rumEvent.Init(clearRumId, clearEvents, this.DumpEventCount);
+            this._rumEvent.Init(clearRumId, clearEvents, DumpEventCount);
+        }
+
+        private void OnSecondDelegate(EventData evd) {
+            this.OnSecond(evd.GetTimestamp());
         }
 
         private object self_locker = new object();
@@ -154,15 +151,10 @@ namespace com.rum {
             }
 
             this.RemovePlatformListener();
+            FPManager.Instance.RemoveSecond(OnSecondDelegate);
 
             lock (self_locker) {
                 pid = this._pid;
-
-                if (this._eventDelegate != null) {
-                    FPManager.Instance.RemoveSecond(this._eventDelegate);
-                    this._eventDelegate = null;
-                }
-
                 this._event.FireEvent(new EventData("close"));
                 this._event.RemoveListener();
 
@@ -192,45 +184,50 @@ namespace com.rum {
                     return;
                 }
 
-                RUMClient self = this;
                 this._baseClient = new FPClient(this._endpoint, RUMConfig.CONNCT_INTERVAL);
-                this._baseClient.Client_Connect = (evd) => {
-                    if (self._debug) {
-                        Debug.Log("[RUM] connect on rum agent!");
-                    }
-
-                    self.GetEvent().FireEvent(new EventData("ready"));
-                    self.StartPing();
-                };
-                this._baseClient.Client_Close = (evd) => {
-                    if (self._debug) {
-                        Debug.Log("[RUM] close from rum agent!");
-                    }
-
-                    self.StopPing();
-                    self._rumEvent.SetTimestamp(0);
-
-                    lock (self_locker) {
-                        if (self._baseClient != null) {
-                            self._baseClient = null;
-                        }
-
-                        self._sendCount = 0;
-                        self._configVersion = 0;
-                    }
-
-                    lock (tryconn_locker) {
-                        tryconn_locker.Status = 1;
-                        tryconn_locker.Timestamp = FPManager.Instance.GetMilliTimestamp();
-                    }
-
-                    self.GetEvent().FireEvent(new EventData("close"));
-                };
-                this._baseClient.Client_Error = (evd) => {
-                    ErrorRecorderHolder.recordError(evd.GetException());
-                };
+                this._baseClient.Client_Connect = BaseClient_Connect;
+                this._baseClient.Client_Close = BaseClient_Close;
+                this._baseClient.Client_Error = BaseClient_Error;
                 this._baseClient.Connect();
             }
+        }
+
+        private void BaseClient_Connect(EventData evd) {
+            if (this._debug) {
+                Debug.Log("[RUM] connect on rum agent!");
+            }
+
+            this.GetEvent().FireEvent(new EventData("ready"));
+            this.StartPing();
+        }
+
+        private void BaseClient_Close(EventData evd) {
+            if (this._debug) {
+                Debug.Log("[RUM] close from rum agent!");
+            }
+
+            this.StopPing();
+            this._rumEvent.SetTimestamp(0);
+
+            lock (self_locker) {
+                if (this._baseClient != null) {
+                    this._baseClient = null;
+                }
+
+                this._sendCount = 0;
+                this._configVersion = 0;
+            }
+
+            lock (tryconn_locker) {
+                tryconn_locker.Status = 1;
+                tryconn_locker.Timestamp = FPManager.Instance.GetMilliTimestamp();
+            }
+
+            this.GetEvent().FireEvent(new EventData("close"));
+        }
+
+        private void BaseClient_Error(EventData evd) {
+            ErrorRecorderHolder.recordError(evd.GetException());
         }
 
         public long GetSession() {
@@ -483,20 +480,21 @@ namespace com.rum {
         }
 
         private void DumpEvent() {
-            RUMClient self = this;
-            FPManager.Instance.ExecTask((state) => {
-                IDictionary<string, object> dict = new Dictionary<string, object>() {
-                    { "init_dump", self._rumEvent.GetInitDump()},
-                    { "proc_dump", self._rumEvent.DumpEventCount()}
-                };
-                dict.Add("type", "unity_dump_info");
+            FPManager.Instance.ExecTask(AsyncDumpEvent, null);
+        }
 
-                if (self._debug) {
-                    Debug.Log("[RUM] dump info: " + Json.SerializeToString(dict));
-                }
+        private void AsyncDumpEvent(object state) {
+            IDictionary<string, object> dict = new Dictionary<string, object>() {
+                { "init_dump", this._rumEvent.GetInitDump()},
+                { "proc_dump", this._rumEvent.DumpEventCount()}
+            };
+            dict.Add("type", "unity_dump_info");
 
-                self.WriteEvent("info", dict);
-            }, null);
+            if (this._debug) {
+                Debug.Log("[RUM] dump info: " + Json.SerializeToString(dict));
+            }
+
+            this.WriteEvent("info", dict);
         }
 
         private void AppendEvent(string type, IDictionary<string, object> dict) {
@@ -506,22 +504,20 @@ namespace com.rum {
             }
         }
 
-        private EventDelegate _platformDelegate;
+        private void OnPlatformDelegate(EventData evd) {
+            if (this._debug) {
+                Debug.Log("[RUM] platform events: " + Json.SerializeToString(evd.GetPayload()));
+            }
+
+            this.WriteEvent(null, (IDictionary<string, object>)evd.GetPayload());
+        }
 
         private void AddPlatformListener() {
-            RUMClient self = this;
-            this._platformDelegate = (evd) => {
-                if (self._debug) {
-                    Debug.Log("[RUM] platform events: " + Json.SerializeToString(evd.GetPayload()));
-                }
-
-                self.WriteEvent(null, (IDictionary<string, object>)evd.GetPayload());
-            };
-            RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, this._platformDelegate);
+            RUMPlatform.Instance.Event.AddListener(RUMPlatform.PLATFORM_EVENT, OnPlatformDelegate);
         }
 
         private void RemovePlatformListener() {
-            RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, this._platformDelegate);
+            RUMPlatform.Instance.Event.RemoveListener(RUMPlatform.PLATFORM_EVENT, OnPlatformDelegate);
         }
 
         private long _eventWriteCount;
@@ -532,7 +528,7 @@ namespace com.rum {
             }
 
             if (!dict.ContainsKey("eid")) {
-                dict.Add("eid", MidGenerator.Gen());
+                dict.Add("eid", RUMEvent.GenEventId());
             }
 
             if (!dict.ContainsKey("pid")) {
@@ -570,14 +566,15 @@ namespace com.rum {
             // if (this._debug) {
             //     Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
             // }
-            RUMClient self = this;
-            FPManager.Instance.ExecTask((state) => {
-                self._rumEvent.WriteEvent(dict);
-            }, null);
+            FPManager.Instance.ExecTask(AsyncWriteEvent, dict);
 
             lock (self_locker) {
                 this._eventWriteCount++;
             }
+        }
+
+        private void AsyncWriteEvent(object state) {
+            this._rumEvent.WriteEvent((IDictionary<string, object>)state);
         }
 
         private void OpenEvent() {
@@ -586,11 +583,12 @@ namespace com.rum {
                     return;
                 }
 
-                this._session = this._initSession > 0 ? this._initSession : MidGenerator.Gen();
+                this._session = this._initSession;
                 this._rumEvent.SetSession(this._session);
             }
 
             IDictionary<string, object> dict = new Dictionary<string, object>() {
+                { "eid", this._initSession },
                 { "appv", this._appv },
                 { "first", this._rumEvent.IsFirst() },
                 { "v", RUMConfig.VERSION },
@@ -605,11 +603,6 @@ namespace com.rum {
                 { "lang", RUMPlatform.SystemLanguage },
                 { "from", RUMPlatform.From }
             };
-
-            if (this._initOpenEid > 0) {
-                dict.Add("eid", this._initOpenEid);
-            }
-
             this.WriteEvent("open", dict);
         }
 
@@ -774,47 +767,65 @@ namespace com.rum {
                 payload.Add("pt", this._pingLatency);
             }
 
-            RUMClient self = this;
-            timestamp = FPManager.Instance.GetMilliTimestamp();
-            this.SendQuest("ping", payload, (cbd) => {
-                lock (self_locker) {
-                    self._pingLatency = Convert.ToInt32(FPManager.Instance.GetMilliTimestamp() - timestamp);
+            this.SendQuest("ping", payload, SendPing_OnCallback, RUMConfig.PING_INTERVAL);
+        }
+
+        private void SendPing_OnCallback(CallbackData cbd) {
+            Exception ex = cbd.GetException();
+
+            if (ex != null) {
+                ErrorRecorderHolder.recordError(ex);
+                return;
+            }
+
+            IDictionary<string, object> dict = (IDictionary<string, object>)cbd.GetPayload();
+
+            if (this._debug) {
+                Debug.Log("[RUM] recv ping: " + Json.SerializeToString(dict));
+            }
+
+            if (dict == null) {
+                return;
+            }
+
+            long timestamp = 0;
+
+            lock (ping_locker) {
+                ping_locker.Count--;
+                timestamp = ping_locker.Timestamp;
+            }
+
+            lock (self_locker) {
+                this._pingLatency = Convert.ToInt32(FPManager.Instance.GetMilliTimestamp() - timestamp);
+            }
+
+            if (dict.ContainsKey("ts")) {
+                this._rumEvent.SetTimestamp(Convert.ToInt64(dict["ts"]));
+            }
+
+            if (dict.ContainsKey("bw")) {
+                this._rumEvent.SetSizeLimit(Convert.ToInt32(dict["bw"]));
+            }
+
+            int cv = 0;
+
+            if (dict.ContainsKey("cv")) {
+                cv = Convert.ToInt32(dict["cv"]);
+            }
+
+            bool hasConfig = this._rumEvent.HasConfig();
+            bool needLoad = !hasConfig;
+
+            lock (self_locker) {
+                if (hasConfig && this._configVersion != cv) {
+                    this._configVersion = cv;
+                    needLoad = true;
                 }
+            }
 
-                Exception ex = cbd.GetException();
-
-                if (ex != null) {
-                    ErrorRecorderHolder.recordError(ex);
-                    return;
-                }
-
-                lock (ping_locker) {
-                    ping_locker.Count--;
-                }
-
-                IDictionary<string, object> dict = (IDictionary<string, object>)cbd.GetPayload();
-
-                if (self._debug) {
-                    Debug.Log("[RUM] recv ping: " + Json.SerializeToString(dict));
-                }
-
-                self._rumEvent.SetTimestamp(Convert.ToInt64(dict["ts"]));
-                self._rumEvent.SetSizeLimit(Convert.ToInt32(dict["bw"]));
-                int cv = Convert.ToInt32(dict["cv"]);
-                bool needLoad = false;
-                bool hasConfig = self._rumEvent.HasConfig();
-
-                lock (self_locker) {
-                    if (self._configVersion != cv || (cv == 0 && !hasConfig)) {
-                        needLoad = true;
-                        self._configVersion = cv;
-                    }
-                }
-
-                if (needLoad) {
-                    self.LoadConfig();
-                }
-            }, RUMConfig.PING_INTERVAL);
+            if (needLoad) {
+                this.LoadConfig();
+            }
         }
 
         private void LoadConfig() {
@@ -839,28 +850,29 @@ namespace com.rum {
                 payload.Add("uid", this._uid);
             }
 
-            RUMClient self = this;
-            this.SendQuest("getconfig", payload, (cbd) => {
-                Exception ex = cbd.GetException();
+            this.SendQuest("getconfig", payload, LoadConfig_OnCallback, RUMConfig.SENT_TIMEOUT);
+        }
 
-                if (ex != null) {
-                    lock (self_locker) {
-                        self._configVersion = 0;
-                    }
+        private void LoadConfig_OnCallback(CallbackData cbd) {
+            Exception ex = cbd.GetException();
 
-                    ErrorRecorderHolder.recordError(ex);
-                    return;
+            if (ex != null) {
+                lock (self_locker) {
+                    this._configVersion = 0;
                 }
 
-                IDictionary<string, object> dict = (IDictionary<string, object>)cbd.GetPayload();
+                ErrorRecorderHolder.recordError(ex);
+                return;
+            }
 
-                if (self._debug) {
-                    Debug.Log("[RUM] recv config: " + Json.SerializeToString(dict));
-                }
+            IDictionary<string, object> dict = (IDictionary<string, object>)cbd.GetPayload();
 
-                self._rumEvent.UpdateConfig((IDictionary<string, object>)dict["events"]);
-                self.GetEvent().FireEvent(new EventData("config"));
-            }, RUMConfig.SENT_TIMEOUT);
+            if (this._debug) {
+                Debug.Log("[RUM] recv config: " + Json.SerializeToString(dict));
+            }
+
+            this._rumEvent.UpdateConfig((IDictionary<string, object>)dict["events"]);
+            this.GetEvent().FireEvent(new EventData("config"));
         }
 
         private void SendEvent() {
@@ -915,17 +927,7 @@ namespace com.rum {
                 if (ex != null) {
                     self._rumEvent.WriteEvents(items);
                     ErrorRecorderHolder.recordError(ex);
-                    return;
                 }
-
-                // if (self._debug) {
-                //     string cacheKey = null;
-                //     IDictionary<string, object> item = (IDictionary<string, object>)items[0];
-                //     if (item != null && item.ContainsKey("eid")) {
-                //         cacheKey = Convert.ToString(item["eid"]);
-                //     }
-                //     Debug.Log("[RUM] sent success, cache key: " + cacheKey);
-                // }
             }, RUMConfig.SENT_TIMEOUT);
         }
 

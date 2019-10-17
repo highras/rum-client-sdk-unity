@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,6 +14,36 @@ namespace com.rum {
     public delegate string DumpDelegate();
 
     public class RUMEvent {
+
+        private static class EidGenerator {
+
+            static private long Count = 0;
+            static private StringBuilder sb = new StringBuilder(20);
+            static object lock_obj = new object();
+
+            static public long Gen() {
+                lock (lock_obj) {
+                    if (++Count > 999) {
+                        Count = 1;
+                    }
+
+                    long c = Count;
+                    sb.Length = 0;
+                    sb.Append(FPManager.Instance.GetMilliTimestamp());
+
+                    if (c < 100) {
+                        sb.Append("0");
+                    }
+
+                    if (c < 10) {
+                        sb.Append("0");
+                    }
+
+                    sb.Append(c);
+                    return Convert.ToInt64(sb.ToString());
+                }
+            }
+        }
 
         private class WriteLocker {
 
@@ -28,6 +59,10 @@ namespace com.rum {
 
             public int Status = 0;
             public int Count = 0;
+        }
+
+        public static long GenEventId(){
+            return EidGenerator.Gen();
         }
 
         private const string EVENT_MAP = "event_map";
@@ -97,12 +132,6 @@ namespace com.rum {
             this._clearEvents = clearEvents;
             this._clientDump = clientDump;
             this.StartWriteThread();
-        }
-
-        private string _initDump;
-
-        public string GetInitDump() {
-            return this._initDump;
         }
 
         private void InitStorage() {
@@ -176,62 +205,41 @@ namespace com.rum {
             List<object> event_items = new List<object>();
 
             lock (storage_locker) {
-                IDictionary<string, object> event_map = (IDictionary<string, object>)this._storage[this._rumEventKey];
+                IDictionary<string, object> rum_event = (IDictionary<string, object>)this._storage[this._rumEventKey];
 
-                if (this.IsNullOrEmpty(event_map)) {
+                if (this.IsNullOrEmpty(rum_event)) {
                     return event_items;
                 }
 
-                IDictionary<string, object> map;
-
-                if (!event_map.ContainsKey("event_map_1")) {
-                    if (event_map.ContainsKey(EVENT_CACHE)) {
-                        map = (IDictionary<string, object>) event_map[EVENT_CACHE];
-
-                        if (!this.IsNullOrEmpty(map)) {
-                            foreach (List<object> items in map.Values) {
-                                event_items.AddRange(items);
-                            }
-
-                            map.Clear();
-                        }
-                    }
-
+                if (rum_event.ContainsKey("event_map_1")) {
+                    rum_event.Clear();
                     return event_items;
                 }
 
-                if (event_map.ContainsKey("event_map_1")) {
-                    map = (IDictionary<string, object>) event_map["event_map_1"];
+                IDictionary<string, object> event_cache = this.GetEventMap(EVENT_CACHE);
 
-                    foreach (ICollection<object> items in map.Values) {
+                if (this.IsNullOrEmpty(event_cache)) {
+                    return event_items;
+                }
+
+                try {
+                    foreach (List<object> items in event_cache.Values) {
                         event_items.AddRange(items);
                     }
+                } catch(Exception ex) {
+                    Debug.LogWarning(ex);
                 }
 
-                if (event_map.ContainsKey("event_map_2")) {
-                    map = (IDictionary<string, object>) event_map["event_map_2"];
-
-                    foreach (ICollection<object> items in map.Values) {
-                        event_items.AddRange(items);
-                    }
-                }
-
-                if (event_map.ContainsKey("event_map_3")) {
-                    map = (IDictionary<string, object>) event_map["event_map_3"];
-
-                    foreach (ICollection<object> items in map.Values) {
-                        event_items.AddRange(items);
-                    }
-                }
-
-                if (event_map.ContainsKey(EVENT_CACHE)) {
-                    map = (IDictionary<string, object>) event_map[EVENT_CACHE];
-                    event_items.AddRange((ICollection<object>) map.Values);
-                }
-
-                event_map.Clear();
-                return event_items;
+                event_cache.Clear();
             }
+
+            return event_items;
+        }
+
+        private string _initDump;
+
+        public string GetInitDump() {
+            return this._initDump;
         }
 
         private object self_locker = new object();
@@ -627,7 +635,7 @@ namespace com.rum {
                         , "medium", storage_medium_count
                         , "low", storage_low_count);
             } catch (Exception ex) {
-                Debug.LogError(ex);
+                Debug.LogWarning(ex);
             }
 
             return String.Format("{0},{1}", FPManager.Instance.GetMilliTimestamp(), dump);

@@ -32,9 +32,9 @@ public class Main : MonoBehaviour {
         //TestCase
         // this._testCase = new TestCase();
         //SingleClientSend
-        // this._testCase = new SingleClientSend();
+        this._testCase = new SingleClientSend();
         //SingleClientConcurrency
-        this._testCase = new SingleClientConcurrency();
+        // this._testCase = new SingleClientConcurrency();
 
         if (this._testCase != null) {
             this._testCase.StartTest();

@@ -927,11 +927,11 @@ public class Integration_RUMEvent {
     public IEnumerator Event_Init_SetSizeLimit1KB_WriteEvents100_WriteEvent1_GetSentEvents() {
         IDictionary<string, object> open_dict = new Dictionary<string, object>() {
             { "ev", "open" },
-            { "eid", 1568109465002 }
+            { "eid", 1568109465001 }
         };
         IDictionary<string, object> test_dict = new Dictionary<string, object>() {
             { "ev", "test" },
-            { "eid", 1568109465001 },
+            { "eid", 1568109465002 },
             { "custom_debug", "test text" }
         };
         ICollection<object> items = new List<object>();
@@ -981,7 +981,7 @@ public class Integration_RUMEvent {
     public IEnumerator Event_Init_SetSizeLimit1KB_WriteEvents100_WriteEvent3_GetSentEvents() {
         IDictionary<string, object> open_dict = new Dictionary<string, object>() {
             { "ev", "open" },
-            { "eid", 1568109465002 }
+            { "eid", 1568109465001 }
         };
         IDictionary<string, object> info_dict = new Dictionary<string, object>() {
             { "ev", "info" },
@@ -1068,7 +1068,7 @@ public class Integration_RUMEvent {
     public IEnumerator Event_Init_SetSizeLimit1KB_WriteEvents6_WriteEvent3_GetSentEvents() {
         IDictionary<string, object> open_dict = new Dictionary<string, object>() {
             { "ev", "open" },
-            { "eid", 1568109465002 }
+            { "eid", 1568109465001 }
         };
         IDictionary<string, object> info_dict = new Dictionary<string, object>() {
             { "ev", "info" },
@@ -1155,7 +1155,7 @@ public class Integration_RUMEvent {
     public IEnumerator Event_Init_SetSizeLimit1KB_WriteEvents20_WriteEvent3_GetSentEvents() {
         IDictionary<string, object> open_dict = new Dictionary<string, object>() {
             { "ev", "open" },
-            { "eid", 1568109465002 }
+            { "eid", 1568109465001 }
         };
         IDictionary<string, object> info_dict = new Dictionary<string, object>() {
             { "ev", "info" },
@@ -1253,7 +1253,7 @@ public class Integration_RUMEvent {
         };
         IDictionary<string, object> open_dict = new Dictionary<string, object>() {
             { "ev", "open" },
-            { "eid", 1568109465002 }
+            { "eid", 1568109465001 }
         };
         IDictionary<string, object> info_dict = new Dictionary<string, object>() {
             { "ev", "info" },
