@@ -367,7 +367,7 @@ namespace com.rum {
         private bool OnInfo(IDictionary<string, object> info) {
             //网络类型信息
             if (!info.ContainsKey("network")) {
-                info.Add("network", RUMPlatform.Network);
+                info.Add("network", Application.internetReachability.ToString());
                 return false;
             }
 
@@ -474,8 +474,8 @@ namespace com.rum {
             }
 
             //显卡的名称
-            if (!info.ContainsKey("graphicsDeviceType")) {
-                info.Add("graphicsDeviceType", SystemInfo.graphicsDeviceName);
+            if (!info.ContainsKey("graphicsDeviceName")) {
+                info.Add("graphicsDeviceName", SystemInfo.graphicsDeviceName);
                 return false;
             }
 

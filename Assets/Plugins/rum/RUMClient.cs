@@ -588,7 +588,6 @@ namespace com.rum {
             }
 
             IDictionary<string, object> dict = new Dictionary<string, object>() {
-                { "eid", this._initSession },
                 { "appv", this._appv },
                 { "first", this._rumEvent.IsFirst() },
                 { "v", RUMConfig.VERSION },
@@ -601,7 +600,8 @@ namespace com.rum {
                 { "nw", RUMPlatform.Network },
                 { "carrier", RUMPlatform.Carrier },
                 { "lang", RUMPlatform.SystemLanguage },
-                { "from", RUMPlatform.From }
+                { "from", RUMPlatform.From },
+                { "eid", this._initSession }
             };
             this.WriteEvent("open", dict);
         }
