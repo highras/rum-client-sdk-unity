@@ -11,45 +11,7 @@ using UnityEngine;
 
 namespace com.rum {
 
-    public static class RUMRegistration {
-
-        static public void Register(LocationService location) {
-            FPManager.Instance.Init();
-            RUMPlatform.Instance.Init(location);
-        }
-    }
-
     public class RUMClient {
-
-        private static class MidGenerator {
-
-            static private long Count = 0;
-            static private StringBuilder sb = new StringBuilder(20);
-            static object lock_obj = new object();
-
-            static public long Gen() {
-                lock (lock_obj) {
-                    if (++Count > 999) {
-                        Count = 1;
-                    }
-
-                    long c = Count;
-                    sb.Length = 0;
-                    sb.Append(FPManager.Instance.GetMilliTimestamp());
-
-                    if (c < 100) {
-                        sb.Append("0");
-                    }
-
-                    if (c < 10) {
-                        sb.Append("0");
-                    }
-
-                    sb.Append(c);
-                    return Convert.ToInt64(sb.ToString());
-                }
-            }
-        }
 
         private class PingLocker {
 
@@ -72,6 +34,8 @@ namespace com.rum {
 
         private static object Pids_Locker = new object();
         private static List<int> PIDS = new List<int>();
+
+        private IDGenerator _midGenerator = new IDGenerator();
 
         private string _secret;
         private string _uid;
@@ -125,8 +89,8 @@ namespace com.rum {
             this._uid = uid;
             this._appv = appv;
             this._debug = debug;
-            this._initSession = RUMEvent.GenEventId();
             this._rumEvent = new RUMEvent(this._pid, this._debug, OnSendQuest, OpenEvent);
+            this._initSession = this._rumEvent.GenEventId();
             FPManager.Instance.AddSecond(OnSecondDelegate);
             ErrorRecorderHolder.setInstance(new RUMErrorRecorder(this._debug, WriteEvent));
             this.AddPlatformListener();
@@ -528,7 +492,7 @@ namespace com.rum {
             }
 
             if (!dict.ContainsKey("eid")) {
-                dict.Add("eid", RUMEvent.GenEventId());
+                dict.Add("eid", this._rumEvent.GenEventId());
             }
 
             if (!dict.ContainsKey("pid")) {
@@ -751,7 +715,7 @@ namespace com.rum {
                 ping_locker.Timestamp = timestamp;
             }
 
-            long salt = MidGenerator.Gen();
+            long salt = this._midGenerator.Gen();
             IDictionary<string, object> payload = new Dictionary<string, object>() {
                 { "pid", this._pid },
                 { "sign", this.GenSign(salt) },
@@ -829,7 +793,7 @@ namespace com.rum {
         }
 
         private void LoadConfig() {
-            long salt = MidGenerator.Gen();
+            long salt = this._midGenerator.Gen();
             IDictionary<string, object> payload = new Dictionary<string, object>() {
                 { "pid", this._pid },
                 { "sign", this.GenSign(salt) },
@@ -904,7 +868,7 @@ namespace com.rum {
         private long _eventSendCount;
 
         private void SendEvents(List<object> items) {
-            long salt = MidGenerator.Gen();
+            long salt = this._midGenerator.Gen();
             IDictionary<string, object> payload = new Dictionary<string, object>() {
                 { "pid", this._pid },
                 { "sign", this.GenSign(salt) },
@@ -1081,6 +1045,43 @@ namespace com.rum {
                     this._writeEvent(ev, dict);
                 }
             }
+        }
+    }
+
+    public class IDGenerator {
+
+        private long count = 0;
+        private StringBuilder sb = new StringBuilder(20);
+        private object lock_obj = new object();
+
+        public long Gen() {
+            lock (lock_obj) {
+                if (++count > 999) {
+                    count = 1;
+                }
+
+                sb.Length = 0;
+                sb.Append(FPManager.Instance.GetMilliTimestamp());
+
+                if (count < 100) {
+                    sb.Append("0");
+                }
+
+                if (count < 10) {
+                    sb.Append("0");
+                }
+
+                sb.Append(count);
+                return Convert.ToInt64(sb.ToString());
+            }
+        }
+    }
+
+    public static class RUMRegistration {
+
+        static public void Register(LocationService location) {
+            FPManager.Instance.Init();
+            RUMPlatform.Instance.Init(location);
         }
     }
 }

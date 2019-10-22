@@ -15,36 +15,6 @@ namespace com.rum {
 
     public class RUMEvent {
 
-        private static class EidGenerator {
-
-            static private long Count = 0;
-            static private StringBuilder sb = new StringBuilder(20);
-            static object lock_obj = new object();
-
-            static public long Gen() {
-                lock (lock_obj) {
-                    if (++Count > 999) {
-                        Count = 1;
-                    }
-
-                    long c = Count;
-                    sb.Length = 0;
-                    sb.Append(FPManager.Instance.GetMilliTimestamp());
-
-                    if (c < 100) {
-                        sb.Append("0");
-                    }
-
-                    if (c < 10) {
-                        sb.Append("0");
-                    }
-
-                    sb.Append(c);
-                    return Convert.ToInt64(sb.ToString());
-                }
-            }
-        }
-
         private class WriteLocker {
 
             public int Status = 0;
@@ -59,10 +29,6 @@ namespace com.rum {
 
             public int Status = 0;
             public int Count = 0;
-        }
-
-        public static long GenEventId(){
-            return EidGenerator.Gen();
         }
 
         private const string EVENT_MAP = "event_map";
@@ -83,7 +49,6 @@ namespace com.rum {
         private string _rumId;
         private bool _isFirst;
 
-        private IDictionary<string, string> _config;
         private bool _debug;
 
         private long _session;
@@ -101,12 +66,14 @@ namespace com.rum {
         private string _fileIndexKey = "rum_index_";
 
         private object second_locker = new object();
-
+        private object storage_locker = new object();
         private WriteLocker write_locker = new WriteLocker();
         private CheckLocker check_locker = new CheckLocker();
 
+        private IDGenerator _eidGenerator = new IDGenerator();
+
+        private IDictionary<string, string> _config;
         private IDictionary<string, object> _storage;
-        private object storage_locker = new object();
 
         private Action _sendQuest;
         private Action _openEvent;
@@ -234,6 +201,10 @@ namespace com.rum {
             }
 
             return event_items;
+        }
+
+        public long GenEventId(){
+            return this._eidGenerator.Gen();
         }
 
         private string _initDump;

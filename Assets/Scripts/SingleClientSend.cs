@@ -101,7 +101,8 @@ public class SingleClientSend : Main.ITestCase {
                         IDictionary<string, object> attrs = new Dictionary<string, object>();
                         attrs.Add("custom_debug", "test text");
                         this._client.CustomEvent("Custom_Test", new Dictionary<string, object>(attrs));
-                        this._client.CustomEvent("info", new Dictionary<string, object>(attrs));
+                        // this._client.CustomEvent("Debug_Test", new Dictionary<string, object>(attrs));
+                        // this._client.CustomEvent("Info_Test", new Dictionary<string, object>(attrs));
                         this.SendInc();
                     }
                 }
