@@ -181,21 +181,21 @@ public class Unit_RUMEvent {
     /**
      *  WriteEvents(ICollection<object> items)
      */
-    [Test]
-    public void Event_WriteEvents_NullItems() {
-        int count = 0;
-        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-        evt.WriteEvents(null);
-        Assert.AreEqual(0, count);
-    }
+    // [Test]
+    // public void Event_WriteEvents_NullItems() {
+    //     int count = 0;
+    //     RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
+    //     evt.WriteEvents(null);
+    //     Assert.AreEqual(0, count);
+    // }
 
-    [Test]
-    public void Event_WriteEvents_EmptyItems() {
-        int count = 0;
-        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-        evt.WriteEvents(new List<object>());
-        Assert.AreEqual(0, count);
-    }
+    // [Test]
+    // public void Event_WriteEvents_EmptyItems() {
+    //     int count = 0;
+    //     RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
+    //     evt.WriteEvents(new List<object>());
+    //     Assert.AreEqual(0, count);
+    // }
 
 
     /**
@@ -305,7 +305,15 @@ public class Unit_RUMEvent {
     public void Event_RemoveFromCache_NullItems() {
         int count = 0;
         RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-        evt.RemoveFromCache(null);
+        evt.RemoveFromCache(null, false);
+        Assert.AreEqual(0, count);
+    }
+
+    [Test]
+    public void Event_RemoveFromCache_NullItems_Unshift() {
+        int count = 0;
+        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
+        evt.RemoveFromCache(null, true);
         Assert.AreEqual(0, count);
     }
 
@@ -313,7 +321,15 @@ public class Unit_RUMEvent {
     public void Event_RemoveFromCache_EmptyItems() {
         int count = 0;
         RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-        evt.RemoveFromCache(new List<object>());
+        evt.RemoveFromCache(new List<object>(), false);
+        Assert.AreEqual(0, count);
+    }
+
+    [Test]
+    public void Event_RemoveFromCache_EmptyItems_Unshift() {
+        int count = 0;
+        RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
+        evt.RemoveFromCache(new List<object>(), true);
         Assert.AreEqual(0, count);
     }
 

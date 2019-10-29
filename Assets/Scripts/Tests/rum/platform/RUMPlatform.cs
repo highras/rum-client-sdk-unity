@@ -121,7 +121,8 @@ namespace com.rum {
             if (!this._isPause) {
                 if (!this._isBackground) {
                     IDictionary<string, object> dict = new Dictionary<string, object>() {
-                        { "ev", "bg"
+                        {
+                            "ev", "bg"
                         }
                     };
                     this._isBackground = true;
@@ -145,7 +146,8 @@ namespace com.rum {
 
                 if (this._isBackground) {
                     IDictionary<string, object> dict = new Dictionary<string, object>() {
-                        { "ev", "fg"
+                        {
+                            "ev", "fg"
                         }
                     };
                     this._isBackground = false;
@@ -253,20 +255,8 @@ namespace com.rum {
             }
         }
 
-        private long _lowMemoryTimestamp;
-        private object self_locker = new object();
-
         private void OnLowMemory() {
-            bool needFire;
-
-            lock (self_locker) {
-                long timestamp = FPManager.Instance.GetMilliTimestamp();
-                needFire = (timestamp - this._lowMemoryTimestamp >= 30 * 1000);
-
-                if (needFire) {
-                    this._lowMemoryTimestamp = timestamp;
-                }
-            }
+            bool needFire = this.DuplicateCheck("low_memory", 30);
 
             if (needFire) {
                 IDictionary<string, object> dict = new Dictionary<string, object>() {
@@ -278,9 +268,9 @@ namespace com.rum {
             }
         }
 
-        private int _fireCount;
-
         private void OnTimer() {
+            //DuplicateExpire
+            this.DuplicateExpire();
             //netwrok_switch
             NetworkReachability network = Application.internetReachability;
 
@@ -294,9 +284,9 @@ namespace com.rum {
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
 
-            bool needFire = (++this._fireCount % 6 == 0);
-
             //fps_update
+            bool needFire = this.DuplicateCheck("fps_update", 60);
+
             if ((needFire && this._fpsList.Count > 0) || this._fpsList.Count == this._fpsList.Capacity) {
                 List<object> fps_list = new List<object>(this._fpsList);
                 IDictionary<string, object> dict = new Dictionary<string, object>() {
@@ -310,6 +300,7 @@ namespace com.rum {
 
             //geo_update
             double distance = 0;
+            needFire = this.DuplicateCheck("geo_update", 60);
 
             try {
                 if (this._locationInfo.longitude != this._longitude || this._locationInfo.latitude != this._latitude) {
@@ -341,10 +332,6 @@ namespace com.rum {
                     { "geo_info", geo_info }
                 };
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
-            }
-
-            if (needFire) {
-                this._fireCount = 0;
             }
         }
 
@@ -784,13 +771,25 @@ namespace com.rum {
         }
 
         private void OnException(string ev, string type, string message, string stack) {
-            IDictionary<string, object> dict = new Dictionary<string, object>() {
-                { "ev", ev },
-                { "type", type },
-                { "message", message },
-                { "stack", stack }
-            };
-            this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+            bool needFire = false;
+
+            if (!string.IsNullOrEmpty(stack)) {
+                needFire = this.DuplicateCheck(stack, 60);
+            } else {
+                if (!string.IsNullOrEmpty(message)) {
+                    needFire = this.DuplicateCheck(message, 60);
+                }
+            }
+
+            if (needFire) {
+                IDictionary<string, object> dict = new Dictionary<string, object>() {
+                    { "ev", ev },
+                    { "type", type },
+                    { "message", message },
+                    { "stack", stack }
+                };
+                this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+            }
         }
 
         //地球半径, 单位: 米
@@ -815,6 +814,45 @@ namespace com.rum {
          */
         private double Rad(double d) {
             return (double)d * Math.PI / 180d;
+        }
+
+        private IDictionary<string, int> _duplicateMap = new Dictionary<string, int>();
+
+        private bool DuplicateCheck(string key, int ttl) {
+            int timestamp = FPManager.Instance.GetTimestamp();
+
+            lock (this._duplicateMap) {
+                if (this._duplicateMap.ContainsKey(key)) {
+                    int expire = this._duplicateMap[key];
+
+                    if (expire > timestamp) {
+                        return false;
+                    }
+
+                    this._duplicateMap.Remove(key);
+                }
+
+                this._duplicateMap.Add(key, ttl + timestamp);
+                return true;
+            }
+        }
+
+        private void DuplicateExpire() {
+            int timestamp = FPManager.Instance.GetTimestamp();
+
+            lock (this._duplicateMap) {
+                List<string> keys = new List<string>(this._duplicateMap.Keys);
+
+                foreach (string key in keys) {
+                    int expire = this._duplicateMap[key];
+
+                    if (expire > timestamp) {
+                        continue;
+                    }
+
+                    this._duplicateMap.Remove(key);
+                }
+            }
         }
     }
 }

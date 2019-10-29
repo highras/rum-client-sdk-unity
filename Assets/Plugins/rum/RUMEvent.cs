@@ -193,8 +193,10 @@ namespace com.rum {
                     foreach (List<object> items in event_cache.Values) {
                         event_items.AddRange(items);
                     }
-                } catch(Exception ex) {
-                    Debug.LogWarning(ex);
+                } catch (Exception ex) {
+                    if (this._debug) {
+                        Debug.LogWarning(ex);
+                    }
                 }
 
                 event_cache.Clear();
@@ -203,7 +205,7 @@ namespace com.rum {
             return event_items;
         }
 
-        public long GenEventId(){
+        public long GenEventId() {
             return this._eidGenerator.Gen();
         }
 
@@ -410,7 +412,7 @@ namespace com.rum {
             this.SaveStorage();
         }
 
-        public void WriteEvents(ICollection<object> items) {
+        private void WriteEvents(ICollection<object> items) {
             if (this.IsNullOrEmpty(items)) {
                 return;
             }
@@ -446,7 +448,9 @@ namespace com.rum {
                     this._cacheDisableCount++;
                 }
 
-                Debug.LogWarning(String.Format("Event Disable! ev: {0}", key));
+                if (this._debug) {
+                    Debug.LogWarning(String.Format("Event Disable! ev: {0}", key));
+                }
                 return;
             }
 
@@ -606,7 +610,9 @@ namespace com.rum {
                         , "medium", storage_medium_count
                         , "low", storage_low_count);
             } catch (Exception ex) {
-                Debug.LogWarning(ex);
+                if (this._debug) {
+                    Debug.LogWarning(ex);
+                }
             }
 
             return String.Format("{0},{1}", FPManager.Instance.GetMilliTimestamp(), dump);
@@ -669,9 +675,28 @@ namespace com.rum {
             event_cache.Add(cache_key, items);
         }
 
-        public void RemoveFromCache(List<object> items)  {
+        private void UnshiftToStorage(List<object> items) {
+            lock (storage_locker) {
+                IDictionary<string, object> event_map = this.GetEventMap(EVENT_MAP);
+
+                if (this.IsNullOrEmpty(event_map)) {
+                    return;
+                }
+
+                if (event_map.ContainsKey(HIGH_LEVEL)) {
+                    List<object> event_list = (List<object>)event_map[HIGH_LEVEL];
+                    event_list.InsertRange(0, items);
+                }
+            }
+        }
+
+        public void RemoveFromCache(List<object> items, bool unshift)  {
             if (this.IsNullOrEmpty(items)) {
                 return;
+            }
+
+            if (unshift) {
+                this.UnshiftToStorage(items);
             }
 
             IDictionary<string, object> item = (IDictionary<string, object>) items[0];

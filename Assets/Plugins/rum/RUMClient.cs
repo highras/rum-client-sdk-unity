@@ -148,7 +148,7 @@ namespace com.rum {
                     return;
                 }
 
-                this._baseClient = new FPClient(this._endpoint, RUMConfig.CONNCT_INTERVAL);
+                this._baseClient = new FPClient(this._endpoint, RUMConfig.CONNCT_TIMEOUT);
                 this._baseClient.Client_Connect = BaseClient_Connect;
                 this._baseClient.Client_Close = BaseClient_Close;
                 this._baseClient.Client_Error = BaseClient_Error;
@@ -157,19 +157,13 @@ namespace com.rum {
         }
 
         private void BaseClient_Connect(EventData evd) {
-            if (this._debug) {
-                Debug.Log("[RUM] connect on rum agent!");
-            }
-
+            this.DebugEvent("connect on rum agent!");
             this.GetEvent().FireEvent(new EventData("ready"));
             this.StartPing();
         }
 
         private void BaseClient_Close(EventData evd) {
-            if (this._debug) {
-                Debug.Log("[RUM] close from rum agent!");
-            }
-
+            this.DebugEvent("close from rum agent!");
             this.StopPing();
             this._rumEvent.SetTimestamp(0);
 
@@ -444,7 +438,7 @@ namespace com.rum {
         }
 
         private void DumpEvent() {
-            FPManager.Instance.ExecTask(AsyncDumpEvent, null);
+            FPManager.Instance.AsyncTask(AsyncDumpEvent, null);
         }
 
         private void AsyncDumpEvent(object state) {
@@ -466,6 +460,19 @@ namespace com.rum {
                 dict.Add("type", type);
                 this.WriteEvent("append", dict);
             }
+        }
+
+        private void DebugEvent(string msg) {
+            if (this._debug) {
+                Debug.Log("[RUM] " + msg);
+            }
+
+            IDictionary<string, object> dict = new Dictionary<string, object>() {
+                { "type", "rum_debug" },
+                { "message", msg }
+            };
+
+            this.WriteEvent("debug", dict);
         }
 
         private void OnPlatformDelegate(EventData evd) {
@@ -530,7 +537,7 @@ namespace com.rum {
             // if (this._debug) {
             //     Debug.Log("[RUM] write event: " + Json.SerializeToString(dict));
             // }
-            FPManager.Instance.ExecTask(AsyncWriteEvent, dict);
+            FPManager.Instance.AsyncTask(AsyncWriteEvent, dict);
 
             lock (self_locker) {
                 this._eventWriteCount++;
@@ -877,20 +884,21 @@ namespace com.rum {
             };
             RUMClient self = this;
             this.SendQuest("adds", payload, (cbd) => {
+                Exception ex = cbd.GetException();
+                bool isException = (ex != null);
+
+                if (isException) {
+                    ErrorRecorderHolder.recordError(ex);
+                }
+
+                self._rumEvent.RemoveFromCache(items, isException);
+
                 lock (self_locker) {
                     if (self._sendCount > 0) {
                         self._sendCount--;
                     }
 
                     self._eventSendCount += items.Count;
-                }
-
-                self._rumEvent.RemoveFromCache(items);
-                Exception ex = cbd.GetException();
-
-                if (ex != null) {
-                    self._rumEvent.WriteEvents(items);
-                    ErrorRecorderHolder.recordError(ex);
                 }
             }, RUMConfig.SENT_TIMEOUT);
         }
@@ -903,7 +911,7 @@ namespace com.rum {
                 sb.Append(this._secret);
                 sb.Append(":");
                 sb.Append(Convert.ToString(salt));
-                return this.CalcMd5(sb.ToString(), true);
+                return FPManager.Instance.GetMD5(sb.ToString(), true);
             }
         }
 
@@ -983,29 +991,6 @@ namespace com.rum {
             }
 
             cbd.CheckException(isAnswerException, payload);
-        }
-
-        private string CalcMd5(string str, bool upper) {
-            byte[] inputBytes = System.Text.Encoding.ASCII.GetBytes(str);
-            return CalcMd5(inputBytes, upper);
-        }
-
-        private string CalcMd5(byte[] bytes, bool upper) {
-            MD5 md5 = System.Security.Cryptography.MD5.Create();
-            byte[] hash = md5.ComputeHash(bytes);
-            string f = "x2";
-
-            if (upper) {
-                f = "X2";
-            }
-
-            StringBuilder sb = new StringBuilder();
-
-            for (int i = 0; i < hash.Length; i++) {
-                sb.Append(hash[i].ToString(f));
-            }
-
-            return sb.ToString();
         }
 
         private class RUMErrorRecorder: ErrorRecorder {

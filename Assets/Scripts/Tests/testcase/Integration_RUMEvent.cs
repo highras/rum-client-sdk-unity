@@ -186,56 +186,56 @@ public class Integration_RUMEvent {
         Assert.AreEqual(0, list.Count);
     }
 
-    [UnityTest]
-    public IEnumerator Event_Init_WriteEvents() {
-        IDictionary<string, object> ev_dict = new Dictionary<string, object>() {
-            { "ev", "test" },
-            { "eid", 1568109465001 },
-            { "custom_debug", "test text" }
-        };
-        ICollection<object> items = new List<object>();
-        items.Add(ev_dict);
-        RUMEvent evt = null;
-        List<object> list = null;
-        Action sendQuest = () => {};
-        Action openEvent = () => {
-            evt.IsFirst();
-        };
-        evt = new RUMEvent(104, false, sendQuest, openEvent);
-        evt.Init(false, true, () => {
-            return "";
-        });
-        yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
-        yield return new WaitForSeconds(2.0f);
-        list = evt.GetSentEvents();
-        evt.Destroy();
-        yield return new WaitForSeconds(1.0f);
-        Assert.AreEqual(1, list.Count);
-    }
+    // [UnityTest]
+    // public IEnumerator Event_Init_WriteEvents() {
+    //     IDictionary<string, object> ev_dict = new Dictionary<string, object>() {
+    //         { "ev", "test" },
+    //         { "eid", 1568109465001 },
+    //         { "custom_debug", "test text" }
+    //     };
+    //     ICollection<object> items = new List<object>();
+    //     items.Add(ev_dict);
+    //     RUMEvent evt = null;
+    //     List<object> list = null;
+    //     Action sendQuest = () => {};
+    //     Action openEvent = () => {
+    //         evt.IsFirst();
+    //     };
+    //     evt = new RUMEvent(104, false, sendQuest, openEvent);
+    //     evt.Init(false, true, () => {
+    //         return "";
+    //     });
+    //     yield return new WaitForSeconds(1.0f);
+    //     evt.WriteEvents(items);
+    //     yield return new WaitForSeconds(2.0f);
+    //     list = evt.GetSentEvents();
+    //     evt.Destroy();
+    //     yield return new WaitForSeconds(1.0f);
+    //     Assert.AreEqual(1, list.Count);
+    // }
 
-    [UnityTest]
-    public IEnumerator Event_Init_WriteEventsEmptyDict() {
-        ICollection<object> items = new List<object>();
-        items.Add(new Dictionary<string, object>());
-        RUMEvent evt = null;
-        List<object> list = null;
-        Action sendQuest = () => {};
-        Action openEvent = () => {
-            evt.IsFirst();
-        };
-        evt = new RUMEvent(105, false, sendQuest, openEvent);
-        evt.Init(false, true, () => {
-            return "";
-        });
-        yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
-        yield return new WaitForSeconds(2.0f);
-        list = evt.GetSentEvents();
-        evt.Destroy();
-        yield return new WaitForSeconds(1.0f);
-        Assert.AreEqual(0, list.Count);
-    }
+    // [UnityTest]
+    // public IEnumerator Event_Init_WriteEventsEmptyDict() {
+    //     ICollection<object> items = new List<object>();
+    //     items.Add(new Dictionary<string, object>());
+    //     RUMEvent evt = null;
+    //     List<object> list = null;
+    //     Action sendQuest = () => {};
+    //     Action openEvent = () => {
+    //         evt.IsFirst();
+    //     };
+    //     evt = new RUMEvent(105, false, sendQuest, openEvent);
+    //     evt.Init(false, true, () => {
+    //         return "";
+    //     });
+    //     yield return new WaitForSeconds(1.0f);
+    //     evt.WriteEvents(items);
+    //     yield return new WaitForSeconds(2.0f);
+    //     list = evt.GetSentEvents();
+    //     evt.Destroy();
+    //     yield return new WaitForSeconds(1.0f);
+    //     Assert.AreEqual(0, list.Count);
+    // }
 
     [UnityTest]
     public IEnumerator Event_Init_WriteEvent_GetSentEvent_RemoveFromCache() {
@@ -258,7 +258,7 @@ public class Integration_RUMEvent {
         yield return new WaitForSeconds(2.0f);
         list_1 = evt_1.GetSentEvents();
         Assert.AreEqual(1, list_1.Count);
-        evt_1.RemoveFromCache(list_1);
+        evt_1.RemoveFromCache(list_1, false);
         yield return new WaitForSeconds(1.0f);
         evt_1.Destroy();
         yield return new WaitForSeconds(1.0f);
@@ -277,6 +277,48 @@ public class Integration_RUMEvent {
         evt_2.Destroy();
         yield return new WaitForSeconds(1.0f);
         Assert.AreEqual(0, list_2.Count);
+    }
+
+    [UnityTest]
+    public IEnumerator Event_Init_WriteEvent_GetSentEvent_RemoveFromCache_Unshift() {
+        IDictionary<string, object> ev_dict = new Dictionary<string, object>() {
+            { "ev", "test" },
+            { "eid", 1568109465001 },
+            { "custom_debug", "test text" }
+        };
+        RUMEvent evt_1 = null;
+        List<object> list_1 = null;
+        Action sendQuest_1 = () => {};
+        Action openEvent_1 = () => {
+            evt_1.IsFirst();
+        };
+        evt_1 = new RUMEvent(133, false, sendQuest_1, openEvent_1);
+        evt_1.Init(false, true, () => {
+            return "";
+        });
+        evt_1.WriteEvent(new Dictionary<string, object>(ev_dict));
+        yield return new WaitForSeconds(2.0f);
+        list_1 = evt_1.GetSentEvents();
+        Assert.AreEqual(1, list_1.Count);
+        evt_1.RemoveFromCache(list_1, true);
+        yield return new WaitForSeconds(1.0f);
+        evt_1.Destroy();
+        yield return new WaitForSeconds(1.0f);
+        RUMEvent evt_2 = null;
+        List<object> list_2 = null;
+        Action sendQuest_2 = () => {};
+        Action openEvent_2 = () => {
+            evt_2.IsFirst();
+        };
+        evt_2 = new RUMEvent(133, false, sendQuest_2, openEvent_2);
+        evt_2.Init(false, false, () => {
+            return "";
+        });
+        yield return new WaitForSeconds(2.0f);
+        list_2 = evt_2.GetSentEvents();
+        evt_2.Destroy();
+        yield return new WaitForSeconds(1.0f);
+        Assert.AreEqual(1, list_2.Count);
     }
 
     [UnityTest]
@@ -546,11 +588,11 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 10; i++) {
-            items.Add(ev_dict);
-        }
+        // for (int i = 0; i < 10; i++) {
+        //     items.Add(ev_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -564,7 +606,10 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(1);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 10; i++) {
+            evt.WriteEvent(ev_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
         evt.Destroy();
@@ -579,11 +624,11 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 100; i++) {
-            items.Add(ev_dict);
-        }
+        // for (int i = 0; i < 100; i++) {
+        //     items.Add(ev_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -597,7 +642,10 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 100; i++) {
+            evt.WriteEvent(ev_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
         evt.Destroy();
@@ -612,11 +660,11 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 100; i++) {
-            items.Add(ev_dict);
-        }
+        // for (int i = 0; i < 100; i++) {
+        //     items.Add(ev_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -630,7 +678,10 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(15 * 1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 100; i++) {
+            evt.WriteEvent(ev_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         list = evt.GetSentEvents();
         evt.Destroy();
@@ -645,11 +696,11 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 400; i++) {
-            items.Add(ev_dict);
-        }
+        // for (int i = 0; i < 400; i++) {
+        //     items.Add(ev_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -663,7 +714,10 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(15 * 1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 400; i++) {
+            evt.WriteEvent(ev_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(5.0f);
         list = evt.GetSentEvents();
         evt.Destroy();
@@ -678,11 +732,11 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 1000; i++) {
-            items.Add(ev_dict);
-        }
+        // for (int i = 0; i < 1000; i++) {
+        //     items.Add(ev_dict);
+        // }
 
         int count = 0;
         RUMEvent evt = null;
@@ -698,7 +752,10 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(15 * 1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 1000; i++) {
+            evt.WriteEvent(ev_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(8.0f);
         evt.Destroy();
         yield return new WaitForSeconds(1.0f);
@@ -934,11 +991,11 @@ public class Integration_RUMEvent {
             { "eid", 1568109465002 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 100; i++) {
-            items.Add(test_dict);
-        }
+        // for (int i = 0; i < 100; i++) {
+        //     items.Add(test_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -952,7 +1009,10 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(1 * 1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 100; i++) {
+            evt.WriteEvent(test_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
         yield return new WaitForSeconds(2.0f);
@@ -997,15 +1057,15 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 50; i++) {
-            items.Add(apen_dict);
-        }
+        // for (int i = 0; i < 50; i++) {
+        //     items.Add(apen_dict);
+        // }
 
-        for (int i = 0; i < 50; i++) {
-            items.Add(test_dict);
-        }
+        // for (int i = 0; i < 50; i++) {
+        //     items.Add(test_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -1019,7 +1079,13 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(1 * 1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 50; i++) {
+            evt.WriteEvent(apen_dict);
+        }
+        for (int i = 0; i < 50; i++) {
+            evt.WriteEvent(test_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
@@ -1084,15 +1150,15 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 3; i++) {
-            items.Add(apen_dict);
-        }
+        // for (int i = 0; i < 3; i++) {
+        //     items.Add(apen_dict);
+        // }
 
-        for (int i = 0; i < 3; i++) {
-            items.Add(test_dict);
-        }
+        // for (int i = 0; i < 3; i++) {
+        //     items.Add(test_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -1106,7 +1172,13 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(1 * 1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 3; i++) {
+            evt.WriteEvent(apen_dict);
+        }
+        for (int i = 0; i < 3; i++) {
+            evt.WriteEvent(test_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
@@ -1171,15 +1243,15 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 10; i++) {
-            items.Add(apen_dict);
-        }
+        // for (int i = 0; i < 10; i++) {
+        //     items.Add(apen_dict);
+        // }
 
-        for (int i = 0; i < 10; i++) {
-            items.Add(test_dict);
-        }
+        // for (int i = 0; i < 10; i++) {
+        //     items.Add(test_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -1193,7 +1265,13 @@ public class Integration_RUMEvent {
         });
         evt.SetSizeLimit(1 * 1024);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 10; i++) {
+            evt.WriteEvent(apen_dict);
+        }
+        for (int i = 0; i < 10; i++) {
+            evt.WriteEvent(test_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
@@ -1269,15 +1347,15 @@ public class Integration_RUMEvent {
             { "eid", 1568109465001 },
             { "custom_debug", "test text" }
         };
-        ICollection<object> items = new List<object>();
+        // ICollection<object> items = new List<object>();
 
-        for (int i = 0; i < 50; i++) {
-            items.Add(test_dict);
-        }
+        // for (int i = 0; i < 50; i++) {
+        //     items.Add(test_dict);
+        // }
 
-        for (int i = 0; i < 50; i++) {
-            items.Add(apen_dict);
-        }
+        // for (int i = 0; i < 50; i++) {
+        //     items.Add(apen_dict);
+        // }
 
         RUMEvent evt = null;
         List<object> list = null;
@@ -1292,7 +1370,13 @@ public class Integration_RUMEvent {
         evt.SetSizeLimit(1 * 1024);
         evt.UpdateConfig(ev_config);
         yield return new WaitForSeconds(1.0f);
-        evt.WriteEvents(items);
+        for (int i = 0; i < 50; i++) {
+            evt.WriteEvent(test_dict);
+        }
+        for (int i = 0; i < 50; i++) {
+            evt.WriteEvent(apen_dict);
+        }
+        // evt.WriteEvents(items);
         yield return new WaitForSeconds(2.0f);
         evt.WriteEvent(new Dictionary<string, object>(open_dict));
         evt.WriteEvent(new Dictionary<string, object>(info_dict));

@@ -8,7 +8,8 @@ namespace com.rum {
 
         public static int PING_INTERVAL = 20 * 1000;                    //PING间隔(ms)
         public static int CONNCT_INTERVAL = 40 * 1000;                  //尝试重新连接的时间间隔(ms)
-        public static int SENT_CONCURRENT = 3;                          //上报事件并发限制
+        public static int CONNCT_TIMEOUT = 20 * 1000;                   //建立连接超时时间(ms)
+        public static int SENT_CONCURRENT = 1;                          //上报事件并发限制
         public static int SENT_INTERVAL = 1 * 1000;                     //事件上报时间间隔(ms)
         public static int SENT_TIMEOUT = 20 * 1000;                     //事件上报超时时间(ms)
         public static int SENT_SIZE_LIMIT = 15 * 1024;                  //事件上报带宽限制(B)
