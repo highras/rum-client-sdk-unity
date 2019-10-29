@@ -267,12 +267,12 @@ namespace com.rum {
 
         public void WriteEvent(IDictionary<string, object> dict) {
             if (this.IsNullOrEmpty(dict)) {
-                ErrorRecorderHolder.recordError(new Exception("Null or Empty IDictionary<string, object>!"));
+                Debug.LogWarning("Null or Empty evnet object!");
                 return;
             }
 
             if (!dict.ContainsKey("ev")) {
-                ErrorRecorderHolder.recordError(new Exception("Not contains key 'ev'!"));
+                Debug.LogWarning("Not contains key 'ev'!");
                 return;
             }
 

@@ -65,10 +65,14 @@ namespace com.rum {
         }
 
         private void Init(int pid, string secret, string uid, string appv, bool debug, bool clearRumId, bool clearEvents) {
-            Debug.Log("[RUM] rum_sdk@" + RUMConfig.VERSION + ", fpnn_sdk@" + FPConfig.VERSION);
-
-            if (!RUMPlatform.HasInit()) {
-                RUMRegistration.Register(new LocationService());
+            if (pid <= 0) {
+                Debug.LogWarning("[RUM] The Parameter 'pid' Is Zero Or Negative!");
+                return;
+            }
+            
+            if (string.IsNullOrEmpty(secret)) {
+                Debug.LogWarning("[RUM] The Parameter 'secret' Is Null Or Empty!");
+                return;
             }
 
             lock (Pids_Locker) {
@@ -77,11 +81,17 @@ namespace com.rum {
                         throw new Exception("The Same Project Id, Instance Limit!");
                     }
 
-                    Debug.LogError("[RUM] The Same Project Id, Instance Limit!");
+                    Debug.LogWarning("[RUM] The Same Project Id, Instance Limit!");
                     return;
                 }
 
                 RUMClient.PIDS.Add(pid);
+            }
+
+            Debug.Log("[RUM] rum_sdk@" + RUMConfig.VERSION + ", fpnn_sdk@" + FPConfig.VERSION);
+
+            if (!RUMPlatform.HasInit()) {
+                RUMRegistration.Register(new LocationService());
             }
 
             this._pid = pid;
@@ -431,7 +441,7 @@ namespace com.rum {
                         , "write~", event_write_count
                         , "send~", event_send_count);
             } catch (Exception ex) {
-                Debug.LogError(ex);
+                Debug.LogWarning(ex);
             }
 
             return dump;
