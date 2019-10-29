@@ -89,12 +89,12 @@ namespace com.rum {
             }
 
             Debug.Log("[RUM] rum_sdk@" + RUMConfig.VERSION + ", fpnn_sdk@" + FPConfig.VERSION);
+            RUMDuplicate.Instance.Init(pid);
 
             if (!RUMPlatform.HasInit()) {
                 RUMRegistration.Register(new LocationService());
             }
 
-            RUMDuplicate.Instance.Init(pid);
             this._pid = pid;
             this._secret = secret;
             this._uid = uid;
