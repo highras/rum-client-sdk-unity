@@ -66,12 +66,12 @@ namespace com.rum {
 
         private void Init(int pid, string secret, string uid, string appv, bool debug, bool clearRumId, bool clearEvents) {
             if (pid <= 0) {
-                Debug.LogWarning("[RUM] The Parameter 'pid' Is Zero Or Negative!");
+                Debug.LogWarning("[RUM] The 'pid' Is Zero Or Negative!");
                 return;
             }
-            
+
             if (string.IsNullOrEmpty(secret)) {
-                Debug.LogWarning("[RUM] The Parameter 'secret' Is Null Or Empty!");
+                Debug.LogWarning("[RUM] The 'secret' Is Null Or Empty!");
                 return;
             }
 
@@ -94,6 +94,7 @@ namespace com.rum {
                 RUMRegistration.Register(new LocationService());
             }
 
+            RUMDuplicate.Instance.Init(pid);
             this._pid = pid;
             this._secret = secret;
             this._uid = uid;
@@ -481,7 +482,6 @@ namespace com.rum {
                 { "type", "rum_debug" },
                 { "message", msg }
             };
-
             this.WriteEvent("debug", dict);
         }
 
@@ -618,25 +618,13 @@ namespace com.rum {
             }
         }
 
-        private long _dumpCheckTimestamp;
-
         private void CheckDump(long timestamp) {
-            lock (self_locker) {
-                if (this._dumpCheckTimestamp == 0) {
-                    this._dumpCheckTimestamp = timestamp;
-                }
+            bool needFire = RUMDuplicate.Instance.Check("check_event_dump", 60);
 
-                if (timestamp - this._dumpCheckTimestamp < RUMConfig.DUMP_INTERVAL) {
-                    return;
-                }
-
-                this._dumpCheckTimestamp = timestamp;
+            if (needFire) {
+                this.DumpEvent();
             }
-
-            this.DumpEvent();
         }
-
-        private long _threadCheckTimestamp;
 
         private void CheckThreadPool(long timestamp) {
             int worker, io;
@@ -648,21 +636,14 @@ namespace com.rum {
                     { "available_worker_threads", worker }
                 };
                 dict.Add("type", "unity_available_threads");
-                bool needWarn;
-
-                lock (self_locker) {
-                    needWarn = (timestamp - this._threadCheckTimestamp >= 30 * 1000);
-
-                    if (needWarn) {
-                        this._threadCheckTimestamp = timestamp;
-                    }
-                }
 
                 if (this._debug) {
                     Debug.LogWarning("[RUM] available threads warn: " + Json.SerializeToString(dict));
                 }
 
-                if (needWarn) {
+                bool needFire = RUMDuplicate.Instance.Check("check_thread_pool", 60);
+
+                if (needFire) {
                     this.WriteEvent("warn", dict);
                 }
             }
@@ -1051,7 +1032,6 @@ namespace com.rum {
 
         public long Gen() {
             lock (lock_obj) {
-
                 if (++count > 999) {
                     count = 1;
                 }

@@ -177,27 +177,6 @@ public class Unit_RUMEvent {
         Assert.AreEqual(0, count);
     }
 
-
-    /**
-     *  WriteEvents(ICollection<object> items)
-     */
-    // [Test]
-    // public void Event_WriteEvents_NullItems() {
-    //     int count = 0;
-    //     RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-    //     evt.WriteEvents(null);
-    //     Assert.AreEqual(0, count);
-    // }
-
-    // [Test]
-    // public void Event_WriteEvents_EmptyItems() {
-    //     int count = 0;
-    //     RUMEvent evt = new RUMEvent(100, false, () => {}, () => {});
-    //     evt.WriteEvents(new List<object>());
-    //     Assert.AreEqual(0, count);
-    // }
-
-
     /**
      *  GetRumId()
      */

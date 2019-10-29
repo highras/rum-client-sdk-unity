@@ -145,6 +145,7 @@
      <Compile Include="Assets\Plugins\rum\platform\Singleton.cs" />
      <Compile Include="Assets\Plugins\rum\RUMClient.cs" />
      <Compile Include="Assets\Plugins\rum\RUMConfig.cs" />
+     <Compile Include="Assets\Plugins\rum\RUMDuplicate.cs" />
      <Compile Include="Assets\Plugins\rum\RUMEvent.cs" />
  <Reference Include="Unity.Timeline.Editor">
  <HintPath>/Users/di.zhao/Documents/repo/Bitbucket/infra-fpnn-rum-client-sdk/Unity/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
