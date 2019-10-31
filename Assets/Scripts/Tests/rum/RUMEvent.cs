@@ -160,7 +160,7 @@ namespace com.rum {
             this.BuildRumId();
 
             if (!this.IsNullOrEmpty(items)) {
-                this.WriteEvents(items);
+                this.UnshiftToStorage(items);
             }
 
             if (this._openEvent != null) {
