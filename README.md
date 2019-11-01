@@ -12,10 +12,16 @@
 * 在`Unity`主线程中初始化`RUMRegistration.Register(new LocationService())`
 * 若`RUMRegistration`已初始化,`RUMClient`可在任意线程中构造和使用(线程安全)
 * 异步函数均由子线程呼叫,不要在其中使用仅UI线程的函数,不要阻塞异步函数
-* 数据类型支持标准[ Json ](https://www.json.org/), 但非整型需转换为字符串类型
+* 数据类型支持标准[Json](https://www.json.org/), 但非整型需转换为字符串类型
 * 用户ID与`RUMClient`实例绑定,如果切换用户ID请使用新的`RUMClient`实例重新建立连接
-* 位置信息需要`Input.location`处于`Running`状态, 参考:[ LocationService.Start ](https://docs.unity3d.com/ScriptReference/LocationService.Start.html)
+* 位置信息需要`Input.location`处于`Running`状态, 参考:[LocationService.Start](https://docs.unity3d.com/ScriptReference/LocationService.Start.html)
 * HTTP HOOK: 半自动非侵入方式,不会抓取请求内容
+
+#### Events ####
+* `event`:
+    * `ready`: 连接可用
+    * `config`: 获取事件配置 
+    * `close`: 连接关闭
 
 #### 一个例子 ####
 ```c#
@@ -26,10 +32,10 @@ using UnityEngine;
 
 using com.rum;
 
-// UnityMainThread
+//UnityMainThread
 RUMRegistration.Register(new LocationService());
 
-// AnyThread
+//AnyThread
 RUMClient client = new RUMClient(
     41000013,
     "c23e9d90-bada-440d-8316-44790f615ec1",
@@ -39,12 +45,9 @@ RUMClient client = new RUMClient(
 );
 
 client.GetEvent().AddListener("close", (evd) => {
-
     Debug.Log("closed!");
 });
-
 client.GetEvent().AddListener("ready", (evd) => {
-
     Debug.Log("ready!");
 });
 
@@ -54,7 +57,6 @@ int intValue = 666666;
 long longValue = 999999999;
 
 IDictionary<string, object> attrs = new Dictionary<string, object>() {
-
     { "bool": true },
     { "string": "str" },
     { "int": intValue },
@@ -62,18 +64,12 @@ IDictionary<string, object> attrs = new Dictionary<string, object>() {
 };
 
 client.SetUid("xxxxxx-xxxxx-xxxx");
-client.CustomEvent("info", attrs);
+client.CustomEvent("Event_Name", attrs);
 
-// Destroy
+//Destroy
 // client.Destroy();
 // client = null;
 ```
-
-#### Events ####
-* `event`:
-    * `ready`: 连接可用
-    * `config`: 获取事件配置 
-    * `close`: 连接关闭
 
 #### API ####
 * `RUMRegistration::Register(LocationService location)`: 在`Unity`主线程中注册RUM服务
