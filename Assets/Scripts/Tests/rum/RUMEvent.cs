@@ -285,7 +285,7 @@ namespace com.rum {
             }
 
             lock (write_locker) {
-                if (this._eventCache.Count < 5000) {
+                if (this._eventCache.Count < 10000) {
                     if (isOpen) {
                         this._eventCache.Insert(0, dict);
                     } else {
@@ -293,7 +293,7 @@ namespace com.rum {
                     }
                 }
 
-                if (this._eventCache.Count == 4998) {
+                if (this._eventCache.Count == 9998) {
                     ErrorRecorderHolder.recordError(new Exception("Cache Events Limit!"));
                 }
             }
@@ -869,7 +869,8 @@ namespace com.rum {
                 return 0;
             }
 
-            return (int) Math.Ceiling(size / (storageSize / storegeCount * 1.0f));
+            int count = (int) Math.Ceiling(size / (storageSize / storegeCount * 1.0f));
+            return Math.Min(6000, count);
         }
 
         private void TrimEmptyKey(IDictionary<string, object> item) {
