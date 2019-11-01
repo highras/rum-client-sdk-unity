@@ -253,7 +253,7 @@ namespace com.fpnn {
             this.StartServiceThread();
 
             lock (service_locker) {
-                if (this._serviceCache.Count < 9999) {
+                if (this._serviceCache.Count < 10000) {
                     this._serviceCache.Add(service);
                 }
 
@@ -282,7 +282,7 @@ namespace com.fpnn {
             this.StartTaskTimer();
 
             lock (task_locker) {
-                if (this._timerTaskQueue.Count < 9999) {
+                if (this._timerTaskQueue.Count < 10000) {
                     int index = this._timerTaskQueue.Count;
 
                     for (int i = 0; i < this._timerTaskQueue.Count; i++) {
