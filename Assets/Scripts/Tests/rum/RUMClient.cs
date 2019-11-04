@@ -95,6 +95,10 @@ namespace com.rum {
                 RUMRegistration.Register(new LocationService());
             }
 
+            if (debug) {
+                Json.DefaultEncoding = new UTF8Encoding(false, true);
+            }
+
             this._pid = pid;
             this._secret = secret;
             this._uid = uid;
@@ -1056,6 +1060,7 @@ namespace com.rum {
     public static class RUMRegistration {
 
         static public void Register(LocationService location) {
+            Json.DefaultEncoding = new UTF8Encoding(false, false);
             FPManager.Instance.Init();
             RUMPlatform.Instance.Init(location);
         }
