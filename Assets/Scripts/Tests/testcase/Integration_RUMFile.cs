@@ -187,6 +187,7 @@ public class Integration_RUMFile {
         RUMFile.Result save_res_1 = file_a.SaveRumLog(0, new byte[100]);
         RUMFile.Result load_res_1 = file_a.LoadRumLog();
         RUMFile.Result save_res_2 = file_a.SaveRumLog(0, new byte[200]);
+        file_b.LoadStorage();
         RUMFile.Result load_res_2 = file_b.LoadRumLog();
         yield return new WaitForSeconds(0.5f);
         file_a.ClearAllFile();

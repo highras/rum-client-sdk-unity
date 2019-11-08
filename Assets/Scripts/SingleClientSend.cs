@@ -18,7 +18,7 @@ public class SingleClientSend : Main.ITestCase {
         public int Status = 0;
     }
 
-    private int send_qps = 1000;
+    private int send_qps = 80;
     private int trace_interval = 10;
     private int batch_count = 10;
 

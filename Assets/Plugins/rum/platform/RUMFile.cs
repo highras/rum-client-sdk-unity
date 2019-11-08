@@ -21,7 +21,10 @@ namespace com.rum {
         private static object File_Locker = new object();
 
         private bool _debug;
+        private int _fileCount;
         private string _secureDataPath;
+
+        private object self_locker = new object();
 
         public RUMFile(int pid, bool debug) {
             this._debug = debug;
@@ -44,13 +47,51 @@ namespace com.rum {
             }
         }
 
-        public RUMFile.Result SaveRumLog(int index, byte[] content) {
-            string path = String.Format("{0}/{1}{2}", this._secureDataPath, FILE_PRE, index);
+        public RUMFile.Result SaveStorage(byte[] content) {
+            string path = String.Format("{0}/{1}", this._secureDataPath, STORAGE_FILE);
             return this.WriteFile(path, content);
         }
 
+        public RUMFile.Result LoadStorage() {
+            int count = this.GetRumLogCount(this._secureDataPath);
+            lock (self_locker) {
+                this._fileCount = count;
+            }
+            string path = String.Format("{0}/{1}", this._secureDataPath, STORAGE_FILE);
+            RUMFile.Result res = this.ReadFile(path, false);
+
+            if (!res.success) {
+                this.DeleteFile(path);
+            }
+
+            return res;
+        }
+
+        public RUMFile.Result SaveRumLog(int index, byte[] content) {
+            string path = String.Format("{0}/{1}{2}", this._secureDataPath, FILE_PRE, index);
+            RUMFile.Result res = this.WriteFile(path, content);
+            if (res.success) {
+                lock (self_locker) {
+                    this._fileCount++;
+                }
+            }
+            return res;
+        }
+
         public RUMFile.Result LoadRumLog() {
-            string name = this.GetEarlierFile(this._secureDataPath);
+            string name = null;
+            bool needLoad = false;
+
+            lock (self_locker) {
+                if (this._fileCount > 0) {
+                    this._fileCount--;
+                    needLoad = true;
+                }
+            }
+
+            if (needLoad) {
+                name = this.GetEarlierFile(this._secureDataPath);
+            }
 
             if (string.IsNullOrEmpty(name)) {
                 return new RUMFile.Result() {
@@ -65,23 +106,6 @@ namespace com.rum {
             if (!res.success) {
                 this.DeleteFile(path);
             }
-
-            return res;
-        }
-
-        public RUMFile.Result SaveStorage(byte[] content) {
-            string path = String.Format("{0}/{1}", this._secureDataPath, STORAGE_FILE);
-            return this.WriteFile(path, content);
-        }
-
-        public RUMFile.Result LoadStorage() {
-            string path = String.Format("{0}/{1}", this._secureDataPath, STORAGE_FILE);
-            RUMFile.Result res = this.ReadFile(path, false);
-
-            if (!res.success) {
-                this.DeleteFile(path);
-            }
-
             return res;
         }
 
@@ -262,7 +286,6 @@ namespace com.rum {
         private string GetEarlierFile(string path) {
             lock (File_Locker) {
                 string name = null;
-
                 try {
                     if (Directory.Exists(path)) {
                         DirectoryInfo info = new DirectoryInfo(path);
@@ -282,8 +305,30 @@ namespace com.rum {
                 } catch (Exception ex) {
                     ErrorRecorderHolder.recordError(ex);
                 }
-
                 return name;
+            }
+        }
+
+        private int GetRumLogCount(string path) {
+            lock (File_Locker) {
+                try {
+                    if (!Directory.Exists(path)) {
+                        return 0;
+                    }
+
+                    DirectoryInfo info = new DirectoryInfo(path);
+                    if (info == null) {
+                        return 0;
+                    }
+
+                    FileInfo[] fis = info.GetFiles();
+                    if (fis != null) {
+                        return fis.Length;
+                    }
+                } catch (Exception ex) {
+                    ErrorRecorderHolder.recordError(ex);
+                }
+                return 0;
             }
         }
     }
