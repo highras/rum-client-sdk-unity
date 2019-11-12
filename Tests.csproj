@@ -140,6 +140,9 @@
      <Compile Include="Assets\Scripts\Tests\GameDevWare.Serialization\Serializers\VersionSerializer.cs" />
      <Compile Include="Assets\Scripts\Tests\GameDevWare.Serialization\TypeSerializer.cs" />
      <Compile Include="Assets\Scripts\Tests\GameDevWare.Serialization\TypeSerializerAttribute.cs" />
+     <Compile Include="Assets\Scripts\Tests\rum\msgpack\MsgPackFix.cs" />
+     <Compile Include="Assets\Scripts\Tests\rum\msgpack\MsgPackFixReader.cs" />
+     <Compile Include="Assets\Scripts\Tests\rum\msgpack\MsgPackFixWriter.cs" />
      <Compile Include="Assets\Scripts\Tests\rum\platform\RUMFile.cs" />
      <Compile Include="Assets\Scripts\Tests\rum\platform\RUMPlatform.cs" />
      <Compile Include="Assets\Scripts\Tests\rum\platform\Singleton.cs" />

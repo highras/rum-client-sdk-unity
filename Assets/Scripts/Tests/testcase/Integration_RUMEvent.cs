@@ -722,7 +722,7 @@ public class Integration_RUMEvent {
         list = evt.GetSentEvents();
         evt.Destroy();
         yield return new WaitForSeconds(1.0f);
-        Assert.AreEqual(177, list.Count);
+        Assert.AreEqual(150, list.Count);
     }
 
     [UnityTest]

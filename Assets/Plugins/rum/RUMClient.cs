@@ -14,14 +14,12 @@ namespace com.rum {
     public class RUMClient {
 
         private class PingLocker {
-
             public int Status = 0;
             public int Count = 0;
             public long Timestamp = 0;
         }
 
         private class TryConnLocker {
-
             public int Status = 0;
             public long Timestamp = 0;
         }
@@ -893,7 +891,9 @@ namespace com.rum {
                         self._sendCount--;
                     }
 
-                    self._eventSendCount += items.Count;
+                    if (!isException) {
+                        self._eventSendCount += items.Count;
+                    }
                 }
             }, RUMConfig.SENT_TIMEOUT);
         }
@@ -915,7 +915,7 @@ namespace com.rum {
 
             try {
                 using (MemoryStream outputStream = new MemoryStream()) {
-                    MsgPack.Serialize(payload, outputStream);
+                    MsgPackFix.Serialize(payload, outputStream, RUMRegistration.RUMEncoding);
                     outputStream.Seek(0, SeekOrigin.Begin);
                     bytes = outputStream.ToArray();
                 }
@@ -969,7 +969,7 @@ namespace com.rum {
                 if (data.GetFlag() == 1) {
                     try {
                         using (MemoryStream inputStream = new MemoryStream(data.MsgpackPayload())) {
-                            payload = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                            payload = MsgPackFix.Deserialize<IDictionary<string, object>>(inputStream, RUMRegistration.RUMEncoding);
                         }
                     } catch (Exception ex) {
                         ErrorRecorderHolder.recordError(ex);
@@ -1058,9 +1058,10 @@ namespace com.rum {
     }
 
     public static class RUMRegistration {
+        public static Encoding RUMEncoding = new UTF8Encoding(false, true);
 
         static public void Register(LocationService location) {
-            Json.DefaultEncoding = new UTF8Encoding(false, false);
+            Json.DefaultEncoding = RUMEncoding;
             FPManager.Instance.Init();
             RUMPlatform.Instance.Init(location);
         }

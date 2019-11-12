@@ -99,7 +99,7 @@ public class SingleClientSend : Main.ITestCase {
 
                     for (int i = 0; i < this.batch_count; i++) {
                         IDictionary<string, object> attrs = new Dictionary<string, object>();
-                        attrs.Add("custom_debug", "test text");
+                        attrs.Add("custom_debug", "{\"json\":\"text\"}");
                         this._client.CustomEvent("Custom_Test", new Dictionary<string, object>(attrs));
                         // this._client.CustomEvent("Debug_Test", new Dictionary<string, object>(attrs));
                         // this._client.CustomEvent("Info_Test", new Dictionary<string, object>(attrs));

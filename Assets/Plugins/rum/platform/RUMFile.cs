@@ -10,7 +10,6 @@ namespace com.rum {
     public class RUMFile {
 
         public class Result {
-
             public bool success;
             public object content;
         }
@@ -53,10 +52,10 @@ namespace com.rum {
         }
 
         public RUMFile.Result LoadStorage() {
-            int count = this.GetRumLogCount(this._secureDataPath);
             lock (self_locker) {
-                this._fileCount = count;
+                this._fileCount = this.GetRumLogCount(this._secureDataPath);
             }
+
             string path = String.Format("{0}/{1}", this._secureDataPath, STORAGE_FILE);
             RUMFile.Result res = this.ReadFile(path, false);
 
@@ -69,28 +68,26 @@ namespace com.rum {
 
         public RUMFile.Result SaveRumLog(int index, byte[] content) {
             string path = String.Format("{0}/{1}{2}", this._secureDataPath, FILE_PRE, index);
-            RUMFile.Result res = this.WriteFile(path, content);
-            if (res.success) {
-                lock (self_locker) {
+
+            lock (self_locker) {
+                RUMFile.Result res = this.WriteFile(path, content);
+
+                if (res.success) {
                     this._fileCount++;
                 }
+
+                return res;
             }
-            return res;
         }
 
         public RUMFile.Result LoadRumLog() {
             string name = null;
-            bool needLoad = false;
 
             lock (self_locker) {
                 if (this._fileCount > 0) {
                     this._fileCount--;
-                    needLoad = true;
+                    name = this.GetEarlierFile(this._secureDataPath);
                 }
-            }
-
-            if (needLoad) {
-                name = this.GetEarlierFile(this._secureDataPath);
             }
 
             if (string.IsNullOrEmpty(name)) {
@@ -106,6 +103,7 @@ namespace com.rum {
             if (!res.success) {
                 this.DeleteFile(path);
             }
+
             return res;
         }
 
@@ -286,6 +284,7 @@ namespace com.rum {
         private string GetEarlierFile(string path) {
             lock (File_Locker) {
                 string name = null;
+
                 try {
                     if (Directory.Exists(path)) {
                         DirectoryInfo info = new DirectoryInfo(path);
@@ -305,6 +304,7 @@ namespace com.rum {
                 } catch (Exception ex) {
                     ErrorRecorderHolder.recordError(ex);
                 }
+
                 return name;
             }
         }
@@ -317,17 +317,20 @@ namespace com.rum {
                     }
 
                     DirectoryInfo info = new DirectoryInfo(path);
+
                     if (info == null) {
                         return 0;
                     }
 
                     FileInfo[] fis = info.GetFiles();
+
                     if (fis != null) {
                         return fis.Length;
                     }
                 } catch (Exception ex) {
                     ErrorRecorderHolder.recordError(ex);
                 }
+
                 return 0;
             }
         }

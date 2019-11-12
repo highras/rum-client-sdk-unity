@@ -16,17 +16,14 @@ namespace com.rum {
     public class RUMEvent {
 
         private class WriteLocker {
-
             public int Status = 0;
         }
 
         private class CheckLocker {
-
             public int Status = 0;
         }
 
         private class ConfigLocker {
-
             public int Status = 0;
             public int Count = 0;
         }
@@ -122,6 +119,7 @@ namespace com.rum {
                 }
 
                 if (this._clearEvents) {
+                    this._clearEvents = false;
                     ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
 
                     if (this._debug) {
@@ -130,6 +128,7 @@ namespace com.rum {
                 }
 
                 if (this._clearRumId) {
+                    this._clearRumId = false;
                     ((IDictionary<string, object>)this._storage[this._rumIdKey]).Clear();
 
                     if (this._debug) {
@@ -349,7 +348,8 @@ namespace com.rum {
                         this._eventCache = new List<object>();
                     }
 
-                    this.WriteStorage(list);
+                    this.MoveToStorage(list);
+                    this.SendToAgent();
                     this.StartCheckThread();
                     this._writeEvent.WaitOne(RUMConfig.SENT_INTERVAL);
                 }
@@ -364,39 +364,18 @@ namespace com.rum {
         private void StopWriteThread() {
             lock (write_locker) {
                 if (write_locker.Status == 1) {
-                    write_locker.Status = 2;
-
                     try {
                         this._writeEvent.Set();
                     } catch (Exception ex) {
                         ErrorRecorderHolder.recordError(ex);
                     }
 
-                    RUMEvent self = this;
-                    FPManager.Instance.DelayTask(100, (state) => {
-                        List<object> list;
-
-                        lock (write_locker) {
-                            write_locker.Status = 0;
-                            list = self._eventCache;
-                            self._eventCache = new List<object>();
-                        }
-
-                        if (!self.IsNullOrEmpty(list)) {
-                            self.WriteEvents(list);
-
-                            lock (self_locker) {
-                                self._cacheWriteCount += list.Count;
-                            }
-
-                            self.SaveStorage();
-                        }
-                    }, null);
+                    write_locker.Status = 0;
                 }
             }
         }
 
-        private void WriteStorage(ICollection<object> list) {
+        private void MoveToStorage(ICollection<object> list) {
             if (!this.IsNullOrEmpty(list)) {
                 this.WriteEvents(list);
 
@@ -404,12 +383,12 @@ namespace com.rum {
                     this._cacheWriteCount += list.Count;
                 }
             }
+        }
 
+        private void SendToAgent() {
             if (this._sendQuest != null) {
                 this._sendQuest();
             }
-
-            this.SaveStorage();
         }
 
         private void WriteEvents(ICollection<object> items) {
@@ -451,6 +430,7 @@ namespace com.rum {
                 if (this._debug) {
                     Debug.LogWarning(String.Format("Event Disable! ev: {0}", key));
                 }
+
                 return;
             }
 
@@ -760,7 +740,7 @@ namespace com.rum {
 
         private List<object> ShiftEventsFromStorage(int size, bool catchAble) {
             List<object> items = new List<object>();
-            int countLimit = this.GetCountLimit(size);
+            int countLimit = this.GetCountLimit(size, 150);
 
             if (countLimit <= 0) {
                 return items;
@@ -809,7 +789,7 @@ namespace com.rum {
 
         private List<object> PopEventsFromStorage(int size, bool catchAble) {
             List<object> items = new List<object>();
-            int countLimit = this.GetCountLimit(size);
+            int countLimit = this.GetCountLimit(size, 5000);
 
             if (countLimit <= 0) {
                 return items;
@@ -856,7 +836,7 @@ namespace com.rum {
             event_list.RemoveRange(index, count);
         }
 
-        private int GetCountLimit(int size) {
+        private int GetCountLimit(int size, int max) {
             int storegeCount = 0;
             int storageSize = 0;
 
@@ -870,7 +850,7 @@ namespace com.rum {
             }
 
             int count = (int) Math.Ceiling(size / (storageSize / storegeCount * 1.0f));
-            return Math.Min(6000, count);
+            return Math.Min(max, count);
         }
 
         private void TrimEmptyKey(IDictionary<string, object> item) {
@@ -901,7 +881,7 @@ namespace com.rum {
                     byte[] storage_bytes = (byte[])res.content;
 
                     using (MemoryStream inputStream = new MemoryStream(storage_bytes)) {
-                        storage = MsgPack.Deserialize<IDictionary<string, object>>(inputStream);
+                        storage = MsgPackFix.Deserialize<IDictionary<string, object>>(inputStream, RUMRegistration.RUMEncoding);
                     }
 
                     needClear = storage_bytes.Length > 2 * RUMConfig.STORAGE_SIZE_MAX;
@@ -950,7 +930,7 @@ namespace com.rum {
             try {
                 using (MemoryStream outputStream = new MemoryStream()) {
                     lock (storage_locker) {
-                        MsgPack.Serialize(this._storage, outputStream);
+                        MsgPackFix.Serialize(this._storage, outputStream, RUMRegistration.RUMEncoding);
                     }
 
                     outputStream.Seek(0, SeekOrigin.Begin);
@@ -970,9 +950,8 @@ namespace com.rum {
                     ((IDictionary<string, object>)this._storage[this._rumEventKey]).Clear();
                 }
 
+                storage_bytes = new byte[0];
                 ErrorRecorderHolder.recordError(new Exception("Storage Size Limit!"));
-                this.UpdateStorageSize(160);
-                return new byte[0];
             }
 
             this.UpdateStorageSize(storage_bytes.Length);
@@ -999,7 +978,7 @@ namespace com.rum {
 
             lock (self_locker) {
                 this._storageCount = count;
-                this._storageSize = size;
+                this._storageSize = Math.Max(size, 100);
             }
         }
 
@@ -1178,6 +1157,7 @@ namespace com.rum {
                         }
                     }
 
+                    this.SaveStorage();
                     this.CheckStorage();
                     this._checkEvent.WaitOne(RUMConfig.LOCAL_STORAGE_DELAY);
                 }
@@ -1192,46 +1172,34 @@ namespace com.rum {
         private void StopCheckThread() {
             lock (check_locker) {
                 if (check_locker.Status == 1) {
-                    check_locker.Status = 2;
-
                     try {
                         this._checkEvent.Set();
                     } catch (Exception ex) {
                         ErrorRecorderHolder.recordError(ex);
                     }
 
-                    RUMEvent self = this;
-                    FPManager.Instance.DelayTask(100, (state) => {
-                        lock (check_locker) {
-                            check_locker.Status = 0;
-                        }
-
-                        if (self._debug) {
-                            Debug.Log("[RUM] DUMP: " + self.DumpEventCount());
-                        }
-                    }, null);
+                    check_locker.Status = 0;
                 }
             }
         }
 
         private void CheckStorage() {
             int size;
-            bool needSave = false;
 
             lock (self_locker) {
                 size = this._storageSize;
             }
 
+            if (size < 1) {
+                return;
+            }
+
             if (size >= RUMConfig.STORAGE_SIZE_MAX) {
-                needSave = this.SlipStorage();
+                this.SlipStorage();
             }
 
             if (size < RUMConfig.STORAGE_SIZE_MIN) {
-                needSave = this.ReStorage();
-            }
-
-            if (needSave) {
-                this.SaveStorage();
+                this.ReStorage();
             }
         }
 
@@ -1249,7 +1217,7 @@ namespace com.rum {
 
             try {
                 using (MemoryStream outputStream = new MemoryStream()) {
-                    MsgPack.Serialize(list, outputStream);
+                    MsgPackFix.Serialize(list, outputStream, RUMRegistration.RUMEncoding);
                     outputStream.Seek(0, SeekOrigin.Begin);
                     bytes = outputStream.ToArray();
                 }
@@ -1300,10 +1268,11 @@ namespace com.rum {
 
                 try {
                     using (MemoryStream inputStream = new MemoryStream((byte[])res.content)) {
-                        items = MsgPack.Deserialize<List<object>>(inputStream);
+                        items = MsgPackFix.Deserialize<List<object>>(inputStream, RUMRegistration.RUMEncoding);
                     }
                 } catch (Exception ex) {
                     ErrorRecorderHolder.recordError(ex);
+                    return false;
                 }
 
                 int count = 0;
