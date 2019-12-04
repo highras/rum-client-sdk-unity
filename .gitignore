@@ -3,3 +3,4 @@
 /**/*.log
 /**/Temp/
 /**/Library/
+/**/*.cs.meta
