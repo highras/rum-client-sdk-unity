@@ -32,7 +32,7 @@ public class Main : MonoBehaviour {
         //TestCase
         // this._testCase = new TestCase();
         //SingleClientSend
-        this._testCase = new SingleClientSend();
+        this._testCase = new SingleClientSendMulti();
         //SingleClientConcurrency
         // this._testCase = new SingleClientConcurrency();
 

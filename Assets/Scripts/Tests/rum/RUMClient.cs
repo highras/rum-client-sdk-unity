@@ -130,6 +130,7 @@ namespace com.rum {
             this.RemovePlatformListener();
             FPManager.Instance.RemoveSecond(OnSecondDelegate);
 
+            FPClient client;
             lock (self_locker) {
                 pid = this._pid;
                 this._event.FireEvent(new EventData("close"));
@@ -139,11 +140,12 @@ namespace com.rum {
                     this._rumEvent.Destroy();
                 }
 
-                if (this._baseClient != null) {
-                    this._baseClient.Close();
-                    this._baseClient = null;
-                }
+                client = this._baseClient;
+                this._baseClient = null;
             }
+
+            if (client != null)
+                client.Close();
 
             lock (Pids_Locker) {
                 if (RUMClient.PIDS.Contains(pid)) {
@@ -165,6 +167,7 @@ namespace com.rum {
                 this._baseClient.Client_Connect = BaseClient_Connect;
                 this._baseClient.Client_Close = BaseClient_Close;
                 this._baseClient.Client_Error = BaseClient_Error;
+                this._baseClient.SetCloseDelayForAppleMobileDeviceInBackground(300);
                 this._baseClient.Connect();
             }
         }
@@ -899,15 +902,16 @@ namespace com.rum {
         }
 
         private string GenSign(long salt) {
-            lock (self_locker) {
-                StringBuilder sb = new StringBuilder(70);
+            StringBuilder sb = new StringBuilder(70);
+            lock (self_locker)
+            {
                 sb.Append(Convert.ToString(this._pid));
                 sb.Append(":");
                 sb.Append(this._secret);
-                sb.Append(":");
-                sb.Append(Convert.ToString(salt));
-                return FPManager.Instance.GetMD5(sb.ToString(), true);
             }
+            sb.Append(":");
+            sb.Append(Convert.ToString(salt));
+            return FPManager.Instance.GetMD5(sb.ToString(), true);
         }
 
         private void SendQuest(string method, IDictionary<string, object> payload, CallbackDelegate callback, int timeout) {
@@ -933,11 +937,12 @@ namespace com.rum {
             data.SetMethod(method);
             data.SetPayload(bytes);
 
+            FPClient client;
             lock (self_locker) {
-                if (this._baseClient != null) {
-                    this._baseClient.SendQuest(data, this.QuestCallback(callback), timeout);
-                }
+                client = this._baseClient;
             }
+            if (client != null)
+                client.SendQuest(data, this.QuestCallback(callback), timeout);
         }
 
         private CallbackDelegate QuestCallback(CallbackDelegate callback) {

@@ -78,8 +78,12 @@ namespace com.rum {
 
         void Awake() {}
         void OnEnable() {
+            //this._isPause = false;
+            //this._isFocus = false;
             this._isPause = false;
-            this._isFocus = false;
+            this._isFocus = true;
+            this._isBackground = false;
+
             this._network = Application.internetReachability;
             Application.lowMemory += OnLowMemory;
             Application.logMessageReceived += OnLogCallback;
@@ -117,6 +121,7 @@ namespace com.rum {
             StopAllCoroutines();
         }
 
+        /*
         void OnApplicationPause() {
             if (!this._isPause) {
                 if (!this._isBackground) {
@@ -155,6 +160,63 @@ namespace com.rum {
                 }
             }
         }
+        */
+
+        private void CheckInBackground()
+        {
+            if (_isPause && !_isFocus)
+            {
+                if (_isBackground == false)
+                {
+                    _isBackground = true;
+
+#if UNITY_IOS
+                    FPClient.AppleMobileDeviceSwitchToBackground(_isBackground);
+#endif
+
+
+                    IDictionary<string, object> dict = new Dictionary<string, object>() {
+                        {
+                            "ev", "bg"
+                        }
+                    };
+                    this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+                }
+            }
+            else
+            {
+                if (_isBackground)
+                {
+                    _isBackground = false;
+
+#if UNITY_IOS
+                    FPClient.AppleMobileDeviceSwitchToBackground(_isBackground);
+#endif
+
+                    IDictionary<string, object> dict = new Dictionary<string, object>() {
+                        {
+                            "ev", "fg"
+                        }
+                    };
+                    this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
+                }
+            }
+        }
+
+        void OnApplicationPause(bool pauseStatus)
+        {
+            _isPause = pauseStatus;
+
+            CheckInBackground();
+        }
+
+        void OnApplicationFocus(bool hasFocus)
+        {
+            _isFocus = hasFocus;
+
+            CheckInBackground();
+        }
+
 
         private float _latitude = 0;
         private float _longitude = 0;

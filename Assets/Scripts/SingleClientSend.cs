@@ -18,9 +18,9 @@ public class SingleClientSend : Main.ITestCase {
         public int Status = 0;
     }
 
-    private int send_qps = 80;
+    private int send_qps = 200;
     private int trace_interval = 10;
-    private int batch_count = 10;
+    private int batch_count = 2;
 
     private SendLocker send_locker = new SendLocker();
 

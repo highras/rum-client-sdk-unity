@@ -167,6 +167,7 @@ namespace com.rum {
                 this._baseClient.Client_Connect = BaseClient_Connect;
                 this._baseClient.Client_Close = BaseClient_Close;
                 this._baseClient.Client_Error = BaseClient_Error;
+                this._baseClient.SetCloseDelayForAppleMobileDeviceInBackground(300);
                 this._baseClient.Connect();
             }
         }

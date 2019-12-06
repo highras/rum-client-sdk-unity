@@ -427,9 +427,9 @@ namespace com.rum {
                     this._cacheDisableCount++;
                 }
 
-                if (this._debug) {
-                    Debug.LogWarning(String.Format("Event Disable! ev: {0}", key));
-                }
+                //if (this._debug) {
+                //    Debug.LogWarning(String.Format("Event Disable! ev: {0}", key));
+                //}
 
                 return;
             }
