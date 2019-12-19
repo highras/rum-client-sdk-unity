@@ -63,9 +63,14 @@ namespace com.rum {
         private static bool isInit;
         private static object lock_obj = new object();
 
+#if RUM_DISABLE_LOCATION_SERVICE
+        public void Init() {
+        }
+#else
         public void Init(LocationService location) {
             this._locationService = location;
         }
+#endif
 
         IEnumerator Start() {
             yield return new WaitForSeconds(10.0f);
@@ -220,12 +225,20 @@ namespace com.rum {
 
         private float _latitude = 0;
         private float _longitude = 0;
+
+#if RUM_DISABLE_LOCATION_SERVICE
+
+#else
         private LocationInfo _locationInfo;
         private LocationService _locationService;
+#endif
 
         private IEnumerator GEO() {
             yield return new WaitForSeconds(10.0f);
 
+#if RUM_DISABLE_LOCATION_SERVICE
+            yield break;
+#else
             if (this._locationService == null) {
                 yield break;
             }
@@ -243,6 +256,7 @@ namespace com.rum {
 
                 yield return new WaitForSeconds(10.0f);
             }
+#endif
         }
 
         private double _lastFpsTime;
@@ -358,6 +372,9 @@ namespace com.rum {
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
 
+#if RUM_DISABLE_LOCATION_SERVICE
+
+#else
             //geo_update
             double distance = 0;
             needFire = RUMDuplicate.Instance.Check("geo_update", 60);
@@ -393,6 +410,7 @@ namespace com.rum {
                 };
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
+#endif
         }
 
         private IEnumerator INFO() {
@@ -737,9 +755,9 @@ namespace com.rum {
             string secureDataPath = Application.temporaryCachePath;
 
             try {
-                #if !UNITY_EDITOR && UNITY_IPHONE
+#if !UNITY_EDITOR && UNITY_IPHONE
                 secureDataPath = Application.persistentDataPath;
-                #elif !UNITY_EDITOR && UNITY_ANDROID
+#elif !UNITY_EDITOR && UNITY_ANDROID
 
                 using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer")) {
                     using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity")) {
@@ -749,7 +767,7 @@ namespace com.rum {
                     }
                 }
 
-                #endif
+#endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
@@ -761,7 +779,7 @@ namespace com.rum {
             string androidId = null;
 
             try {
-                #if !UNITY_EDITOR && UNITY_ANDROID
+#if !UNITY_EDITOR && UNITY_ANDROID
 
                 using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer")) {
                     using (var currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity")) {
@@ -773,7 +791,7 @@ namespace com.rum {
                     }
                 }
 
-                #endif
+#endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
@@ -785,14 +803,14 @@ namespace com.rum {
             string deviceToken = null;
 
             try {
-                #if !UNITY_EDITOR && UNITY_IPHONE
+#if !UNITY_EDITOR && UNITY_IPHONE
                 byte[] token = UnityEngine.iOS.NotificationServices.deviceToken;
 
                 if (token != null) {
                     deviceToken = System.BitConverter.ToString(token).Replace("-", "");
                 }
 
-                #endif
+#endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
@@ -804,9 +822,9 @@ namespace com.rum {
             string vendorIdentifier = null;
 
             try {
-                #if !UNITY_EDITOR && UNITY_IPHONE
+#if !UNITY_EDITOR && UNITY_IPHONE
                 vendorIdentifier = UnityEngine.iOS.Device.vendorIdentifier;
-                #endif
+#endif
             } catch (Exception ex) {
                 ErrorRecorderHolder.recordError(ex);
             }
