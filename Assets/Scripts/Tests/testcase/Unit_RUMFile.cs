@@ -15,7 +15,11 @@ public class Unit_RUMFile {
 
     [SetUp]
     public void SetUp() {
+#if RUM_ENABLE_LOCATION_SERVICE
         RUMRegistration.Register(null);
+#else
+        RUMRegistration.Register();
+#endif
     }
 
     [TearDown]

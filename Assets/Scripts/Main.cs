@@ -27,7 +27,11 @@ public class Main : MonoBehaviour {
             Input.location.Start();
         }
 
+#if RUM_ENABLE_LOCATION_SERVICE
         RUMRegistration.Register(new LocationService());
+#else
+        RUMRegistration.Register();
+#endif
         // RUMRegistration.Register(null);
         //TestCase
         // this._testCase = new TestCase();

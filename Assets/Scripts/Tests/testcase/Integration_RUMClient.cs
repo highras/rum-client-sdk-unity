@@ -17,7 +17,11 @@ public class Integration_RUMClient {
 
     [SetUp]
     public void SetUp() {
+#if RUM_ENABLE_LOCATION_SERVICE
         RUMRegistration.Register(null);
+#else
+        RUMRegistration.Register();
+#endif
     }
 
     [TearDown]

@@ -12,7 +12,11 @@ public class Unit_RUMEvent {
 
     [SetUp]
     public void SetUp() {
+#if RUM_ENABLE_LOCATION_SERVICE
         RUMRegistration.Register(null);
+#else
+        RUMRegistration.Register();
+#endif
     }
 
     [TearDown]

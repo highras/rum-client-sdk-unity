@@ -90,10 +90,10 @@ namespace com.rum {
             RUMDuplicate.Instance.Init(pid);
 
             if (!RUMPlatform.HasInit()) {
-#if RUM_DISABLE_LOCATION_SERVICE
-                RUMRegistration.Register();
-#else
+#if RUM_ENABLE_LOCATION_SERVICE
                 RUMRegistration.Register(new LocationService());
+#else
+                RUMRegistration.Register();
 #endif
             }
 
@@ -1069,18 +1069,17 @@ namespace com.rum {
     public static class RUMRegistration {
         public static Encoding RUMEncoding = new UTF8Encoding(false, true);
 
-#if RUM_DISABLE_LOCATION_SERVICE
-        static public void Register()
-        {
-            Json.DefaultEncoding = RUMEncoding;
-            FPManager.Instance.Init();
-            RUMPlatform.Instance.Init();
-        }
-#else
+#if RUM_ENABLE_LOCATION_SERVICE
         static public void Register(LocationService location) {
             Json.DefaultEncoding = RUMEncoding;
             FPManager.Instance.Init();
             RUMPlatform.Instance.Init(location);
+        }
+#else
+        static public void Register() {
+            Json.DefaultEncoding = RUMEncoding;
+            FPManager.Instance.Init();
+            RUMPlatform.Instance.Init();
         }
 #endif
     }

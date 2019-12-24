@@ -63,12 +63,12 @@ namespace com.rum {
         private static bool isInit;
         private static object lock_obj = new object();
 
-#if RUM_DISABLE_LOCATION_SERVICE
-        public void Init() {
-        }
-#else
+#if RUM_ENABLE_LOCATION_SERVICE
         public void Init(LocationService location) {
             this._locationService = location;
+        }
+#else
+        public void Init() {
         }
 #endif
 
@@ -226,19 +226,17 @@ namespace com.rum {
         private float _latitude = 0;
         private float _longitude = 0;
 
-#if RUM_DISABLE_LOCATION_SERVICE
-
-#else
+#if RUM_ENABLE_LOCATION_SERVICE
         private LocationInfo _locationInfo;
         private LocationService _locationService;
+#else
+
 #endif
 
         private IEnumerator GEO() {
             yield return new WaitForSeconds(10.0f);
 
-#if RUM_DISABLE_LOCATION_SERVICE
-            yield break;
-#else
+#if RUM_ENABLE_LOCATION_SERVICE
             if (this._locationService == null) {
                 yield break;
             }
@@ -256,6 +254,8 @@ namespace com.rum {
 
                 yield return new WaitForSeconds(10.0f);
             }
+#else
+            yield break;
 #endif
         }
 
@@ -372,9 +372,7 @@ namespace com.rum {
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
 
-#if RUM_DISABLE_LOCATION_SERVICE
-
-#else
+#if RUM_ENABLE_LOCATION_SERVICE
             //geo_update
             double distance = 0;
             needFire = RUMDuplicate.Instance.Check("geo_update", 60);
@@ -410,6 +408,8 @@ namespace com.rum {
                 };
                 this.Event.FireEvent(new EventData(PLATFORM_EVENT, dict));
             }
+#else
+
 #endif
         }
 
