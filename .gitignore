@@ -3,6 +3,8 @@
 /**/*.log
 /**/Temp/
 /**/Library/
+/**/[Oo]bj/
 /**/*.cs.meta
+.vs/
 *.sln
 *.csproj
