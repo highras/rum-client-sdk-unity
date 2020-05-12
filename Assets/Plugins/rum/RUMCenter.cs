@@ -576,6 +576,11 @@ namespace com.fpnn.rum
 
         private long GenEventId()
         {
+            /*
+             * 这里有个 defect，当 eventIdBase 溢出后，成为负数，会导致 eid 回退变小。
+             * 但假设客户端 1 秒生成 1000 个，也就是 1 毫秒生成 1 个，进程需要持续运行4年才会触发该 defect。
+             * 因此不打算修改。
+             */
             return (ClientEngine.GetCurrentSeconds() << 32) + Interlocked.Increment(ref eventIdBase);
         }
 
