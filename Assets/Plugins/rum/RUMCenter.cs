@@ -50,16 +50,18 @@ namespace com.fpnn.rum
         private string uid;
         private string secretKey;
         private long delaySeconds;
+        volatile bool timeAdjusted;
 
         public CoreInfo(RUMConfig config)
         {
             rumId = SystemInfo.deviceUniqueIdentifier;      //-- Init rumId with reserve id. It will be rewriten when RumId file exist.
-            sessionId = ClientEngine.GetCurrentMilliseconds();
+            sessionId = ClientEngine.GetCurrentMilliseconds();  //-- Cannot large than 52 bits, compatible with javascript.
 
             pid = config.pid;
             uid = config.uid;
             secretKey = config.secretKey;
             delaySeconds = 0;
+            timeAdjusted = false;
         }
 
         public long ConfigForNewSession()
@@ -78,13 +80,17 @@ namespace com.fpnn.rum
             return Crypto.GetMD5(src, true);
         }
 
-        public long GetAdjustedTimestamp()
+        public long AdjustTimestamp(long eid)
         {
-            return ClientEngine.GetCurrentSeconds() - Interlocked.Read(ref delaySeconds);
+            if (timeAdjusted)
+                return eid/1000/1000 - Interlocked.Read(ref delaySeconds);
+
+            return 0;
         }
 
         public void ConfigDelay(long delay)
         {
+            timeAdjusted = true;
             Interlocked.Exchange(ref delaySeconds, delay);
         }
 
@@ -576,12 +582,50 @@ namespace com.fpnn.rum
 
         private long GenEventId()
         {
+            //-- Cannot large than 52 bits, compatible with javascript.
+
             /*
-             * 这里有个 defect，当 eventIdBase 溢出后，成为负数，会导致 eid 回退变小。
-             * 但假设客户端 1 秒生成 1000 个，也就是 1 毫秒生成 1 个，进程需要持续运行4年才会触发该 defect。
-             * 因此不打算修改。
+             * 假设客户端 1 秒生成 1000 个，进程需要持续运行4年后，
+             * eventIdBase 会从 -2 转到 -1，导致生成的 order 会从 295 变到 0，而不是 999 变到 0.
+             *
+             * 测试：
+             *  -- No.2 turn 0: base 998 order = 999
+             *  -- No.2 turn 1: base 999 order = 0
+             *  -- No.2 turn 2: base 1000 order = 1
+             *  -- No.2 turn 3: base 1001 order = 2
+             * 
+             *  -- No.3 turn 1: base 2147483646 order = 647
+             *  -- No.3 turn 2: base 2147483647 order = 648
+             *  -- No.3 turn 3: base -2147483648 order = 649
+             *  -- No.3 turn 4: base -2147483647 order = 650
+             * 
+             *  -- No.4 turn 4: base -2147483299 order = 998
+             *  -- No.4 turn 5: base -2147483298 order = 999
+             *  -- No.4 turn 6: base -2147483297 order = 0
+             *  -- No.4 turn 7: base -2147483296 order = 1
+             *  -- No.4 turn 8: base -2147483295 order = 2
+             * 
+             *  -- No.5 turn 0: base -3 order = 294
+             *  -- No.5 turn 1: base -2 order = 295
+             *  -- No.5 turn 2: base -1 order = 0
+             *  -- No.5 turn 3: base 0 order = 1
+             *  -- No.5 turn 4: base 1 order = 2
+             *  
              */
-            return (ClientEngine.GetCurrentSeconds() << 32) + Interlocked.Increment(ref eventIdBase);
+
+            const int MaxValue = 1000;
+            int order = Interlocked.Increment(ref eventIdBase);
+
+            if (order >= MaxValue)
+                order %= MaxValue;
+            else if (order < 0)
+            {
+                long extend = 0xFFFFFFFF;
+                extend &= order;
+                order = (int)(extend % MaxValue);
+            }
+
+            return ClientEngine.GetCurrentMilliseconds() * 1000 + order;
         }
 
         public void StartNewSession()
@@ -652,7 +696,9 @@ namespace com.fpnn.rum
 
             Dictionary<string, int> eventConfig = RUMFile.LoadConfig(out configVersion, out int maxPriority);
             if (eventConfig == null)
-                eventConfig = BuildDefaultConfigMap(out maxPriority);
+            {
+                maxPriority = RUMLimitation.defaultPriorityLevel;
+            }
 
             UpdateConfig(eventConfig, maxPriority);
             eventsSendState = new EventsSendState(config.network.bandwidthInKBPS * 1024);
@@ -673,37 +719,6 @@ namespace com.fpnn.rum
             {
                 priorityDict = eventConfig;
             }
-        }
-
-        private Dictionary<string, int> BuildDefaultConfigMap(out int maxPriority)
-        {
-            Dictionary<string, int> config = new Dictionary<string, int>()
-            {
-                { "open", 0 },
-                { "nwswitch", 1 },
-                { "bg", 1 },
-                { "fg", 1 },
-                { "crash", 1 },
-                { "append", 1 },
-                { "http", 2 },
-                { "error", 2 },
-                { "warn", 2 },
-                { "info", 3 },
-
-                { "channel", 2 },       //-- only server-end SDK using
-                { "loading", 2 },
-                { "register", 2 },
-                { "login", 2 },
-                { "level", 2 },         //-- only server-end SDK using
-                { "payment", 2 },       //-- only server-end SDK using
-                { "tutorial", 2 },
-                { "task", 3 },
-                { "source", 3 },        //-- only server-end SDK using
-                { "order", 3 },         //-- only server-end SDK using
-            };
-
-            maxPriority = 3;
-            return config;
         }
 
         public void OnDestroy()
@@ -940,17 +955,13 @@ namespace com.fpnn.rum
         {
             Dictionary<string, object> info = new Dictionary<string, object>();
             info.Add("message", errorInfo);
+            info.Add("eid", GenEventId());
 
             if (ex != null)
                 info.Add("ex", ex.ToString());
 
             lock (interLocker)
             {
-                if (coreInfo != null)
-                    info.Add("ts", coreInfo.GetAdjustedTimestamp());
-                else
-                    info.Add("ts", ClientEngine.GetCurrentSeconds());
-
                 internalErrors.Add(info);
             }
         }
@@ -962,7 +973,7 @@ namespace com.fpnn.rum
 
         private void AddPrimaryEvent(string eventName, Dictionary<string, object> eventDict)
         {
-            eventDict.Add("ts", ClientEngine.GetCurrentSeconds());
+            eventDict.Add("eid", GenEventId());
 
             byte[] binaryData = SerializeEventDict(eventName, eventDict);
             if (binaryData == null)
@@ -998,7 +1009,6 @@ namespace com.fpnn.rum
             }
 
             eventDict.Add("ev", eventName);
-            eventDict.Add("ts", coreInfo.GetAdjustedTimestamp());
             eventDict.Add("pid", coreInfo.pid);
             eventDict.Add("eid", GenEventId());
             eventDict.Add("sid", Interlocked.Read(ref coreInfo.sessionId));     //-- Only this read coreInfo.sessionId in other thread, not in RoutineFunc()' loop.
@@ -1039,7 +1049,12 @@ namespace com.fpnn.rum
             {
                 foreach (KeyValuePair<string, Queue<byte[]>> kvp in primaryEventsCache)
                 {
-                    if (priorityDict.TryGetValue(kvp.Key, out int priority))
+                    if (priorityDict == null)
+                    {
+                        eventPriorities.Add(kvp.Key, RUMLimitation.defaultPriorityLevel);
+                        eventCache.Add(kvp.Key, kvp.Value);
+                    }
+                    else if (priorityDict.TryGetValue(kvp.Key, out int priority))
                     {
                         eventPriorities.Add(kvp.Key, priority);
                         eventCache.Add(kvp.Key, kvp.Value);
@@ -1081,9 +1096,7 @@ namespace com.fpnn.rum
 
 
                     eventDict.Add("ev", kvp.Key);
-
                     eventDict.Add("pid", coreInfo.pid);
-                    eventDict.Add("eid", GenEventId());
                     eventDict.Add("sid", sessionId);
                     eventDict.Add("rid", coreInfo.rumId);
 
@@ -1117,7 +1130,12 @@ namespace com.fpnn.rum
 
                 foreach (KeyValuePair<string, Queue<byte[]>> kvp in tempEventCache)
                 {
-                    if (priorityDict.TryGetValue(kvp.Key, out int priority))
+                    if (priorityDict == null)
+                    {
+                        eventPriorities.Add(kvp.Key, RUMLimitation.defaultPriorityLevel);
+                        eventCache.Add(kvp.Key, kvp.Value);
+                    }
+                    else if (priorityDict.TryGetValue(kvp.Key, out int priority))
                     {
                         eventPriorities.Add(kvp.Key, priority);
                         eventCache.Add(kvp.Key, kvp.Value);
@@ -1150,7 +1168,9 @@ namespace com.fpnn.rum
                 dumpInternalErrors = internalErrors;
                 internalErrors = new List<Dictionary<string, object>>();
 
-                if (!priorityDict.TryGetValue("error", out priority))
+                if (priorityDict == null)
+                    priority = 2;
+                else if (!priorityDict.TryGetValue("error", out priority))
                     priority = 2;
             }
 
@@ -1163,7 +1183,6 @@ namespace com.fpnn.rum
                 dict.Add("type", "unity_sdk");
 
                 dict.Add("pid", coreInfo.pid);
-                dict.Add("eid", GenEventId());
                 dict.Add("sid", sessionId);
                 dict.Add("rid", coreInfo.rumId);
 
@@ -1202,7 +1221,6 @@ namespace com.fpnn.rum
             Dictionary<string, object> dict = new Dictionary<string, object>();
 
             dict.Add("ev", "open");
-            dict.Add("ts", coreInfo.GetAdjustedTimestamp());
             dict.Add("pid", coreInfo.pid);
             dict.Add("eid", GenEventId());
             dict.Add("sid", coreInfo.sessionId);
