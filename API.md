@@ -6,7 +6,7 @@
 
 ## Current Version
 
-	public static readonly string com.fpnn.rum.RUMConfig.SDKVersion = "2.0.1";
+	public static readonly string com.fpnn.rum.RUMConfig.SDKVersion = "2.0.2";
 
 ## Init & Config SDK
 

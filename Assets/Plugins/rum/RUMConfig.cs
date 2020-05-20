@@ -39,7 +39,7 @@ namespace com.fpnn.rum
 
     public class RUMConfig
     {
-        public static readonly string SDKVersion = "2.0.1";
+        public static readonly string SDKVersion = "2.0.2";
 
         public NetworkSetting network;
         public CacheSetting cache;

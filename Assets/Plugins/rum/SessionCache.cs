@@ -525,20 +525,24 @@ namespace com.fpnn.rum
                     Dictionary<Object, Object> dict = MsgUnpacker.Unpack(data);
                     if (dict != null)
                     {
-                        object eidObj = dict["eid"];
-                        long eid = 0;
-
-                        try
+                        if (!dict.ContainsKey("ts"))
                         {
-                            ulong v = (ulong)eidObj;
-                            eid = (long)v;
-                        }
-                        catch (Exception)
-                        {
-                            eid = (long)eidObj;
-                        }
+                            object eidObj = dict["eid"];
+                            long eid = 0;
 
-                        dict.Add("ts", coreInfo.AdjustTimestamp(eid));
+                            try
+                            {
+                                ulong v = (ulong)eidObj;
+                                eid = (long)v;
+                            }
+                            catch (Exception)
+                            {
+                                eid = (long)eidObj;
+                            }
+
+                            dict.Add("ts", coreInfo.AdjustTimestamp(eid));
+                        }
+                        
                         events.Add(dict);
                     }
                     else
