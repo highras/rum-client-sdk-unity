@@ -568,7 +568,11 @@ namespace com.fpnn.rum
             if (RealSend(client, quest, binaryList, true))
                 return true;
 
-            return RealSend(client, quest, binaryList, false);     //-- retry.
+            bool status = RealSend(client, quest, binaryList, false);     //-- retry.
+            if (!status)
+                CacheFailedSentData(binaryList);
+
+            return status;
         }
 
         private bool RealSend(TCPClient client, Quest quest, List<byte[]> binaryList, bool firstSend)
@@ -583,7 +587,9 @@ namespace com.fpnn.rum
                 if (firstSend && (errorCode == ErrorCode.FPNN_EC_CORE_CONNECTION_CLOSED
                     || errorCode == ErrorCode.FPNN_EC_CORE_INVALID_CONNECTION))
                 {
-                    RealSend(client, quest, binaryList, false);
+                    if (!RealSend(client, quest, binaryList, false))
+                        CacheFailedSentData(binaryList);
+
                     return;
                 }
 
