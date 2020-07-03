@@ -41,7 +41,7 @@ public class Main : MonoBehaviour
         //-- Init RUM SDK
         {
             RUMConfig config = new RUMConfig("52.83.220.166:13609",
-                88888888, "fdb82dd0-6f33-49d9-b0b6-4f4a01bc4054", "demo version")
+                41033, "fdb82dd0-6f33-49d9-b0b6-4f4a01bc4054", "demo version")
             {
                 errorRecorder = errorRecorder
             };
