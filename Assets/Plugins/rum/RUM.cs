@@ -239,6 +239,8 @@ namespace com.fpnn.rum
 
             if (userLevel >= 0)
                 eventDict.Add("uslev", userLevel);
+
+            RUMCenter.Instance.AddEvent("tutorial", eventDict);
         }
 
         //----------------- task -------------------//
